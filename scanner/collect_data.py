@@ -174,6 +174,9 @@ def main():
     except Exception as e:
         print(f"Error connecting to database for logging: {e}")
 
+    # Aggressive Garbage Collection nach intensiven DB-Operationen
+    gc.collect()
+    
     for city_id, stats in results.items():
         success = stats.get('success', False)
         status = "SUCCESS" if success else "FAILED"
@@ -205,6 +208,11 @@ def main():
                 db_utils.insert_log(cursor, severity, log_text)
             except Exception as e:
                 print(f"Error inserting individual log for {city_id}: {e}")
+
+        # Optional: Pro Stadt GC triggern falls Memory kritisch
+        if gc.get_count()[0] > 500:  # Objekt-Count
+            gc.collect()
+            
     # Commit and close
     if conn:
         try:
