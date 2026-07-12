@@ -1,0 +1,247 @@
+{
+    "luzern": [
+        {
+            "name": "Parkhäuser Nord",
+            "parkings": [
+                "Casino-Palace",
+                "City Parking",
+                "Löwencenter",
+                "Nationalhof",
+                "Schweizerhof"
+            ]
+        },
+        {
+            "name": "Parkhäuser Süd",
+            "parkings": [
+                "Altstadt",
+                "am Gütsch",
+                "Parkhaus Flora",
+                "Hirzenmatt",
+                "Kantonalbank",
+                "Kesselturm",
+                "Bahnhofparking P1+P2",
+                "Bahnhofparking P3"
+            ]
+        },
+        {
+            "name": "Allmend / Messe",
+            "parkings": [
+                "Parkhaus Sportgebäude"
+            ]
+        },
+        {
+            "name": "Top 3",
+            "parkings": [
+                "Löwencenter",
+                "Kantonalbank",
+                "Bahnhofparking P1+P2"
+            ]
+        },
+        {
+            "name": "All",
+            "parkings": []
+        }
+    ],
+    "basel": [
+        {
+            "name": "Parkhäuser Zentrum West",
+            "parkings": [
+                "Elisabethen",
+                "Steinen",
+                "City",
+                "Storchen"
+            ]
+        },
+        {
+            "name": "Parkhäuser Zentrum Nord",
+            "parkings": [
+                "Bad. Bahnhof",
+                "Messe",
+                "Europe",
+                "Rebgasse",
+                "Claramatte",
+                "Clarahuus"
+            ]
+        },
+        {
+            "name": "Parkhäuser Zentrum Süd",
+            "parkings": [
+                "Post Basel",
+                "Centralbahn",
+                "Aeschen",
+                "Bahnhof Süd",
+                "Anfos",
+                "Kunstmuseum"
+            ]
+        },
+        {
+            "name": "All",
+            "parkings": []
+        }
+    ],
+    "stgallen": [
+        {
+            "name": "Zentrum West",
+            "parkings": [
+                "Neumarkt",
+                "Rathaus",
+                "Manor",
+                "Bahnhof",
+                "Kreuzbleiche"
+            ]
+        },
+        {
+            "name": "Klosterviertel",
+            "parkings": [
+                "Oberer Graben",
+                "Raiffeisen",
+                "Einstein"
+            ]
+        },
+        {
+            "name": "Marktplatz",
+            "parkings": [
+                "Burggraben",
+                "Spisertor",
+                "Brühltor"
+            ]
+        },
+        {
+            "name": "Zentrum Ost",
+            "parkings": [
+                "Stadtpark AZSG",
+                "Spelterini",
+                "OLMA Parkplatz",
+                "OLMA Messen"
+            ]
+        },
+        {
+            "name": "All",
+            "parkings": []
+        }
+    ],
+    "zurich": [
+        {
+            "name": "Zürich Nord / Oerlikon",
+            "parkings": [
+                "Accu",
+                "Center Eleven",
+                "Cityport",
+                "Dorflinde",
+                "Jungholz",
+                "Max-Bill-Platz",
+                "Messe Zürich AG",
+                "Nordhaus",
+                "Octavo",
+                "Parkside",
+                "Theater 11",
+                "Züri 11 Shopping"
+            ]
+        },
+        {
+            "name": "Zürich West / Altstetten",
+            "parkings": [
+                "Albisriederplatz",
+                "Crowne Plaza",
+                "Hardau II",
+                "P West",
+                "Pfingstweid",
+                "Puls 5 Parkgarage"
+            ]
+        },
+        {
+            "name": "Zürich Enge",
+            "parkings": [
+                "Bleicherweg",
+                "Park Hyatt",
+                "Talgarten"
+            ]
+        },
+        {
+            "name": "Zürich City",
+            "parkings": [
+                "City Parking",
+                "Globus",
+                "Hauptbahnhof",
+                "Helvetiaplatz",
+                "Jelmoli",
+                "Stampfenbach",
+                "Urania"
+            ]
+        },
+        {
+            "name": "Zürich Seefeld / Bellevue",
+            "parkings": [
+                "Hohe Promenade",
+                "Opéra",
+                "Feldegg",
+                "Utoquai",
+                "Zürichhorn"
+            ]
+        },
+        {
+            "name": "USZ / Uni Irchel",
+            "parkings": [
+                "USZ Nord",
+                "USZ Süd",
+                "Uni Irchel"
+            ]
+        },
+        {
+            "name": "All",
+            "parkings": []
+        }
+    ],
+    "bern": [
+        {
+            "name": "Bahnhof / Zentrum",
+            "parkings": [
+                "Bahnhof Parking",
+                "SBB Kurzparking",
+                "Metro Parking",
+                "Mobiliar Parking",
+                "Parking City West"
+            ]
+        },
+        {
+            "name": "Altstadt / Casino",
+            "parkings": [
+                "Casinoparking",
+                "Rathaus Parking",
+                "Kursaal Parking"
+            ]
+        },
+        {
+            "name": "Messe / Expo",
+            "parkings": [
+                "Expo Parking"
+            ]
+        },
+        {
+            "name": "P+R",
+            "parkings": [
+                "Park + Ride Neufeld"
+            ]
+        },
+        {
+            "name": "All",
+            "parkings": []
+        }
+    ],
+    "event_mappings": {
+        "KKL Luzern": {
+            "parkings": [
+                "Bahnhofparking P1+P2",
+                "Bahnhofparking P3"
+            ],
+            "url": "https://www.kkl-luzern.ch/"
+        },
+        "Luzerner Theater": {
+            "parkings": [
+                "Kantonalbank"
+            ],
+            "url": "https://www.luzernertheater.ch/"
+        }
+    },
+    "current_events": []
+}

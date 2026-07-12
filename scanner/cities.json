@@ -1,0 +1,44 @@
+{
+    "cities": {
+        "luzern": {
+            "enabled": true,
+            "name": "Luzern",
+            "collector": "luzern.LuzernCollector",
+            "api_url": "https://info.pls-luzern.ch/TeqParkingWS/GetFreeParks",
+            "official_url": "https://www.pls-luzern.ch/",
+            "description": "PLS Luzern - 15 facilities, ~4,000 spaces"
+        },
+        "basel": {
+            "enabled": true,
+            "name": "Basel",
+            "collector": "basel.BaselCollector",
+            "api_url": "https://api.parkendd.de/Basel",
+            "official_url": "https://www.parkleitsystem-basel.ch/",
+            "description": "ParkenDD Basel - 16 facilities, ~5,000 spaces"
+        },
+        "stgallen": {
+            "enabled": true,
+            "name": "St. Gallen",
+            "collector": "stgallen.StGallenCollector",
+            "api_url": "https://daten.stadt.sg.ch/api/records/1.0/search/?dataset=freie-parkplatze-in-der-stadt-stgallen-pls&rows=100",
+            "official_url": "https://www.pls-sg.ch/",
+            "description": "St. Gallen Open Data - 16 facilities, ~2,200 spaces"
+        },
+        "zurich": {
+            "enabled": true,
+            "name": "Zürich",
+            "collector": "zurich.ZurichCollector",
+            "api_url": "https://api.parkendd.de/Zuerich",
+            "official_url": "https://www.pls-zh.ch/",
+            "description": "ParkenDD Zürich - 36 facilities, ~9,000+ spaces"
+        },
+        "bern": {
+            "enabled": true,
+            "name": "Bern",
+            "collector": "bern.BernCollector",
+            "api_url": "https://www.parking-bern.ch/parkdata.xml",
+            "official_url": "https://www.parking-bern.ch/",
+            "description": "Parking Bern - ~28 facilities"
+        }
+    }
+}

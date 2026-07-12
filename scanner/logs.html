@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs - Swiss Parking Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-info: #38bdf8;
+            --accent-warn: #fbbf24;
+            --accent-error: #f43f5e;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.1) 0, transparent 50%);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            transition: transform 0.2s ease;
+        }
+
+        h1 {
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2rem;
+            transition: all 0.2s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--accent-info);
+            border-color: var(--accent-info);
+        }
+
+        .chart-container {
+            height: 400px;
+            position: relative;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 12px 16px;
+        }
+
+        td {
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td:first-child {
+            border-left: 1px solid var(--glass-border);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        td:last-child {
+            border-right: 1px solid var(--glass-border);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .badge-severity {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .severity-I {
+            background: rgba(56, 189, 248, 0.2);
+            color: var(--accent-info);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .severity-W {
+            background: rgba(251, 191, 36, 0.2);
+            color: var(--accent-warn);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .severity-E {
+            background: rgba(244, 63, 94, 0.2);
+            color: var(--accent-error);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        .timestamp {
+            color: var(--text-secondary);
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/" class="btn-back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Dashboard
+        </a>
+
+        <h1>System Integrity Logs</h1>
+
+        <div class="glass-card">
+            <h5 class="mb-4">Severity Timeline</h5>
+            <div class="chart-container">
+                <canvas id="logsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h5 class="mb-4">Weekly Issues by Source (Warning/Error)</h5>
+            <div class="chart-container">
+                <canvas id="weeklyStatsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h5 class="mb-4">Stuck Parking Data (Last 24h)</h5>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">
+                Parking places with no changes detected (MIN = MAX free spaces). This may indicate closed facilities or
+                data feed issues.
+            </p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>City</th>
+                            <th>Parking Place</th>
+                            <th>Day</th>
+                            <th style="text-align: right;">Static Value</th>
+                            <th style="text-align: right;">Records</th>
+                            <th>Time Range</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stuck-parking-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <div id="stuck-empty-state" class="empty-state" style="display: none;">
+                    No stuck parking data detected. All parking places are reporting changes.
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h5 class="mb-4">Recent Failed</h5>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;">Timestamp</th>
+                            <th style="width: 100px;">Level</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <div id="empty-state" class="empty-state" style="display: none;">
+                    No logs found in the database.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        async function fetchLogs() {
+            try {
+                // Fetch weekly stats
+                const weeklyResponse = await fetch('/api/logs/weekly_stats');
+                if (weeklyResponse.ok) {
+                    const weeklyData = await weeklyResponse.json();
+                    renderWeeklyStats(weeklyData);
+                }
+
+                // Fetch stuck parking data
+                const stuckResponse = await fetch('/api/logs/stuck_parking');
+                if (stuckResponse.ok) {
+                    const stuckData = await stuckResponse.json();
+                    renderStuckParking(stuckData);
+                }
+
+                const response = await fetch('/api/logs');
+                if (!response.ok) throw new Error('Failed to fetch logs');
+                const logs = await response.json();
+
+                if (logs.length === 0) {
+                    document.getElementById('empty-state').style.display = 'block';
+                    return [];
+                }
+
+                renderTable(logs);
+                renderChart(logs);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Could not load logs. See console for details.');
+            }
+        }
+
+        function renderWeeklyStats(data) {
+            const ctx = document.getElementById('weeklyStatsChart').getContext('2d');
+            
+            // Filter out Info logs, keep only Warnings and Errors
+            const issues = data.filter(d => d.severity !== 'I');
+            
+            // Extract unique weeks and sorted
+            const weeks = [...new Set(issues.map(d => d.week_code))].sort();
+            
+            // Extract unique parkhouses (sources)
+            const sources = [...new Set(issues.map(d => d.parkhaus))].sort();
+            
+            // Create nice colors
+            const colors = [
+                '#38bdf8', '#fbbf24', '#f43f5e', '#a78bfa', '#34d399', 
+                '#f472b6', '#fb923c', '#94a3b8', '#22d3ee', '#818cf8'
+            ];
+            
+            const datasets = sources.map((source, index) => {
+                const dataPoints = weeks.map(week => {
+                    // Find all entries for this week and source
+                    const entry = issues.find(d => d.week_code === week && d.parkhaus === source);
+                    return entry ? entry.count : 0;
+                });
+                
+                return {
+                    label: source,
+                    data: dataPoints,
+                    backgroundColor: colors[index % colors.length],
+                    borderRadius: 4
+                };
+            });
+            
+            // Format week labels (202603 -> Week 03, 2026)
+            const weekLabels = weeks.map(w => {
+                 const s = String(w);
+                 return `Week ${s.substring(4)}, ${s.substring(0, 4)}`;
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: weekLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8', stepSize: 1 }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#f8fafc', padding: 20, font: { weight: '600' } }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderStuckParking(stuckData) {
+            const tableBody = document.getElementById('stuck-parking-table-body');
+            const emptyState = document.getElementById('stuck-empty-state');
+            tableBody.innerHTML = '';
+
+            if (stuckData.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            stuckData.forEach(item => {
+                const tr = document.createElement('tr');
+
+                const date = new Date(item.day);
+                const formattedDate = date.toLocaleDateString('de-CH', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+
+                const firstFetch = new Date(item.first_fetch);
+                const lastFetch = new Date(item.last_fetch);
+                const timeRange = `${firstFetch.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })} - ${lastFetch.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
+
+                // Capitalize city name
+                const cityDisplay = item.city.charAt(0).toUpperCase() + item.city.slice(1);
+
+                tr.innerHTML = `
+                    <td style="font-weight: 600;">${cityDisplay}</td>
+                    <td>${item.name}</td>
+                    <td class="timestamp">${formattedDate}</td>
+                    <td style="text-align: right; font-weight: 600; color: var(--accent-warn);">${item.min_free}</td>
+                    <td style="text-align: right;">${item.record_count}</td>
+                    <td class="timestamp">${timeRange}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function renderTable(logs) {
+            const tableBody = document.getElementById('logs-table-body');
+            tableBody.innerHTML = '';
+
+            // Filter out Info-level entries (severity = 'I')
+            const filteredLogs = logs.filter(log => log.severity !== 'I');
+
+            filteredLogs.forEach(log => {
+                const tr = document.createElement('tr');
+
+                const date = new Date(log.timestamp);
+                const formattedDate = date.toLocaleString('de-CH', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                const severityMap = {
+                    'I': 'Info',
+                    'W': 'Warning',
+                    'E': 'Error'
+                };
+
+                tr.innerHTML = `
+                    <td class="timestamp">${formattedDate}</td>
+                    <td><span class="badge-severity severity-${log.severity}">${severityMap[log.severity] || log.severity}</span></td>
+                    <td>${log.text}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function renderChart(logs) {
+            const ctx = document.getElementById('logsChart').getContext('2d');
+
+            // Group by time buckets (e.g., hourly)
+            // For now, let's just bucket by day and hour if logs are recent
+            const buckets = {}; // "YYYY-MM-DD HH:00" -> {I: 0, W: 0, E: 0}
+
+            // Sort logs by time ascending for the chart
+            const sortedLogs = [...logs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            sortedLogs.forEach(log => {
+                const d = new Date(log.timestamp);
+                // Simple hourly bucket
+                const bucketKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:00`;
+
+                if (!buckets[bucketKey]) {
+                    buckets[bucketKey] = { I: 0, W: 0, E: 0 };
+                }
+                buckets[bucketKey][log.severity]++;
+            });
+
+            const labels = Object.keys(buckets);
+            const infoData = labels.map(l => buckets[l].I);
+            const warnData = labels.map(l => buckets[l].W);
+            const errData = labels.map(l => buckets[l].E);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Info',
+                            data: infoData,
+                            backgroundColor: '#38bdf8',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Warning',
+                            data: warnData,
+                            backgroundColor: '#fbbf24',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Error',
+                            data: errData,
+                            backgroundColor: '#f43f5e',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8', stepSize: 1 }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#f8fafc', padding: 20, font: { weight: '600' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        fetchLogs();
+    </script>
+</body>
+
+</html>

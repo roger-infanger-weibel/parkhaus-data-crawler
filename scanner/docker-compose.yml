@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  crawler:
+    build: .
+    container_name: swiss-parking-crawler
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    command: --interval 900 --data-dir data

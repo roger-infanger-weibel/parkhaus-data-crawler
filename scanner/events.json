@@ -1,0 +1,1042 @@
+{
+    "last_updated": "2026-07-12T04:00:52.728851",
+    "mappings": {
+        "KKL Luzern": {
+            "parkings": [
+                "Bahnhofparking P1+P2",
+                "Bahnhofparking P3"
+            ],
+            "url": "https://www.kkl-luzern.ch/"
+        },
+        "Luzerner Theater": {
+            "parkings": [
+                "Kantonalbank"
+            ],
+            "url": "https://www.luzernertheater.ch/"
+        }
+    },
+    "events": [
+        {
+            "title": "Alkopop",
+            "location": "Bar Nordpol",
+            "start": "2026-08-20T00:00:00",
+            "end": "2026-08-20T02:00:00",
+            "description": "Theater: Alkopop (Bar Nordpol)"
+        },
+        {
+            "title": "Queer* Space",
+            "location": "UG",
+            "start": "2026-08-24T00:00:00",
+            "end": "2026-08-24T02:00:00",
+            "description": "Theater: Queer* Space (UG)"
+        },
+        {
+            "title": "Alkopop",
+            "location": "Buvette Bar Inseli",
+            "start": "2026-08-27T00:00:00",
+            "end": "2026-08-27T02:00:00",
+            "description": "Theater: Alkopop (Buvette Bar Inseli)"
+        },
+        {
+            "title": "Mad King & Medea",
+            "location": "Box",
+            "start": "2026-08-28T00:00:00",
+            "end": "2026-08-28T02:00:00",
+            "description": "Theater: Mad King & Medea (Box)"
+        },
+        {
+            "title": "Theaterfest",
+            "location": "Bühne",
+            "start": "2026-08-29T00:00:00",
+            "end": "2026-08-29T02:00:00",
+            "description": "Theater: Theaterfest (Bühne)"
+        },
+        {
+            "title": "Alkopop",
+            "location": "Krienbrüggli",
+            "start": "2026-09-03T00:00:00",
+            "end": "2026-09-03T02:00:00",
+            "description": "Theater: Alkopop (Krienbrüggli)"
+        },
+        {
+            "title": "Kleine Probleme",
+            "location": "UG",
+            "start": "2026-09-04T00:00:00",
+            "end": "2026-09-04T02:00:00",
+            "description": "Theater: Kleine Probleme (UG)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-09-05T00:00:00",
+            "end": "2026-09-05T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "Mad King & Medea",
+            "location": "Box",
+            "start": "2026-09-06T00:00:00",
+            "end": "2026-09-06T02:00:00",
+            "description": "Theater: Mad King & Medea (Box)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-09-06T00:00:00",
+            "end": "2026-09-06T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Alkopop",
+            "location": "Parterre",
+            "start": "2026-09-10T00:00:00",
+            "end": "2026-09-10T02:00:00",
+            "description": "Theater: Alkopop (Parterre)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-09-11T00:00:00",
+            "end": "2026-09-11T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-09-12T00:00:00",
+            "end": "2026-09-12T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-09-12T00:00:00",
+            "end": "2026-09-12T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-09-13T00:00:00",
+            "end": "2026-09-13T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "Queer* Space",
+            "location": "UG",
+            "start": "2026-09-14T00:00:00",
+            "end": "2026-09-14T02:00:00",
+            "description": "Theater: Queer* Space (UG)"
+        },
+        {
+            "title": "Kleine Probleme",
+            "location": "UG",
+            "start": "2026-09-16T00:00:00",
+            "end": "2026-09-16T02:00:00",
+            "description": "Theater: Kleine Probleme (UG)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-09-17T00:00:00",
+            "end": "2026-09-17T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Alkopop",
+            "location": "Jazzkantine",
+            "start": "2026-09-17T00:00:00",
+            "end": "2026-09-17T02:00:00",
+            "description": "Theater: Alkopop (Jazzkantine)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-09-18T00:00:00",
+            "end": "2026-09-18T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "Mad King & Medea",
+            "location": "Box",
+            "start": "2026-09-18T00:00:00",
+            "end": "2026-09-18T02:00:00",
+            "description": "Theater: Mad King & Medea (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Foyer",
+            "start": "2026-09-19T00:00:00",
+            "end": "2026-09-19T02:00:00",
+            "description": "Theater: My Fair Lady (Foyer)"
+        },
+        {
+            "title": "Kuscheltier-Safari",
+            "location": "Foyer",
+            "start": "2026-09-20T00:00:00",
+            "end": "2026-09-20T02:00:00",
+            "description": "Theater: Kuscheltier-Safari (Foyer)"
+        },
+        {
+            "title": "Kuscheltier-Safari",
+            "location": "Foyer",
+            "start": "2026-09-20T00:00:00",
+            "end": "2026-09-20T02:00:00",
+            "description": "Theater: Kuscheltier-Safari (Foyer)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-09-20T00:00:00",
+            "end": "2026-09-20T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "Gilgamesch, mein Sternenschiff",
+            "location": "UG",
+            "start": "2026-09-21T00:00:00",
+            "end": "2026-09-21T02:00:00",
+            "description": "Theater: Gilgamesch, mein Sternenschiff (UG)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Foyer",
+            "start": "2026-09-21T00:00:00",
+            "end": "2026-09-21T02:00:00",
+            "description": "Theater: My Fair Lady (Foyer)"
+        },
+        {
+            "title": "Gilgamesch, mein Sternenschiff",
+            "location": "UG",
+            "start": "2026-09-22T00:00:00",
+            "end": "2026-09-22T02:00:00",
+            "description": "Theater: Gilgamesch, mein Sternenschiff (UG)"
+        },
+        {
+            "title": "Gilgamesch, mein Sternenschiff",
+            "location": "UG",
+            "start": "2026-09-22T00:00:00",
+            "end": "2026-09-22T02:00:00",
+            "description": "Theater: Gilgamesch, mein Sternenschiff (UG)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-09-23T00:00:00",
+            "end": "2026-09-23T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-09-24T00:00:00",
+            "end": "2026-09-24T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-09-24T00:00:00",
+            "end": "2026-09-24T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-09-25T00:00:00",
+            "end": "2026-09-25T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-09-26T00:00:00",
+            "end": "2026-09-26T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-09-30T00:00:00",
+            "end": "2026-09-30T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-10-03T00:00:00",
+            "end": "2026-10-03T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-10-04T00:00:00",
+            "end": "2026-10-04T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Mad King & Medea",
+            "location": "Box",
+            "start": "2026-10-08T00:00:00",
+            "end": "2026-10-08T02:00:00",
+            "description": "Theater: Mad King & Medea (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-10-09T00:00:00",
+            "end": "2026-10-09T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-10-10T00:00:00",
+            "end": "2026-10-10T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "Krabbelkonzert",
+            "location": "Foyer",
+            "start": "2026-10-11T00:00:00",
+            "end": "2026-10-11T02:00:00",
+            "description": "Theater: Krabbelkonzert (Foyer)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-10-11T00:00:00",
+            "end": "2026-10-11T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Ronny von Welt",
+            "location": "Klassenzimmer",
+            "start": "2026-10-13T00:00:00",
+            "end": "2026-10-13T02:00:00",
+            "description": "Theater: Ronny von Welt (Klassenzimmer)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-10-14T00:00:00",
+            "end": "2026-10-14T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-10-15T00:00:00",
+            "end": "2026-10-15T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-10-16T00:00:00",
+            "end": "2026-10-16T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-10-17T00:00:00",
+            "end": "2026-10-17T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Mad King & Medea",
+            "location": "Box",
+            "start": "2026-10-17T00:00:00",
+            "end": "2026-10-17T02:00:00",
+            "description": "Theater: Mad King & Medea (Box)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-10-18T00:00:00",
+            "end": "2026-10-18T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Gilgamesch, mein Sternenschiff",
+            "location": "UG",
+            "start": "2026-10-20T00:00:00",
+            "end": "2026-10-20T02:00:00",
+            "description": "Theater: Gilgamesch, mein Sternenschiff (UG)"
+        },
+        {
+            "title": "Gilgamesch, mein Sternenschiff",
+            "location": "UG",
+            "start": "2026-10-21T00:00:00",
+            "end": "2026-10-21T02:00:00",
+            "description": "Theater: Gilgamesch, mein Sternenschiff (UG)"
+        },
+        {
+            "title": "Mad King & Medea",
+            "location": "Box",
+            "start": "2026-10-21T00:00:00",
+            "end": "2026-10-21T02:00:00",
+            "description": "Theater: Mad King & Medea (Box)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-10-22T00:00:00",
+            "end": "2026-10-22T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-10-22T00:00:00",
+            "end": "2026-10-22T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-10-23T00:00:00",
+            "end": "2026-10-23T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-10-23T00:00:00",
+            "end": "2026-10-23T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-10-24T00:00:00",
+            "end": "2026-10-24T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-10-25T00:00:00",
+            "end": "2026-10-25T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Queer* Space",
+            "location": "UG",
+            "start": "2026-10-26T00:00:00",
+            "end": "2026-10-26T02:00:00",
+            "description": "Theater: Queer* Space (UG)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-10-27T00:00:00",
+            "end": "2026-10-27T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-10-28T00:00:00",
+            "end": "2026-10-28T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Mad King & Medea",
+            "location": "Box",
+            "start": "2026-10-28T00:00:00",
+            "end": "2026-10-28T02:00:00",
+            "description": "Theater: Mad King & Medea (Box)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-10-29T00:00:00",
+            "end": "2026-10-29T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-10-29T00:00:00",
+            "end": "2026-10-29T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "Mad King & Medea",
+            "location": "Box",
+            "start": "2026-10-29T00:00:00",
+            "end": "2026-10-29T02:00:00",
+            "description": "Theater: Mad King & Medea (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-10-30T00:00:00",
+            "end": "2026-10-30T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Die Opern-Tode meiner Mutter",
+            "location": "UG",
+            "start": "2026-10-31T00:00:00",
+            "end": "2026-10-31T02:00:00",
+            "description": "Theater: Die Opern-Tode meiner Mutter (UG)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-10-31T00:00:00",
+            "end": "2026-10-31T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "Egal",
+            "location": "Box",
+            "start": "2026-10-31T00:00:00",
+            "end": "2026-10-31T02:00:00",
+            "description": "Theater: Egal (Box)"
+        },
+        {
+            "title": "Exploration of Energy",
+            "location": "Bühne",
+            "start": "2026-11-06T00:00:00",
+            "end": "2026-11-06T02:00:00",
+            "description": "Theater: Exploration of Energy (Bühne)"
+        },
+        {
+            "title": "Pu der Bär",
+            "location": "Box",
+            "start": "2026-11-07T00:00:00",
+            "end": "2026-11-07T02:00:00",
+            "description": "Theater: Pu der Bär (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-11-07T00:00:00",
+            "end": "2026-11-07T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Pu der Bär",
+            "location": "Box",
+            "start": "2026-11-08T00:00:00",
+            "end": "2026-11-08T02:00:00",
+            "description": "Theater: Pu der Bär (Box)"
+        },
+        {
+            "title": "Pu der Bär",
+            "location": "Box",
+            "start": "2026-11-08T00:00:00",
+            "end": "2026-11-08T02:00:00",
+            "description": "Theater: Pu der Bär (Box)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-11-08T00:00:00",
+            "end": "2026-11-08T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Piggeldy und Frederick",
+            "location": "Box",
+            "start": "2026-11-11T00:00:00",
+            "end": "2026-11-11T02:00:00",
+            "description": "Theater: Piggeldy und Frederick (Box)"
+        },
+        {
+            "title": "Piggeldy und Frederick",
+            "location": "Box",
+            "start": "2026-11-11T00:00:00",
+            "end": "2026-11-11T02:00:00",
+            "description": "Theater: Piggeldy und Frederick (Box)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-11-13T00:00:00",
+            "end": "2026-11-13T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Kostümverkauf",
+            "location": "Südpol, Pb 3",
+            "start": "2026-11-14T00:00:00",
+            "end": "2026-11-14T02:00:00",
+            "description": "Theater: Kostümverkauf (Südpol, Pb 3)"
+        },
+        {
+            "title": "Piggeldy und Frederick",
+            "location": "Box",
+            "start": "2026-11-14T00:00:00",
+            "end": "2026-11-14T02:00:00",
+            "description": "Theater: Piggeldy und Frederick (Box)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-11-14T00:00:00",
+            "end": "2026-11-14T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Piggeldy und Frederick",
+            "location": "Box",
+            "start": "2026-11-15T00:00:00",
+            "end": "2026-11-15T02:00:00",
+            "description": "Theater: Piggeldy und Frederick (Box)"
+        },
+        {
+            "title": "Die Opern-Tode meiner Mutter",
+            "location": "UG",
+            "start": "2026-11-15T00:00:00",
+            "end": "2026-11-15T02:00:00",
+            "description": "Theater: Die Opern-Tode meiner Mutter (UG)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-11-15T00:00:00",
+            "end": "2026-11-15T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-11-17T00:00:00",
+            "end": "2026-11-17T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Piggeldy und Frederick",
+            "location": "Box",
+            "start": "2026-11-18T00:00:00",
+            "end": "2026-11-18T02:00:00",
+            "description": "Theater: Piggeldy und Frederick (Box)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-11-18T00:00:00",
+            "end": "2026-11-18T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-11-19T00:00:00",
+            "end": "2026-11-19T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-11-20T00:00:00",
+            "end": "2026-11-20T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Krabbelkonzert",
+            "location": "Foyer",
+            "start": "2026-11-21T00:00:00",
+            "end": "2026-11-21T02:00:00",
+            "description": "Theater: Krabbelkonzert (Foyer)"
+        },
+        {
+            "title": "Gschichte-Chischte",
+            "location": "Foyer",
+            "start": "2026-11-21T00:00:00",
+            "end": "2026-11-21T02:00:00",
+            "description": "Theater: Gschichte-Chischte (Foyer)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-11-21T00:00:00",
+            "end": "2026-11-21T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Petitpas & ich",
+            "location": "Box",
+            "start": "2026-11-22T00:00:00",
+            "end": "2026-11-22T02:00:00",
+            "description": "Theater: Petitpas & ich (Box)"
+        },
+        {
+            "title": "Petitpas & ich",
+            "location": "Box",
+            "start": "2026-11-22T00:00:00",
+            "end": "2026-11-22T02:00:00",
+            "description": "Theater: Petitpas & ich (Box)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-11-22T00:00:00",
+            "end": "2026-11-22T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-11-24T00:00:00",
+            "end": "2026-11-24T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-11-24T00:00:00",
+            "end": "2026-11-24T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Gilgamesch, mein Sternenschiff",
+            "location": "UG",
+            "start": "2026-11-25T00:00:00",
+            "end": "2026-11-25T02:00:00",
+            "description": "Theater: Gilgamesch, mein Sternenschiff (UG)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-11-25T00:00:00",
+            "end": "2026-11-25T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-11-26T00:00:00",
+            "end": "2026-11-26T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-11-27T00:00:00",
+            "end": "2026-11-27T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Besteste Freunde",
+            "location": "Box",
+            "start": "2026-11-28T00:00:00",
+            "end": "2026-11-28T02:00:00",
+            "description": "Theater: Besteste Freunde (Box)"
+        },
+        {
+            "title": "Gilgamesch, mein Sternenschiff",
+            "location": "UG",
+            "start": "2026-11-28T00:00:00",
+            "end": "2026-11-28T02:00:00",
+            "description": "Theater: Gilgamesch, mein Sternenschiff (UG)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-11-28T00:00:00",
+            "end": "2026-11-28T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "Besteste Freunde",
+            "location": "Box",
+            "start": "2026-11-29T00:00:00",
+            "end": "2026-11-29T02:00:00",
+            "description": "Theater: Besteste Freunde (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-11-29T00:00:00",
+            "end": "2026-11-29T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Queer* Space",
+            "location": "UG",
+            "start": "2026-11-30T00:00:00",
+            "end": "2026-11-30T02:00:00",
+            "description": "Theater: Queer* Space (UG)"
+        },
+        {
+            "title": "Lotte Lenya - eine Jahrhundertbiografie",
+            "location": "Bühne",
+            "start": "2026-12-01T00:00:00",
+            "end": "2026-12-01T02:00:00",
+            "description": "Theater: Lotte Lenya - eine Jahrhundertbiografie (Bühne)"
+        },
+        {
+            "title": "Besteste Freunde",
+            "location": "Box",
+            "start": "2026-12-02T00:00:00",
+            "end": "2026-12-02T02:00:00",
+            "description": "Theater: Besteste Freunde (Box)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-03T00:00:00",
+            "end": "2026-12-03T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-12-03T00:00:00",
+            "end": "2026-12-03T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-12-04T00:00:00",
+            "end": "2026-12-04T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-05T00:00:00",
+            "end": "2026-12-05T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Bestiarium",
+            "location": "Box",
+            "start": "2026-12-05T00:00:00",
+            "end": "2026-12-05T02:00:00",
+            "description": "Theater: Bestiarium (Box)"
+        },
+        {
+            "title": "Lotte Lenya - eine Jahrhundertbiografie",
+            "location": "Bühne",
+            "start": "2026-12-05T00:00:00",
+            "end": "2026-12-05T02:00:00",
+            "description": "Theater: Lotte Lenya - eine Jahrhundertbiografie (Bühne)"
+        },
+        {
+            "title": "Bestiarium",
+            "location": "Box",
+            "start": "2026-12-06T00:00:00",
+            "end": "2026-12-06T02:00:00",
+            "description": "Theater: Bestiarium (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-12-06T00:00:00",
+            "end": "2026-12-06T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-08T00:00:00",
+            "end": "2026-12-08T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-09T00:00:00",
+            "end": "2026-12-09T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Bestiarium",
+            "location": "Box",
+            "start": "2026-12-09T00:00:00",
+            "end": "2026-12-09T02:00:00",
+            "description": "Theater: Bestiarium (Box)"
+        },
+        {
+            "title": "I Capuleti e i Montecchi [Romeo und Julia]",
+            "location": "Bühne",
+            "start": "2026-12-09T00:00:00",
+            "end": "2026-12-09T02:00:00",
+            "description": "Theater: I Capuleti e i Montecchi [Romeo und Julia] (Bühne)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-12-10T00:00:00",
+            "end": "2026-12-10T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Der zerbrochne Krug",
+            "location": "Bühne",
+            "start": "2026-12-11T00:00:00",
+            "end": "2026-12-11T02:00:00",
+            "description": "Theater: Der zerbrochne Krug (Bühne)"
+        },
+        {
+            "title": "Konrad, das Kind aus der Konservenbüchse",
+            "location": "Box",
+            "start": "2026-12-12T00:00:00",
+            "end": "2026-12-12T02:00:00",
+            "description": "Theater: Konrad, das Kind aus der Konservenbüchse (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-12-12T00:00:00",
+            "end": "2026-12-12T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Konrad, das Kind aus der Konservenbüchse",
+            "location": "Box",
+            "start": "2026-12-13T00:00:00",
+            "end": "2026-12-13T02:00:00",
+            "description": "Theater: Konrad, das Kind aus der Konservenbüchse (Box)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-13T00:00:00",
+            "end": "2026-12-13T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-13T00:00:00",
+            "end": "2026-12-13T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-15T00:00:00",
+            "end": "2026-12-15T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Konrad, das Kind aus der Konservenbüchse",
+            "location": "Box",
+            "start": "2026-12-16T00:00:00",
+            "end": "2026-12-16T02:00:00",
+            "description": "Theater: Konrad, das Kind aus der Konservenbüchse (Box)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-16T00:00:00",
+            "end": "2026-12-16T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-16T00:00:00",
+            "end": "2026-12-16T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-12-17T00:00:00",
+            "end": "2026-12-17T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-12-18T00:00:00",
+            "end": "2026-12-18T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "Konrad, das Kind aus der Konservenbüchse",
+            "location": "Box",
+            "start": "2026-12-19T00:00:00",
+            "end": "2026-12-19T02:00:00",
+            "description": "Theater: Konrad, das Kind aus der Konservenbüchse (Box)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-12-19T00:00:00",
+            "end": "2026-12-19T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        },
+        {
+            "title": "Konrad, das Kind aus der Konservenbüchse",
+            "location": "Box",
+            "start": "2026-12-20T00:00:00",
+            "end": "2026-12-20T02:00:00",
+            "description": "Theater: Konrad, das Kind aus der Konservenbüchse (Box)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-20T00:00:00",
+            "end": "2026-12-20T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-20T00:00:00",
+            "end": "2026-12-20T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Seeing Beyond",
+            "location": "Bühne",
+            "start": "2026-12-22T00:00:00",
+            "end": "2026-12-22T02:00:00",
+            "description": "Theater: Seeing Beyond (Bühne)"
+        },
+        {
+            "title": "L'elisir d'amore [Der Liebestrank]",
+            "location": "Bühne",
+            "start": "2026-12-23T00:00:00",
+            "end": "2026-12-23T02:00:00",
+            "description": "Theater: L'elisir d'amore [Der Liebestrank] (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-24T00:00:00",
+            "end": "2026-12-24T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-26T00:00:00",
+            "end": "2026-12-26T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "I Capuleti e i Montecchi [Romeo und Julia]",
+            "location": "Bühne",
+            "start": "2026-12-26T00:00:00",
+            "end": "2026-12-26T02:00:00",
+            "description": "Theater: I Capuleti e i Montecchi [Romeo und Julia] (Bühne)"
+        },
+        {
+            "title": "Eine Weihnachtsgeschichte",
+            "location": "Bühne",
+            "start": "2026-12-27T00:00:00",
+            "end": "2026-12-27T02:00:00",
+            "description": "Theater: Eine Weihnachtsgeschichte (Bühne)"
+        },
+        {
+            "title": "My Fair Lady",
+            "location": "Bühne",
+            "start": "2026-12-31T00:00:00",
+            "end": "2026-12-31T02:00:00",
+            "description": "Theater: My Fair Lady (Bühne)"
+        }
+    ]
+}

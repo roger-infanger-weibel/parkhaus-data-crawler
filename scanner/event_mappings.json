@@ -1,0 +1,17 @@
+{
+    "mappings": {
+        "KKL Luzern": {
+            "parkings": [
+                "Bahnhofparking P1+P2",
+                "Bahnhofparking P3"
+            ],
+            "url": "https://www.kkl-luzern.ch/"
+        },
+        "Luzerner Theater": {
+            "parkings": [
+                "Kantonalbank"
+            ],
+            "url": "https://www.luzernertheater.ch/"
+        }
+    }
+}

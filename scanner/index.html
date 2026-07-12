@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swiss Parking Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 70vh;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .city-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .city-luzern {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .city-basel {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .city-stgallen {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .city-zurich {
+            background-color: #9b59b6;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <h1 class="mb-4">🇨🇭 Swiss Parking Availability Monitor</h1>
+
+        <div class="row mb-3">
+            <div class="col-auto">
+                <label for="city-select" class="col-form-label">Select City:</label>
+            </div>
+            <div class="col-auto">
+                <select id="city-select" class="form-select" onchange="onCityChange()">
+                    <option disabled selected>Loading cities...</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label for="group-select" class="col-form-label">Select Group:</label>
+            </div>
+            <div class="col-auto">
+                <select id="group-select" class="form-select" onchange="onGroupChange()">
+                    <option value="all">All</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label for="date-select" class="col-form-label">Select Date:</label>
+            </div>
+            <div class="col-auto">
+                <select id="date-select" class="form-select" onchange="loadData()">
+                    <option disabled selected>Loading dates...</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" onclick="loadData()">Reload Data</button>
+            </div>
+            <div class="col-auto">
+                <a id="official-link" href="#" target="_blank" class="btn btn-primary" style="display: none;">Official
+                    Page</a>
+            </div>
+            <div class="col-auto">
+                <a href="/logs" class="btn btn-dark">System Log 📋</a>
+            </div>
+            <div class="row mb-3" id="official-source-row" style="display: none;">
+                <div class="col">
+                    <small class="text-muted">Data Source: <a id="official-url-display" href="#"
+                            target="_blank"></a></small>
+                </div>
+            </div>
+
+            <div class="mt-4 mb-4">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Forecast</th>
+                            <th>Parking Place</th>
+                            <th>Status</th>
+                            <th>Free / Total</th>
+                            <th>Trend (1h)</th>
+                            <th>% Free</th>
+                        </tr>
+                    </thead>
+                    <tbody id="parking-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="parkingChart"></canvas>
+            </div>
+
+            <!-- Events Section -->
+            <div class="row mt-4 mb-4" id="events-section" style="display: none;">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">🎭 Local Events & Traffic Impact</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="events-loading" class="text-muted">Loading events...</div>
+                            <div id="events-empty" class="text-muted" style="display: none;">No major events found for
+                                this date.</div>
+                            <table class="table table-hover" id="events-table" style="display: none;">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Event</th>
+                                        <th>Location</th>
+                                        <th>Recommended / Impacted Parking</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="events-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+        <script>
+            Chart.register(ChartDataLabels);
+            let myChart = null;
+            let GROUP_CONFIG = {};
+            const API_BASE = "/api";
+
+            let CITY_CONFIG = {}; // Will be populated dynamically
+
+            let FULL_CITY_CONFIG = {};
+
+            async function loadCities() {
+                try {
+                    // Fetch official URLs and descriptions
+                    const configResponse = await fetch('/cities.json');
+                    if (configResponse.ok) {
+                        const configData = await configResponse.json();
+                        FULL_CITY_CONFIG = configData.cities;
+                    }
+
+                    const response = await fetch(`${API_BASE}/cities`);
+                    if (!response.ok) throw new Error("Failed to fetch cities");
+                    const cities = await response.json();
+
+                    const select = document.getElementById('city-select');
+                    select.innerHTML = '';
+
+                    const DISPLAY_NAMES = {
+                        'stgallen': 'St.Gallen',
+                        'zurich': 'Zürich'
+                    };
+
+                    cities.forEach(cityId => {
+                        const option = document.createElement('option');
+                        option.value = cityId;
+                        // Use mapping or capitalize first letter for display name
+                        option.text = DISPLAY_NAMES[cityId] || (cityId.charAt(0).toUpperCase() + cityId.slice(1));
+                        select.add(option);
+
+                        // Simple color generation or default map
+                        // ideally this comes from DB too, but for now we generate/mock it
+                        if (!CITY_CONFIG[cityId]) {
+                            CITY_CONFIG[cityId] = {
+                                name: option.text,
+                                color: stringToColor(cityId)
+                            };
+                        }
+                    });
+
+                    let lastCity = null;
+                    if (hasConsent()) {
+                        lastCity = localStorage.getItem('lastCity');
+                    }
+
+                    if (lastCity && Array.from(select.options).some(opt => opt.value === lastCity)) {
+                        select.value = lastCity;
+                    }
+
+                    // Trigger initial load
+                    onCityChange();
+
+                } catch (e) {
+                    console.error("Error loading cities:", e);
+                    alert("Could not load city list.");
+                }
+            }
+
+            // Helper to generate a consistent color from a string
+            function stringToColor(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+                return '#' + "00000".substring(0, 6 - c.length) + c;
+            }
+
+            async function loadGroups() {
+                try {
+                    const response = await fetch('groups.json');
+                    if (!response.ok) throw new Error("Failed to fetch groups config");
+                    GROUP_CONFIG = await response.json();
+                    updateGroupSelect(); // call this to update in case groups loaded after cities
+                } catch (error) {
+                    console.error("Error loading groups:", error);
+                }
+            }
+
+            function updateGroupSelect() {
+                const city = getCurrentCity();
+                if (!city) return;
+
+                const select = document.getElementById('group-select');
+                const groups = GROUP_CONFIG[city] || [];
+
+                select.innerHTML = '<option value="all">All</option>';
+
+                groups.forEach((group, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.text = group.name;
+                    select.add(option);
+                });
+
+                let savedGroup = null;
+                if (hasConsent()) {
+                    savedGroup = localStorage.getItem('lastGroup_' + city);
+                }
+
+                if (savedGroup !== null && Array.from(select.options).some(opt => opt.value === savedGroup)) {
+                    select.value = savedGroup;
+                } else if (groups.length > 0) {
+                    select.value = 0;
+                } else {
+                    select.value = "all";
+                }
+            }
+
+            function getCurrentCity() {
+                const select = document.getElementById('city-select');
+                return select.value;
+            }
+
+            function onCityChange() {
+                const cityId = getCurrentCity();
+                savePreferences();
+                updateGroupSelect();
+                updateOfficialLink();
+                loadDates();
+            }
+
+            function updateOfficialLink() {
+                const cityId = getCurrentCity();
+                const linkButton = document.getElementById('official-link');
+                const linkDisplay = document.getElementById('official-url-display');
+                const sourceRow = document.getElementById('official-source-row');
+                const cityConfig = FULL_CITY_CONFIG[cityId];
+
+                if (cityConfig && cityConfig.official_url) {
+                    // Update button
+                    linkButton.href = cityConfig.official_url;
+                    linkButton.style.display = 'inline-block';
+                    linkButton.title = `Visit official ${cityConfig.name} parking portal`;
+
+                    // Update text display
+                    linkDisplay.href = cityConfig.official_url;
+                    linkDisplay.innerText = cityConfig.official_url;
+                    sourceRow.style.display = 'flex';
+                } else {
+                    linkButton.style.display = 'none';
+                    sourceRow.style.display = 'none';
+                }
+            }
+
+            function onGroupChange() {
+                const city = getCurrentCity();
+                const select = document.getElementById('group-select');
+                savePreferences();
+
+                if (myChart) {
+                    renderChart(myChart.data.originalData);
+                }
+            }
+
+            async function loadDates() {
+                const city = getCurrentCity();
+                const select = document.getElementById('date-select');
+                select.innerHTML = '<option disabled selected>Loading dates...</option>';
+
+                try {
+                    const response = await fetch(`${API_BASE}/dates/${city}`);
+                    if (!response.ok) throw new Error("Failed to fetch dates from API");
+                    const dates = await response.json();
+
+                    select.innerHTML = '';
+
+                    if (dates.length === 0) {
+                        const option = document.createElement('option');
+                        option.text = "No dates found";
+                        select.add(option);
+                        return;
+                    }
+
+                    dates.forEach(date => {
+                        const option = document.createElement('option');
+                        option.value = date;
+                        option.text = date;
+                        select.add(option);
+                    });
+
+                    // Load data for the first (newest) date
+                    loadData();
+
+                } catch (error) {
+                    console.error("Error loading dates:", error);
+                    select.innerHTML = '<option>Error loading dates</option>';
+                }
+            }
+
+            async function loadData() {
+                const city = getCurrentCity();
+                const date = document.getElementById('date-select').value;
+                if (!date) return;
+
+                try {
+                    const response = await fetch(`${API_BASE}/data/${city}/${date}`);
+                    if (!response.ok) throw new Error("Failed to fetch data");
+                    const flatData = await response.json();
+
+                    processData(flatData, city, date);
+
+                    // Trigger event loading based on the date
+                    loadEvents();
+
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    alert('Failed to load data: ' + error.message);
+                }
+            }
+
+            function isToday(dateStr) {
+                const d = new Date();
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return dateStr === `${year}-${month}-${day}`;
+            }
+
+            function processData(flatData, city, dateStr) {
+                // Transform flat DB rows into time-based snapshots
+                // Row structure: { fetch_ts: "ISO...", id: "...", name: "...", free: 123, total: 500 }
+
+                const timelineMap = new Map(); // timestamp -> { time: "HH:MM", data: { id: {free, total} }, originalDt }
+                const allParkingIds = new Set();
+                const parkingDetails = {};
+
+                const selectedDatePart = dateStr; // expects YYYY-MM-DD
+
+                flatData.forEach(row => {
+                    const ts = row.fetch_ts;
+                    if (!ts) return;
+
+                    // Check if the timestamp actually matches the selected date
+                    if (!ts.startsWith(selectedDatePart)) return;
+
+                    if (!timelineMap.has(ts)) {
+                        const dt = new Date(ts);
+                        const timePart = dt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+                        timelineMap.set(ts, {
+                            time: timePart,
+                            data: {},
+                            originalDt: dt
+                        });
+                    }
+
+                    const snapshot = timelineMap.get(ts);
+                    snapshot.data[row.id] = { free: row.free, total: row.total };
+
+                    allParkingIds.add(row.id);
+                    if (!parkingDetails[row.id]) {
+                        parkingDetails[row.id] = row.name || row.id;
+                    }
+                });
+
+                // Convert map to array and sort
+                const timeline = Array.from(timelineMap.values()).sort((a, b) => a.originalDt - b.originalDt);
+
+                const labels = timeline.map(t => t.time);
+                const datasets = [];
+
+                const sortedIds = Array.from(allParkingIds).sort();
+
+                sortedIds.forEach(pid => {
+                    // Extract only free counts for the chart
+                    const dataPoints = timeline.map(t => t.data[pid] === undefined ? null : t.data[pid].free);
+
+                    datasets.push({
+                        label: parkingDetails[pid] || pid,
+                        data: dataPoints,
+                        fill: false,
+                        tension: 0.1
+                    });
+                });
+
+                // Forecast logic - next 4 hours
+                const originalLength = labels.length;
+                if (isToday(dateStr) && originalLength > 1) {
+                    const latestSnapshot = timeline[originalLength - 1];
+                    const latestDt = latestSnapshot.originalDt;
+
+                    // Find snapshot ~1 hour ago for trend calculation
+                    const oneHourAgoDt = new Date(latestDt.getTime() - 3600000);
+                    let pastSnapshot = timeline[0];
+                    let minDiff = Math.abs(latestDt - pastSnapshot.originalDt);
+                    for (let i = 0; i < timeline.length; i++) {
+                        const diff = Math.abs(timeline[i].originalDt - oneHourAgoDt);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            pastSnapshot = timeline[i];
+                        }
+                    }
+
+                    // Add 4 forecast points (every 60 mins)
+                    for (let i = 1; i <= 4; i++) {
+                        const forecastDt = new Date(latestDt.getTime() + i * 3600000);
+                        const forecastTime = forecastDt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+                        labels.push(forecastTime);
+                    }
+
+                    datasets.forEach(ds => {
+                        const pid = Array.from(allParkingIds).find(id => (parkingDetails[id] || id) === ds.label);
+                        if (!pid) return;
+
+                        const currentFree = latestSnapshot.data[pid] ? latestSnapshot.data[pid].free : 0;
+                        const pastFree = pastSnapshot.data[pid] ? pastSnapshot.data[pid].free : currentFree;
+                        const trendPerHour = currentFree - pastFree;
+                        const total = latestSnapshot.data[pid] ? latestSnapshot.data[pid].total : 100;
+
+                        for (let i = 1; i <= 4; i++) {
+                            let pred = currentFree + (trendPerHour * i);
+                            pred = Math.max(0, Math.min(total, Math.round(pred)));
+                            ds.data.push(pred);
+                        }
+                    });
+                }
+
+                // Pass full timeline and details to renderChart to be used for the table
+                renderChart({ labels, datasets, city, date: dateStr, timeline, parkingDetails, sortedIds, originalLength });
+            }
+
+            function renderChart(data) {
+                const ctx = document.getElementById('parkingChart').getContext('2d');
+
+                if (myChart) {
+                    myChart.destroy();
+                }
+
+                const cityConfig = CITY_CONFIG[data.city] || { name: data.city };
+
+                // Filtering logic based on group selection
+                const groupSelect = document.getElementById('group-select');
+                const selectedGroupIndex = groupSelect.value;
+                const groups = GROUP_CONFIG[data.city] || [];
+                const datasets = data.datasets;
+
+                let visibleParkings = null;
+                if (selectedGroupIndex !== "all" && groups[selectedGroupIndex]) {
+                    visibleParkings = groups[selectedGroupIndex].parkings;
+                }
+
+                let filteredDatasets = datasets.map(ds => ({
+                    ...ds,
+                    segment: {
+                        borderDash: ctx => ctx.p1DataIndex >= data.originalLength ? [5, 5] : undefined,
+                    },
+                    spanGaps: true
+                }));
+
+                if (visibleParkings && visibleParkings.length > 0) {
+                    filteredDatasets = filteredDatasets.filter(ds => visibleParkings.includes(ds.label));
+                }
+
+                // Render the table with the filtered view
+                renderTable(data, visibleParkings);
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: filteredDatasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            title: {
+                                display: false
+                            },
+                            tooltip: {
+                                position: 'nearest'
+                            },
+                            legend: {
+                                display: false
+                            },
+                            datalabels: {
+                                align: 'right',
+                                anchor: 'end',
+                                backgroundColor: 'white',
+                                borderRadius: 4,
+                                color: function (context) {
+                                    return context.dataset.borderColor;
+                                },
+                                font: {
+                                    weight: 'bold'
+                                },
+                                formatter: function (value, context) {
+                                    if (context.dataIndex === context.dataset.data.length - 1) {
+                                        return context.dataset.label;
+                                    }
+                                    return null;
+                                },
+                                display: function (context) {
+                                    return context.dataIndex === context.dataset.data.length - 1;
+                                }
+                            }
+                        },
+                        layout: {
+                            padding: {
+                                right: 100
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Free Spots'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                }
+                            }
+                        }
+                    }
+                });
+                // Store original data for filtering without re-fetching
+                myChart.data.originalData = data;
+            }
+
+            function renderTable(data, visibleParkings) {
+                const tableBody = document.getElementById('parking-table-body');
+                const tableHeadRow = document.querySelector('thead.table-dark tr');
+                tableBody.innerHTML = '';
+
+                // Determine if we are showing today's data
+                const isCurrentDate = isToday(data.date);
+
+                // Update Table Header
+                if (isCurrentDate) {
+                    tableHeadRow.innerHTML = `
+                        <th>Forecast</th>
+                        <th>Parking Place</th>
+                        <th>Status</th>
+                        <th>Free / Total</th>
+                        <th>Trend (1h)</th>
+                        <th>% Free</th>
+                    `;
+                } else {
+                    tableHeadRow.innerHTML = `
+                        <th>Parking Place</th>
+                        <th>Status</th>
+                        <th>Free / Total</th>
+                        <th>% Free</th>
+                    `;
+                }
+
+                const timeline = data.timeline;
+                if (timeline.length === 0) return;
+
+                // Get current (latest) snapshot
+                const currentSnapshot = timeline[timeline.length - 1];
+                const currentDt = currentSnapshot.originalDt;
+
+                // Find snapshot ~1 hour ago (3600000 ms)
+                const oneHourAgoDt = new Date(currentDt.getTime() - 3600000);
+
+                // Find the closest snapshot to 1h ago
+                let pastSnapshot = timeline[0];
+                let minDiff = Math.abs(currentDt - pastSnapshot.originalDt);
+
+                for (let i = 0; i < timeline.length; i++) {
+                    const diff = Math.abs(timeline[i].originalDt - oneHourAgoDt);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        pastSnapshot = timeline[i];
+                    }
+                }
+
+                // Determine which IDs to show
+                let idsToShow = data.sortedIds;
+                if (visibleParkings && visibleParkings.length > 0) {
+                    // Map names back to IDs
+                    idsToShow = idsToShow.filter(pid => {
+                        const name = data.parkingDetails[pid];
+                        return visibleParkings.includes(name);
+                    });
+                }
+
+                idsToShow.forEach(pid => {
+                    const name = data.parkingDetails[pid];
+                    const currentData = currentSnapshot.data[pid];
+
+                    // If no data for this parking in forecast/current, skip
+                    if (!currentData) return;
+
+                    const currentFree = currentData.free;
+                    const total = currentData.total;
+
+                    // Trend
+                    let pastFree = currentFree;
+                    if (pastSnapshot && pastSnapshot.data[pid]) {
+                        pastFree = pastSnapshot.data[pid].free;
+                    }
+                    const trend = currentFree - pastFree;
+
+                    // % Chance (Free / Total)
+                    let pctFree = 0;
+                    if (total > 0) {
+                        pctFree = Math.round((currentFree / total) * 100);
+                    }
+
+                    // Status heuristic
+                    const isOpen = !(currentFree === 0 && total === 0);
+
+                    // Forecast (Heuristic)
+                    let forecastColor = 'success'; // Green
+                    let forecastText = 'Good';
+
+                    if (!isOpen) {
+                        forecastColor = 'secondary';
+                        forecastText = 'Closed';
+                    } else if (pctFree < 2 || currentFree === 0) {
+                        forecastColor = 'danger'; // Red
+                        forecastText = 'Full';
+                    } else if (pctFree < 10) {
+                        forecastColor = 'warning'; // Yellow
+                        forecastText = 'Tight';
+                    }
+
+                    // If trending down fast and low stock
+                    if (isOpen && trend < -5 && pctFree < 20) {
+                        forecastColor = 'warning';
+                        if (pctFree < 5) forecastColor = 'danger';
+                    }
+
+                    const tr = document.createElement('tr');
+
+                    // Trend Arrow
+                    let trendIcon = 'Analyzing...';
+                    if (trend > 0) trendIcon = `<span class="text-success">▲ +${trend}</span>`;
+                    else if (trend < 0) trendIcon = `<span class="text-danger">▼ ${trend}</span>`;
+                    else trendIcon = `<span class="text-secondary">− 0</span>`;
+
+                    const statusBadge = isOpen
+                        ? '<span class="badge bg-success">Open</span>'
+                        : '<span class="badge bg-danger">Closed / Unknown</span>';
+
+                    if (isCurrentDate) {
+                        tr.innerHTML = `
+                            <td><span class="badge bg-${forecastColor}">${forecastText}</span></td>
+                            <td><strong>${name}</strong></td>
+                            <td>${statusBadge}</td>
+                            <td>${currentFree} / ${total}</td>
+                            <td>${trendIcon}</td>
+                            <td>${pctFree}%</td>
+                        `;
+                    } else {
+                        tr.innerHTML = `
+                            <td><strong>${name}</strong></td>
+                            <td>${statusBadge}</td>
+                            <td>${currentFree} / ${total}</td>
+                            <td>${pctFree}%</td>
+                        `;
+                    }
+
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            let EVENT_DATA = null;
+
+            async function loadEvents() {
+                const city = getCurrentCity();
+                const dateSelect = document.getElementById('date-select');
+                const date = dateSelect ? dateSelect.value : null;
+                const section = document.getElementById('events-section');
+
+                if (!date) return;
+
+                // Only show for Luzern for now as per user request/mock data context
+                // The user specifically asked to map events for Luzern examples.
+                if (city !== 'luzern') {
+                    section.style.display = 'none';
+                    return;
+                }
+                section.style.display = 'block';
+
+                try {
+                    if (!EVENT_DATA) {
+                        const response = await fetch('/events.json');
+                        if (!response.ok) throw new Error("Failed to fetch events");
+                        EVENT_DATA = await response.json();
+                    }
+
+                    renderEvents(city, date);
+                } catch (e) {
+                    console.error("Error loading events", e);
+                    document.getElementById('events-loading').innerText = "Failed to load event data.";
+                }
+            }
+
+            function renderEvents(city, date) {
+                const tbody = document.getElementById('events-table-body');
+                const loading = document.getElementById('events-loading');
+                const empty = document.getElementById('events-empty');
+                const table = document.getElementById('events-table');
+
+                tbody.innerHTML = '';
+                loading.style.display = 'none';
+
+                // Simple date string match (YYYY-MM-DD)
+                const events = EVENT_DATA.events.filter(e => e.start.startsWith(date));
+                const mappings = EVENT_DATA.mappings;
+
+                if (events.length === 0) {
+                    empty.style.display = 'block';
+                    table.style.display = 'none';
+                    return;
+                }
+
+                empty.style.display = 'none';
+                table.style.display = 'table';
+
+                events.forEach(event => {
+                    const dt = new Date(event.start);
+                    const timeStr = dt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+
+                    const mapping = mappings[event.location];
+                    let parkingHtml = '<em>No specific mapping</em>';
+                    if (mapping && mapping.parkings) {
+                        // We could also highlight if they are full using the existing data if we wanted to be fancy
+                        parkingHtml = mapping.parkings.map(p => `<span class="badge bg-secondary me-1">${p}</span>`).join('');
+                    }
+
+                    const row = `
+                        <tr>
+                            <td><strong>${timeStr}</strong></td>
+                            <td>${event.title}<br><small class="text-muted">${event.description || ''}</small></td>
+                            <td>${event.location} ${mapping?.url ? `<a href="${mapping.url}" target="_blank">🔗</a>` : ''}</td>
+                            <td>${parkingHtml}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
+
+            // Cookie Consent Logic
+            const CONSENT_KEY = 'cookie_consent';
+
+            function checkCookieConsent() {
+                const consent = localStorage.getItem(CONSENT_KEY);
+                if (consent === null) {
+                    document.getElementById('cookie-banner').style.display = 'block';
+                }
+            }
+
+            function acceptCookies() {
+                localStorage.setItem(CONSENT_KEY, 'true');
+                document.getElementById('cookie-banner').style.display = 'none';
+                // Try to save current state now that we have permission
+                savePreferences();
+            }
+
+            function declineCookies() {
+                // We still store the refusal so we don't ask again, 
+                // but we will clear other data and stop saving preferences.
+                // Note: Storing the refusal is generally considered "strictly necessary" 
+                // and exempt from consent requirements in many jurisdictions.
+                localStorage.setItem(CONSENT_KEY, 'false');
+                document.getElementById('cookie-banner').style.display = 'none';
+                clearPreferences();
+            }
+
+            function hasConsent() {
+                return localStorage.getItem(CONSENT_KEY) === 'true';
+            }
+
+            function savePreferences() {
+                if (!hasConsent()) return;
+
+                const city = getCurrentCity();
+                if (city) {
+                    localStorage.setItem('lastCity', city);
+                    const groupSelect = document.getElementById('group-select');
+                    localStorage.setItem('lastGroup_' + city, groupSelect.value);
+                }
+            }
+
+            function clearPreferences() {
+                // Keep the consent key, remove others
+                const consent = localStorage.getItem(CONSENT_KEY);
+                localStorage.clear();
+                if (consent !== null) {
+                    localStorage.setItem(CONSENT_KEY, consent);
+                }
+            }
+
+            // Initial load
+            loadGroups().then(() => {
+                loadCities();
+                checkCookieConsent();
+            });
+        </script>
+
+        <!-- Cookie Consent Banner -->
+        <div id="cookie-banner" class="fixed-bottom p-4 bg-dark text-white" style="display: none; z-index: 9999;">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5>🍪 Cookie Configuration</h5>
+                        <p class="mb-0">
+                            We use local storage to save your selected city and preferences.
+                            If you decline, your preferences will not be saved between visits.
+                            Do you agree to the use of these "cookies"?
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end mt-3 mt-md-0">
+                        <button class="btn btn-secondary me-2" onclick="declineCookies()">No, thanks</button>
+                        <button class="btn btn-success" onclick="acceptCookies()">Yes, I agree</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-5 py-3 border-top">
+            <div class="container-fluid text-center text-muted">
+                <small>
+                    © 2026 Swiss Parking Monitor | Version: 2026-01-20 | Contact: <a
+                        href="mailto:roger@roil.ch">roger@roil.ch</a>
+                </small>
+            </div>
+        </footer>
+</body>
+
+</html>
