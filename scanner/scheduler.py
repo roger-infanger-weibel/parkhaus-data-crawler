@@ -67,6 +67,32 @@ def run_update_events():
     except Exception as e:
         logger.exception(f"Error running update_events.py: {e}")
 
+def run_get_event_and_weather_data():
+    """Execute the get_event_and_weather_data.py script."""
+    script_path = Path(__file__).parent / "get_event_and_weather_data.py"
+
+    try:
+        logger.info("Running get_event_and_weather_data.py...")
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            cwd=Path(__file__).parent,
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode == 0:
+            logger.info("get_event_and_weather_data.py completed successfully")
+        else:
+            logger.error(f"get_event_and_weather_data.py failed with return code {result.returncode}")
+            if result.stderr:
+                logger.error(f"Error: {result.stderr}")
+
+        if result.stdout:
+            logger.info(f"Output: {result.stdout}")
+
+    except Exception as e:
+        logger.exception(f"Error running get_event_and_weather_data.py: {e}")
+
 def main():
     """Main entry point."""
     try:
@@ -74,14 +100,18 @@ def main():
         
         # Run event update daily at 04:00
         schedule.every().day.at("04:00").do(run_update_events)
-        
+
+        # Run event and weather data collection twice daily
+        schedule.every().day.at("06:00").do(run_get_event_and_weather_data)
+        schedule.every().day.at("18:00").do(run_get_event_and_weather_data)
+
         # Run first collection immediately
         run_collect_data()
         
         # Try running event update on startup too, if needed
         # run_update_events() 
         
-        logger.info("Scheduler started - will run collect_data every 15 minutes and update_events daily")
+        logger.info("Scheduler started - will run collect_data every 15 minutes, update_events daily and get_event_and_weather_data twice daily")
         
         while True:
             schedule.run_pending()
