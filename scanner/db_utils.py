@@ -72,7 +72,7 @@ def load_db_config():
     config['host'] = os.environ.get('DB_HOST', config['host'])
     config['user'] = os.environ.get('DB_USER', config['user'])
     config['password'] = os.environ.get('DB_PASSWORD', config['password'])
-    config['database'] = os.environ.get('DB_NAME', config['database'])
+    config['database'] = os.environ.get('DB_DATABASE', os.environ.get('DB_NAME', config['database']))
 
     env_port = os.environ.get('DB_PORT')
     if env_port:
