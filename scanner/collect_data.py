@@ -226,7 +226,7 @@ def main():
     all_success = all(res.get('success', False) for res in results.values())
 
     if args.simulation:
-        print("\n⚠️  SIMULATION MODE: No data was written to the database")
+        print("\n[!] SIMULATION MODE: No data was written to the database")
 
     print("Job finished")
 
