@@ -12,20 +12,20 @@ class StGallenCollector(BaseParkingCollector):
     def normalize_data(self, raw_data):
         """
         Normalize St. Gallen Open Data API to unified format.
-        
+
         St. Gallen format:
         {
-            "nhits": 16,
+            "nhits": 14,
             "records": [
                 {
                     "fields": {
-                        "phid": "P23",
-                        "phname": "Manor",
-                        "phstate": "offen",
-                        "shortfree": 130,
-                        "shortoccupied": 2,
-                        "shortmax": 132,
-                        "zeitpunkt": "2026-01-06T05:36:05+00:00"
+                        "ph_id": "32",
+                        "ph_name": "Parkgarage Raiffeisenzentrum",
+                        "ph_status": "offen",
+                        "frei": 56,
+                        "besetzt": 40,
+                        "anzahl_parkplatze": 96,
+                        "letzte_aktualisierung": "2026-07-28T12:50:00+00:00"
                     }
                 }
             ]
@@ -33,38 +33,38 @@ class StGallenCollector(BaseParkingCollector):
         """
         if not raw_data or "records" not in raw_data:
             return None
-        
+
         parkings = {}
-        
+
         for record in raw_data.get("records", []):
             fields = record.get("fields", {})
-            parking_id = fields.get("phid", "")
-            if not parking_id:
+            parking_id = str(fields.get("ph_id", ""))
+            if not parking_id or parking_id == "":
                 continue
-            
+
             # Map St. Gallen status to standard status
             status_map = {
                 "offen": "open",
                 "geschlossen": "closed",
                 "nicht verfügbar": "nodata"
             }
-            raw_status = fields.get("phstate", "").lower()
+            raw_status = fields.get("ph_status", "").lower()
             status = status_map.get(raw_status, "unknown")
-            
+
             parkings[parking_id] = {
                 "id": parking_id,
-                "name": fields.get("phname", parking_id),
-                "free": fields.get("shortfree", 0),
-                "total": fields.get("shortmax", 0),
+                "name": fields.get("ph_name", parking_id),
+                "free": int(fields.get("frei", 0)),
+                "total": int(fields.get("anzahl_parkplatze", 0)),
                 "status": status,
-                "timestamp": fields.get("zeitpunkt", datetime.now().isoformat())
+                "timestamp": fields.get("letzte_aktualisierung", datetime.now().isoformat())
             }
-        
+
         return {
             "status": "success",
             "city": self.city_id,
             "data": {
                 "parkings": parkings
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": raw_data.get("records", [{}])[0].get("fields", {}).get("letzte_aktualisierung", datetime.now().isoformat()) if raw_data.get("records") else datetime.now().isoformat()
         }
