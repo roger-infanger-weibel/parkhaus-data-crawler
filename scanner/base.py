@@ -177,7 +177,6 @@ class BaseParkingCollector(ABC):
 
             success_count = 0
             fail_count = 0
-            duplicate_count = 0
             inserted_names = []
 
             for pid, pdata in parkings.items():
@@ -196,26 +195,23 @@ class BaseParkingCollector(ABC):
                     success_count += 1
                     inserted_names.append(pname)
                 except mysql.connector.Error as err:
-                    if err.errno == errorcode.ER_DUP_ENTRY:
-                        duplicate_count += 1
-                    else:
-                        fail_count += 1
-                        print(f"[{now}] {self.city_name}: Failed to insert parking {pid}: {err}")
+                    fail_count += 1
+                    print(f"[{now}] {self.city_name}: Failed to upsert parking {pid}: {err}")
                 except Exception as e:
                     fail_count += 1
-                    print(f"[{now}] {self.city_name}: Failed to insert parking {pid}: {e}")
+                    print(f"[{now}] {self.city_name}: Failed to upsert parking {pid}: {e}")
 
             conn.commit()
             cursor.close()
             conn.close()
 
             mode_info = " (SIMULATION MODE)" if self.simulation_mode else ""
-            print(f"[{now}] {self.city_name}: Data saved{mode_info} (Inserted: {success_count}, Duplicates: {duplicate_count}, Failed: {fail_count})")
+            print(f"[{now}] {self.city_name}: Data saved{mode_info} (Upserted: {success_count}, Failed: {fail_count})")
 
             return {
                 'success': True,
                 'inserted': success_count,
-                'duplicates': duplicate_count,
+                'duplicates': 0,
                 'failed': fail_count,
                 'error': None,
                 'latest_data_ts': fetch_ts,
@@ -229,7 +225,7 @@ class BaseParkingCollector(ABC):
                 'success': False,
                 'inserted': 0,
                 'duplicates': 0,
-                'failed': 0,
+                'failed': len(parkings) if 'parkings' in locals() else 0,
                 'error': str(e),
                 'latest_data_ts': None,
                 'simulation_mode': self.simulation_mode

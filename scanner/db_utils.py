@@ -111,7 +111,8 @@ def get_connection(simulation_mode=False):
 
 def insert_measurement(cursor, data):
     """
-    Insert a single measurement record using the provided cursor.
+    Insert or update a single measurement record using UPSERT pattern.
+    Prevents duplicates by updating existing records instead of failing.
     Does NOT commit the transaction.
 
     Args:
@@ -119,10 +120,15 @@ def insert_measurement(cursor, data):
         data (dict): Dictionary containing the data to insert.
     """
 
-    insert_query = """
+    upsert_query = """
     INSERT INTO pls_fetch_current
     (day, fetch_ts, city, id, name, free, total)
     VALUES (%s, %s, %s, %s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE
+        fetch_ts = VALUES(fetch_ts),
+        name = VALUES(name),
+        free = VALUES(free),
+        total = VALUES(total)
     """
 
     try:
@@ -135,9 +141,9 @@ def insert_measurement(cursor, data):
             data.get('free'),
             data.get('total')
         )
-        cursor.execute(insert_query, record)
+        cursor.execute(upsert_query, record)
     except Error as e:
-        logging.error(f"Error inserting record {data}: {e}")
+        logging.error(f"Error upserting record {data}: {e}")
         raise
 
 def insert_log(cursor, severity, text):
