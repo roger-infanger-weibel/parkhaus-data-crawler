@@ -13,8 +13,6 @@ parkhaus-data-crawler/
 │   ├── luzern.py / basel.py / bern.py / zurich.py / stgallen.py
 │   ├── get_event_and_weather_data.py
 │   ├── cities.json / groups.json / events.json
-│   ├── event_mappings.json     ⚠ unbenutzt
-│   ├── past_events.json        ⚠ unbenutzt
 │   ├── requirements.txt
 │   ├── version.py / __init__.py
 │   └── *.md (Dokumentation)
@@ -44,8 +42,6 @@ parkhaus-data-crawler/
 | **cities.json** | Stadt-Konfiguration (IDs, APIs, Koordinaten) | `collect_data.py` (load_config) | — |
 | **groups.json** | Parkhaus-Gruppierungen pro Stadt | Nur von `flask/web_server.py` verwendet | — |
 | **events.json** | Event-Definitionen für Dashboard | Nur von `flask/web_server.py` verwendet | — |
-| **event_mappings.json** | ⚠ **Unbenutzt** — wird nirgends im Code geladen | — | — |
-| **past_events.json** | ⚠ **Unbenutzt** — wird nirgends im Code geladen | — | — |
 | **requirements.txt** | Python-Abhängigkeiten | `pip install -r` | — |
 | **version.py** | Versionsnummer | — | — |
 | **__init__.py** | Package-Marker | Python-Import-System | — |
@@ -112,6 +108,5 @@ web_server.py  (separater Prozess)
 
 ## Hinweise
 
-- **event_mappings.json** und **past_events.json** werden von keinem Python-File geladen und können gelöscht werden
 - **flask/db_utils.py** ist eine Kopie von **scanner/db_utils.py** — Änderungen müssen in beiden Dateien gemacht werden
 - **get_event_and_weather_data.py** verwendet `pymysql`, alle anderen DB-Zugriffe verwenden `mysql.connector`
