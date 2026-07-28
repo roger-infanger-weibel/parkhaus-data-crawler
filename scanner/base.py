@@ -5,6 +5,7 @@ Base parking collector class for all city-specific collectors.
 import requests
 import json
 import os
+import time
 from datetime import datetime
 from abc import ABC, abstractmethod
 
@@ -27,23 +28,59 @@ class BaseParkingCollector(ABC):
         self.api_url = api_url
         self.simulation_mode = simulation_mode
 
-    def fetch_raw_data(self):
+    def fetch_raw_data(self, max_retries=3):
         """
-        Fetch raw data from the API.
+        Fetch raw data from the API with retry logic.
+
+        Args:
+            max_retries (int): Maximum number of retry attempts
 
         Returns:
             dict: Raw API response as JSON
 
         Raises:
-            requests.RequestException: If the API request fails
+            requests.RequestException: If the API request fails after all retries
         """
-        try:
-            response = requests.get(self.api_url, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"[{datetime.now()}] Error fetching data for {self.city_name}: {e}")
-            raise
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(self.api_url, timeout=15, headers=headers)
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.Timeout:
+                wait_time = 2 ** attempt
+                if attempt < max_retries - 1:
+                    print(f"[{datetime.now()}] {self.city_name}: Timeout (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"[{datetime.now()}] Error fetching data for {self.city_name}: Timeout after {max_retries} attempts")
+                    raise
+            except requests.exceptions.ConnectionError:
+                wait_time = 2 ** attempt
+                if attempt < max_retries - 1:
+                    print(f"[{datetime.now()}] {self.city_name}: Connection error (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"[{datetime.now()}] Error fetching data for {self.city_name}: Connection error after {max_retries} attempts")
+                    raise
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code in [429, 500, 502, 503, 504]:
+                    wait_time = 2 ** attempt
+                    if attempt < max_retries - 1:
+                        print(f"[{datetime.now()}] {self.city_name}: Server error {e.response.status_code} (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s...")
+                        time.sleep(wait_time)
+                    else:
+                        print(f"[{datetime.now()}] Error fetching data for {self.city_name}: Server error {e.response.status_code} after {max_retries} attempts")
+                        raise
+                else:
+                    print(f"[{datetime.now()}] Error fetching data for {self.city_name}: HTTP {e.response.status_code}")
+                    raise
+            except requests.RequestException as e:
+                print(f"[{datetime.now()}] Error fetching data for {self.city_name}: {e}")
+                raise
 
     @abstractmethod
     def normalize_data(self, raw_data):
