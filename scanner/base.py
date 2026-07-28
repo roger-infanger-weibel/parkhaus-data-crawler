@@ -28,9 +28,9 @@ class BaseParkingCollector(ABC):
         self.api_url = api_url
         self.simulation_mode = simulation_mode
 
-    def fetch_raw_data(self, max_retries=3):
+    def fetch_raw_data(self, max_retries=5):
         """
-        Fetch raw data from the API with retry logic.
+        Fetch raw data from the API with robust retry logic and exponential backoff.
 
         Args:
             max_retries (int): Maximum number of retry attempts
@@ -42,45 +42,73 @@ class BaseParkingCollector(ABC):
             requests.RequestException: If the API request fails after all retries
         """
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)',
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive'
         }
+
+        last_exception = None
 
         for attempt in range(max_retries):
             try:
-                response = requests.get(self.api_url, timeout=15, headers=headers)
+                response = requests.get(
+                    self.api_url,
+                    timeout=30,
+                    headers=headers,
+                    verify=True
+                )
                 response.raise_for_status()
-                return response.json()
-            except requests.exceptions.Timeout:
-                wait_time = 2 ** attempt
+                data = response.json()
+                if attempt > 0:
+                    print(f"[{datetime.now()}] {self.city_name}: Successfully retrieved data on attempt {attempt + 1}")
+                return data
+
+            except requests.exceptions.Timeout as e:
+                last_exception = e
+                wait_time = min(2 ** (attempt + 1), 60)
                 if attempt < max_retries - 1:
-                    print(f"[{datetime.now()}] {self.city_name}: Timeout (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s...")
+                    print(f"[{datetime.now()}] {self.city_name}: Timeout (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s before retry...")
                     time.sleep(wait_time)
                 else:
-                    print(f"[{datetime.now()}] Error fetching data for {self.city_name}: Timeout after {max_retries} attempts")
-                    raise
-            except requests.exceptions.ConnectionError:
-                wait_time = 2 ** attempt
+                    print(f"[{datetime.now()}] {self.city_name}: Timeout after {max_retries} attempts (waited {wait_time}s max)")
+
+            except requests.exceptions.ConnectionError as e:
+                last_exception = e
+                wait_time = min(2 ** (attempt + 1), 60)
                 if attempt < max_retries - 1:
-                    print(f"[{datetime.now()}] {self.city_name}: Connection error (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s...")
+                    print(f"[{datetime.now()}] {self.city_name}: Connection error (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s...")
                     time.sleep(wait_time)
                 else:
-                    print(f"[{datetime.now()}] Error fetching data for {self.city_name}: Connection error after {max_retries} attempts")
-                    raise
+                    print(f"[{datetime.now()}] {self.city_name}: Connection error after {max_retries} attempts")
+
             except requests.exceptions.HTTPError as e:
-                if e.response.status_code in [429, 500, 502, 503, 504]:
-                    wait_time = 2 ** attempt
+                last_exception = e
+                status_code = e.response.status_code
+
+                if status_code in [429, 500, 502, 503, 504]:
+                    wait_time = min(2 ** (attempt + 1), 60)
                     if attempt < max_retries - 1:
-                        print(f"[{datetime.now()}] {self.city_name}: Server error {e.response.status_code} (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s...")
+                        print(f"[{datetime.now()}] {self.city_name}: Server error {status_code} (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s...")
                         time.sleep(wait_time)
                     else:
-                        print(f"[{datetime.now()}] Error fetching data for {self.city_name}: Server error {e.response.status_code} after {max_retries} attempts")
-                        raise
+                        print(f"[{datetime.now()}] {self.city_name}: Server error {status_code} after {max_retries} attempts")
                 else:
-                    print(f"[{datetime.now()}] Error fetching data for {self.city_name}: HTTP {e.response.status_code}")
+                    print(f"[{datetime.now()}] {self.city_name}: HTTP error {status_code} (not retryable)")
                     raise
-            except requests.RequestException as e:
-                print(f"[{datetime.now()}] Error fetching data for {self.city_name}: {e}")
+
+            except requests.exceptions.JSONDecodeError as e:
+                last_exception = e
+                print(f"[{datetime.now()}] {self.city_name}: Invalid JSON response")
                 raise
+
+            except requests.RequestException as e:
+                last_exception = e
+                print(f"[{datetime.now()}] {self.city_name}: Request error: {str(e)[:100]}")
+                raise
+
+        print(f"[{datetime.now()}] Error fetching data for {self.city_name}: All {max_retries} retry attempts failed")
+        raise last_exception if last_exception else Exception("Failed to fetch data after all retries")
 
     @abstractmethod
     def normalize_data(self, raw_data):
@@ -218,20 +246,67 @@ class BaseParkingCollector(ABC):
             print(f"[{datetime.now()}] {self.city_name}: Fetching data...")
             raw_data = self.fetch_raw_data()
 
+            if not raw_data:
+                print(f"[{datetime.now()}] {self.city_name}: No data received from API")
+                return {
+                    'success': False,
+                    'inserted': 0,
+                    'duplicates': 0,
+                    'failed': 0,
+                    'error': 'No data received',
+                    'latest_data_ts': None,
+                    'simulation_mode': self.simulation_mode
+                }
+
             print(f"[{datetime.now()}] {self.city_name}: Normalizing data...")
             normalized_data = self.normalize_data(raw_data)
+
+            if not normalized_data:
+                print(f"[{datetime.now()}] {self.city_name}: Failed to normalize data (check API format)")
+                return {
+                    'success': False,
+                    'inserted': 0,
+                    'duplicates': 0,
+                    'failed': 0,
+                    'error': 'Data normalization failed',
+                    'latest_data_ts': None,
+                    'simulation_mode': self.simulation_mode
+                }
 
             print(f"[{datetime.now()}] {self.city_name}: Saving data...")
             return self.save_data(normalized_data)
 
-        except Exception as e:
-            print(f"[{datetime.now()}] {self.city_name}: Collection failed: {e}")
+        except requests.exceptions.Timeout as e:
+            print(f"[{datetime.now()}] {self.city_name}: Timeout - API is slow or unreachable")
             return {
                 'success': False,
                 'inserted': 0,
                 'duplicates': 0,
                 'failed': 0,
-                'error': str(e),
+                'error': 'API timeout',
+                'latest_data_ts': None,
+                'simulation_mode': self.simulation_mode
+            }
+        except requests.exceptions.ConnectionError as e:
+            print(f"[{datetime.now()}] {self.city_name}: Connection error - network issue or API down")
+            return {
+                'success': False,
+                'inserted': 0,
+                'duplicates': 0,
+                'failed': 0,
+                'error': 'Connection error',
+                'latest_data_ts': None,
+                'simulation_mode': self.simulation_mode
+            }
+        except Exception as e:
+            error_msg = str(e)[:200]
+            print(f"[{datetime.now()}] {self.city_name}: Collection error: {error_msg}")
+            return {
+                'success': False,
+                'inserted': 0,
+                'duplicates': 0,
+                'failed': 0,
+                'error': error_msg,
                 'latest_data_ts': None,
                 'simulation_mode': self.simulation_mode
             }
