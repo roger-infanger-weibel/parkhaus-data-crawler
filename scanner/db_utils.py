@@ -23,6 +23,10 @@ class MockCursor:
     def fetchone(self):
         return None
 
+    def close(self):
+        """No-op in simulation mode."""
+        pass
+
 class MockConnection:
     """Mock connection for simulation mode."""
 
