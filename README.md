@@ -4,7 +4,7 @@
 
 ```
 parkhaus-data-crawler/
-├── CROSS_REFERENCE.md          ← dieses Dokument
+├── README.md                   ← dieses Dokument
 ├── scanner/                    ← Datensammlung (Crawler)
 │   ├── collect_data.py
 │   ├── scheduler.py
@@ -16,11 +16,14 @@ parkhaus-data-crawler/
 │   ├── requirements.txt
 │   ├── version.py / __init__.py
 │   └── *.md (Dokumentation)
-└── flask/                      ← Web-Server (Dashboard)
-    ├── web_server.py
-    ├── db_utils.py
-    ├── index.html / logs.html
-    └── cities.json / groups.json / events.json
+├── flask/                      ← Web-Server (Dashboard)
+│   ├── web_server.py
+│   ├── db_utils.py
+│   ├── index.html / logs.html
+│   └── cities.json / groups.json / events.json
+└── linux-cmd/                  ← Linux Start-Skripte
+    ├── start-prod.sh
+    └── start-test.sh
 ```
 
 ---
@@ -103,6 +106,24 @@ web_server.py  (separater Prozess)
 | **CHANGES_SUMMARY.md** | Zusammenfassung aller technischen Änderungen |
 | **ARCHITECTURE.md** | Systemdesign und Datenfluss |
 | **MANIFEST.md** | Datei-Inventar und Implementierungsguide |
+
+---
+
+## linux-cmd/ — Linux Start-Skripte
+
+| Datei | Beschreibung |
+|-------|-------------|
+| **start-prod.sh** | Stoppt laufenden Prod-Scheduler, kopiert `scheduler.py` → `scheduler-prod.py` und startet ihn im Hintergrund (nohup) |
+| **start-test.sh** | Stoppt laufenden Test-Scheduler, kopiert `scheduler.py` → `scheduler-test.py` und startet ihn im Hintergrund (nohup) |
+
+Verwendung auf dem Linux-Server (`root@87.106.222.137`):
+```bash
+# Test-Umgebung starten
+bash start-test.sh
+
+# Produktions-Umgebung starten
+bash start-prod.sh
+```
 
 ---
 
