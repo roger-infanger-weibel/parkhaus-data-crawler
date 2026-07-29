@@ -188,7 +188,13 @@
             Back to Dashboard
         </a>
 
-        <h1>System Integrity Logs</h1>
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <h1 class="mb-0">System Integrity Logs</h1>
+            <select id="env-select" class="form-select form-select-sm" style="width:auto;background-color:var(--card-bg);color:var(--text-primary);border-color:var(--glass-border);" onchange="loadAllData()">
+                <option value="prod" selected>Prod</option>
+                <option value="test">Test</option>
+            </select>
+        </div>
 
         <div class="glass-card">
             <h5 class="mb-4">Severity Timeline</h5>
@@ -256,23 +262,34 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        function getEnv() {
+            return document.getElementById('env-select').value;
+        }
+
+        function apiUrl(path) {
+            const sep = path.includes('?') ? '&' : '?';
+            return `/api${path}${sep}env=${getEnv()}`;
+        }
+
+        function loadAllData() {
+            fetchLogs();
+        }
+
         async function fetchLogs() {
             try {
-                // Fetch weekly stats
-                const weeklyResponse = await fetch('/api/logs/weekly_stats');
+                const weeklyResponse = await fetch(apiUrl('/logs/weekly_stats'));
                 if (weeklyResponse.ok) {
                     const weeklyData = await weeklyResponse.json();
                     renderWeeklyStats(weeklyData);
                 }
 
-                // Fetch stuck parking data
-                const stuckResponse = await fetch('/api/logs/stuck_parking');
+                const stuckResponse = await fetch(apiUrl('/logs/stuck_parking'));
                 if (stuckResponse.ok) {
                     const stuckData = await stuckResponse.json();
                     renderStuckParking(stuckData);
                 }
 
-                const response = await fetch('/api/logs');
+                const response = await fetch(apiUrl('/logs'));
                 if (!response.ok) throw new Error('Failed to fetch logs');
                 const logs = await response.json();
 

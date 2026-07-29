@@ -12,7 +12,7 @@ from base import BaseParkingCollector
 SWISS_TZ = ZoneInfo("Europe/Zurich")
 
 FALLBACK_URL = "https://data.bs.ch/api/records/1.0/search/?dataset=100088&rows=100"
-STALE_THRESHOLD_HOURS = 2
+STALE_THRESHOLD_MINUTES = 30
 
 
 class BaselCollector(BaseParkingCollector):
@@ -24,8 +24,8 @@ class BaselCollector(BaseParkingCollector):
             dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=SWISS_TZ)
-            age_hours = (datetime.now(SWISS_TZ) - dt.astimezone(SWISS_TZ)).total_seconds() / 3600
-            return age_hours > STALE_THRESHOLD_HOURS
+            age_minutes = (datetime.now(SWISS_TZ) - dt.astimezone(SWISS_TZ)).total_seconds() / 60
+            return age_minutes > STALE_THRESHOLD_MINUTES
         except (ValueError, TypeError):
             return True
 
@@ -79,14 +79,20 @@ class BaselCollector(BaseParkingCollector):
     def collect(self):
         """Collect with automatic fallback to data.bs.ch if ParkenDD is stale."""
         try:
-            result = super().collect()
+            raw_data = self.fetch_raw_data()
+            if not raw_data:
+                return self._collect_fallback()
 
-            if result.get('success') and result.get('latest_data_ts'):
-                if self._is_stale(result['latest_data_ts']):
-                    print(f"[{datetime.now(SWISS_TZ)}] Basel: ParkenDD data from {result['latest_data_ts']} is stale")
-                    return self._collect_fallback()
+            last_updated = raw_data.get("last_updated", "")
+            if self._is_stale(last_updated):
+                print(f"[{datetime.now(SWISS_TZ)}] Basel: ParkenDD data from {last_updated} is stale")
+                return self._collect_fallback()
 
-            return result
+            normalized = self.normalize_data(raw_data)
+            if not normalized:
+                return self._collect_fallback()
+
+            return self.save_data(normalized)
 
         except Exception as e:
             print(f"[{datetime.now(SWISS_TZ)}] Basel: ParkenDD failed ({e}), trying fallback...")

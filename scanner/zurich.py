@@ -4,57 +4,26 @@ Primary: ParkenDD API
 Fallback: Stadt Zürich Parkleitsystem RSS (pls-zh.ch)
 """
 
+import json
 import re
 import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 from base import BaseParkingCollector
 
 SWISS_TZ = ZoneInfo("Europe/Zurich")
 
 FALLBACK_URL = "https://www.pls-zh.ch/plsFeed/rss"
-STALE_THRESHOLD_HOURS = 2
+STALE_THRESHOLD_MINUTES = 30
 
-# RSS pid → ParkenDD id mapping + known total capacities
-RSS_PARKING_MAP = {
-    "accu": ("zuerichparkhausaccu", "Accu", 194),
-    "albisriederplatz": ("zuerichparkhausalbisriederplatz", "Albisriederplatz", 66),
-    "bleicherweg": ("zuerichparkhausbleicherweg", "Bleicherweg", 275),
-    "center_11": ("zuerichparkhauscentereleven", "Center Eleven", 342),
-    "cp": ("zuerichparkhauscityparking", "City Parking", 620),
-    "cityport": ("zuerichparkhauscityport", "Cityport", 153),
-    "crowne_plaza": ("zuerichparkhauscrowneplaza", "Crowne Plaza", 520),
-    "dorflinde": ("zuerichparkhausdorflinde", "Dorflinde", 98),
-    "feldegg": ("zuerichparkhausfeldegg", "Feldegg", 346),
-    "globus": ("zuerichparkhausglobus", "Globus", 178),
-    "hardau": ("zuerichparkhaushardauii", "Hardau II", 982),
-    "hb": ("zuerichparkhaushauptbahnhof", "Hauptbahnhof", 176),
-    "helvetia": ("zuerichparkhaushelvetiaplatz", "Helvetiaplatz", 0),
-    "promenade": ("zuerichparkhaushohepromenade", "Hohe Promenade", 556),
-    "jelmoli": ("zuerichparkhausjelmoli", "Jelmoli", 222),
-    "jungholz": ("zuerichparkhausjungholz", "Jungholz", 124),
-    "max_bill_platz": ("zuerichparkplatzmax_bill_platz", "Max-Bill-Platz", 59),
-    "messe": ("zuerichparkhausmessezuerichag", "Messe Zürich AG", 2000),
-    "nordhaus": ("zuerichparkhausnordhaus", "Nordhaus", 175),
-    "octavo": ("zuerichparkhausoctavo", "Octavo", 123),
-    "opera": ("zuerichparkhausopera", "Opéra", 299),
-    "p_west": ("zuerichparkhauspwest", "P West", 1000),
-    "park_hyatt": ("zuerichparkhausparkhyatt", "Park Hyatt", 267),
-    "parkside": ("zuerichparkhausparkside", "Parkside", 38),
-    "pfingstweid": ("zuerichparkhauspfingstweid", "Pfingstweid", 276),
-    "stampfenbach": ("zuerichparkhaustampfenbach", "Stampfenbach", 237),
-    "talgarten": ("zuerichparkhaustalgarten", "Talgarten", 110),
-    "unispital_nord": ("zuerichparkhaususznord", "USZ Nord", 90),
-    "uni_irchel": ("zuerichparkhausuniirchel", "Uni Irchel", 1227),
-    "urania": ("zuerichparkhausurania", "Urania", 607),
-    "utoquai": ("zuerichparkhausutoquai", "Utoquai", 175),
-    "zueri11": ("zuerichparkhauszueri11shopping", "Züri 11 Shopping", 60),
-    "zuerichhorn": ("zuerichparkhauszuerichhorn", "Zürichhorn", 245),
-    "theater_11": ("zuerichparkplatztheater11", "Theater 11", 188),
-    "unispital_sued": ("zuerichparkplatzuszsued", "USZ Süd", 80),
-    "puls5": ("zuerichpuls5parkgarage", "Puls 5 Parkgarage", 0),
-}
+def _load_parking_map():
+    map_path = Path(__file__).parent / "zurich_parking_map.json"
+    with open(map_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+RSS_PARKING_MAP = _load_parking_map()
 
 
 class ZurichCollector(BaseParkingCollector):
@@ -66,8 +35,8 @@ class ZurichCollector(BaseParkingCollector):
             dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=SWISS_TZ)
-            age_hours = (datetime.now(SWISS_TZ) - dt.astimezone(SWISS_TZ)).total_seconds() / 3600
-            return age_hours > STALE_THRESHOLD_HOURS
+            age_minutes = (datetime.now(SWISS_TZ) - dt.astimezone(SWISS_TZ)).total_seconds() / 60
+            return age_minutes > STALE_THRESHOLD_MINUTES
         except (ValueError, TypeError):
             return True
 
@@ -113,7 +82,9 @@ class ZurichCollector(BaseParkingCollector):
 
             mapping = RSS_PARKING_MAP.get(pid)
             if mapping:
-                parking_id, name, total = mapping
+                parking_id = mapping["id"]
+                name = mapping["name"]
+                total = mapping["total"]
             else:
                 title_el = item.find('title')
                 name = title_el.text.split('/')[0].strip() if title_el is not None else pid
@@ -139,17 +110,59 @@ class ZurichCollector(BaseParkingCollector):
             "timestamp": latest_ts or datetime.now(SWISS_TZ).isoformat()
         }
 
+    def _update_parking_map(self, raw_data):
+        """Update zurich_parking_map.json with fresh total values from ParkenDD."""
+        global RSS_PARKING_MAP
+        try:
+            lots = raw_data.get("lots", [])
+            if not lots:
+                return
+
+            pid_to_rss = {}
+            for rss_pid, info in RSS_PARKING_MAP.items():
+                pid_to_rss[info["id"]] = rss_pid
+
+            updated = False
+            for lot in lots:
+                parkendd_id = lot.get("id", "")
+                total = lot.get("total", 0)
+                name = lot.get("name", "")
+                rss_pid = pid_to_rss.get(parkendd_id)
+                if rss_pid and RSS_PARKING_MAP[rss_pid]["total"] != total:
+                    RSS_PARKING_MAP[rss_pid]["total"] = total
+                    updated = True
+                if rss_pid and name and RSS_PARKING_MAP[rss_pid]["name"] != name:
+                    RSS_PARKING_MAP[rss_pid]["name"] = name
+                    updated = True
+
+            if updated:
+                map_path = Path(__file__).parent / "zurich_parking_map.json"
+                with open(map_path, "w", encoding="utf-8") as f:
+                    json.dump(RSS_PARKING_MAP, f, indent=4, ensure_ascii=False)
+                print(f"[{datetime.now(SWISS_TZ)}] Zürich: zurich_parking_map.json updated from ParkenDD")
+
+        except Exception as e:
+            print(f"[{datetime.now(SWISS_TZ)}] Zürich: Failed to update parking map: {e}")
+
     def collect(self):
         """Collect with automatic fallback to PLS RSS if ParkenDD is stale."""
         try:
-            result = super().collect()
+            raw_data = self.fetch_raw_data()
+            if not raw_data:
+                return self._collect_fallback()
 
-            if result.get('success') and result.get('latest_data_ts'):
-                if self._is_stale(result['latest_data_ts']):
-                    print(f"[{datetime.now(SWISS_TZ)}] Zürich: ParkenDD data from {result['latest_data_ts']} is stale")
-                    return self._collect_fallback()
+            last_updated = raw_data.get("last_updated", "")
+            if self._is_stale(last_updated):
+                print(f"[{datetime.now(SWISS_TZ)}] Zürich: ParkenDD data from {last_updated} is stale")
+                return self._collect_fallback()
 
-            return result
+            self._update_parking_map(raw_data)
+
+            normalized = self.normalize_data(raw_data)
+            if not normalized:
+                return self._collect_fallback()
+
+            return self.save_data(normalized)
 
         except Exception as e:
             print(f"[{datetime.now(SWISS_TZ)}] Zürich: ParkenDD failed ({e}), trying fallback...")

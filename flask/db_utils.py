@@ -83,12 +83,13 @@ def load_db_config():
 
     return config
 
-def get_connection(simulation_mode=False):
+def get_connection(simulation_mode=False, database_override=None):
     """
     Establish a connection to the MariaDB database.
 
     Args:
         simulation_mode (bool): If True, return a mock connection that doesn't write.
+        database_override (str): If set, use this database name instead of the configured one.
 
     Returns:
         Connection object (real or mock)
@@ -98,6 +99,8 @@ def get_connection(simulation_mode=False):
         return MockConnection()
 
     config = load_db_config()
+    if database_override:
+        config['database'] = database_override
     try:
         connection = mysql.connector.connect(
             host=config['host'],

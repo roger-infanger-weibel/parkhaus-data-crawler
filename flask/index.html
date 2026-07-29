@@ -58,6 +58,15 @@
 
         <div class="row mb-3">
             <div class="col-auto">
+                <label for="env-select" class="col-form-label">Environment:</label>
+            </div>
+            <div class="col-auto">
+                <select id="env-select" class="form-select" onchange="onEnvChange()">
+                    <option value="prod" selected>Prod</option>
+                    <option value="test">Test</option>
+                </select>
+            </div>
+            <div class="col-auto">
                 <label for="city-select" class="col-form-label">Select City:</label>
             </div>
             <div class="col-auto">
@@ -157,6 +166,19 @@
             let GROUP_CONFIG = {};
             const API_BASE = "/api";
 
+            function getEnv() {
+                return document.getElementById('env-select').value;
+            }
+
+            function apiUrl(path) {
+                const sep = path.includes('?') ? '&' : '?';
+                return `${API_BASE}${path}${sep}env=${getEnv()}`;
+            }
+
+            function onEnvChange() {
+                loadCities();
+            }
+
             let CITY_CONFIG = {}; // Will be populated dynamically
 
             let FULL_CITY_CONFIG = {};
@@ -170,7 +192,7 @@
                         FULL_CITY_CONFIG = configData.cities;
                     }
 
-                    const response = await fetch(`${API_BASE}/cities`);
+                    const response = await fetch(apiUrl('/cities'));
                     if (!response.ok) throw new Error("Failed to fetch cities");
                     const cities = await response.json();
 
@@ -320,7 +342,7 @@
                 select.innerHTML = '<option disabled selected>Loading dates...</option>';
 
                 try {
-                    const response = await fetch(`${API_BASE}/dates/${city}`);
+                    const response = await fetch(apiUrl(`/dates/${city}`));
                     if (!response.ok) throw new Error("Failed to fetch dates from API");
                     const dates = await response.json();
 
@@ -355,7 +377,7 @@
                 if (!date) return;
 
                 try {
-                    const response = await fetch(`${API_BASE}/data/${city}/${date}`);
+                    const response = await fetch(apiUrl(`/data/${city}/${date}`));
                     if (!response.ok) throw new Error("Failed to fetch data");
                     const flatData = await response.json();
 
