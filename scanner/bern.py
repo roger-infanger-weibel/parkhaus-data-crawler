@@ -6,7 +6,10 @@ Parses XML data from parking-bern.ch.
 import xml.etree.ElementTree as ET
 import requests
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from base import BaseParkingCollector
+
+SWISS_TZ = ZoneInfo("Europe/Zurich")
 
 
 class BernCollector(BaseParkingCollector):
@@ -25,7 +28,7 @@ class BernCollector(BaseParkingCollector):
             # Return bytes to handle BOM correctly
             return response.content
         except requests.RequestException as e:
-            print(f"[{datetime.now()}] Error fetching data for {self.city_name}: {e}")
+            print(f"[{datetime.now(SWISS_TZ)}] Error fetching data for {self.city_name}: {e}")
             raise
 
     def normalize_data(self, raw_data):
@@ -43,14 +46,14 @@ class BernCollector(BaseParkingCollector):
         try:
             # ET.fromstring can handle bytes with XML declaration and BOM
             root = ET.fromstring(raw_data)
-            updated_str = root.get("updated", datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
+            updated_str = root.get("updated", datetime.now(SWISS_TZ).strftime("%d.%m.%Y %H:%M:%S"))
             
             # Convert DD.MM.YYYY HH:MM:SS to ISO format
             try:
                 dt = datetime.strptime(updated_str, "%d.%m.%Y %H:%M:%S")
                 timestamp = dt.isoformat()
             except ValueError:
-                timestamp = datetime.now().isoformat()
+                timestamp = datetime.now(SWISS_TZ).isoformat()
 
             # Mapping of XML name to (ID, Name)
             OFFICIAL_PARKINGS = {
@@ -109,5 +112,5 @@ class BernCollector(BaseParkingCollector):
                 "timestamp": timestamp
             }
         except ET.ParseError as e:
-            print(f"[{datetime.now()}] Bern: Error parsing XML: {e}")
+            print(f"[{datetime.now(SWISS_TZ)}] Bern: Error parsing XML: {e}")
             return None

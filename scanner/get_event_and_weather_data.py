@@ -5,6 +5,9 @@ import json
 import requests
 import pymysql
 from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
+
+SWISS_TZ = ZoneInfo("Europe/Zurich")
 load_dotenv()
 
 # --- KONFIGURATION ---
@@ -102,7 +105,7 @@ def store_historical_events():
     event_mappings = []
 
     start_date = datetime.datetime(2026, 1, 1)
-    end_date = datetime.datetime.now() + datetime.timedelta(days=14)  # 2 Wochen Zukunft
+    end_date = datetime.datetime.now(SWISS_TZ) + datetime.timedelta(days=14)  # 2 Wochen Zukunft
 
     current_day = start_date
     event_counter = 1

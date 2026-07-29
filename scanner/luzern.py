@@ -3,7 +3,10 @@ Luzern parking data collector.
 """
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from base import BaseParkingCollector
+
+SWISS_TZ = ZoneInfo("Europe/Zurich")
 
 
 class LuzernCollector(BaseParkingCollector):
@@ -28,7 +31,7 @@ class LuzernCollector(BaseParkingCollector):
                 "free": parking_data.get("vacancy", 0),
                 "total": parking_data.get("capacity", 0),
                 "status": "open" if parking_data.get("opened", True) and not parking_data.get("maintenance", False) else "closed",
-                "timestamp": parking_data.get("datestamp", datetime.now().isoformat())
+                "timestamp": parking_data.get("datestamp", datetime.now(SWISS_TZ).isoformat())
             }
         
         return {
@@ -37,5 +40,5 @@ class LuzernCollector(BaseParkingCollector):
             "data": {
                 "parkings": parkings
             },
-            "timestamp": raw_data.get("data", {}).get("time", datetime.now().isoformat())
+            "timestamp": raw_data.get("data", {}).get("time", datetime.now(SWISS_TZ).isoformat())
         }

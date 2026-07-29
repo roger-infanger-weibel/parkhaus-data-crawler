@@ -3,7 +3,10 @@ St. Gallen parking data collector.
 """
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from base import BaseParkingCollector
+
+SWISS_TZ = ZoneInfo("Europe/Zurich")
 
 
 class StGallenCollector(BaseParkingCollector):
@@ -57,7 +60,7 @@ class StGallenCollector(BaseParkingCollector):
                 "free": int(fields.get("frei", 0)),
                 "total": int(fields.get("anzahl_parkplatze", 0)),
                 "status": status,
-                "timestamp": fields.get("letzte_aktualisierung", datetime.now().isoformat())
+                "timestamp": fields.get("letzte_aktualisierung", datetime.now(SWISS_TZ).isoformat())
             }
 
         return {
@@ -66,5 +69,5 @@ class StGallenCollector(BaseParkingCollector):
             "data": {
                 "parkings": parkings
             },
-            "timestamp": raw_data.get("records", [{}])[0].get("fields", {}).get("letzte_aktualisierung", datetime.now().isoformat()) if raw_data.get("records") else datetime.now().isoformat()
+            "timestamp": raw_data.get("records", [{}])[0].get("fields", {}).get("letzte_aktualisierung", datetime.now(SWISS_TZ).isoformat()) if raw_data.get("records") else datetime.now(SWISS_TZ).isoformat()
         }

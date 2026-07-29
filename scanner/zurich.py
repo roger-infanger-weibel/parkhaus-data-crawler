@@ -3,7 +3,10 @@ Zürich parking data collector.
 """
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from base import BaseParkingCollector
+
+SWISS_TZ = ZoneInfo("Europe/Zurich")
 
 
 class ZurichCollector(BaseParkingCollector):
@@ -31,7 +34,7 @@ class ZurichCollector(BaseParkingCollector):
                 "free": lot.get("free", 0),
                 "total": lot.get("total", 0),
                 "status": lot.get("state", "unknown"),
-                "timestamp": raw_data.get("last_updated", datetime.now().isoformat())
+                "timestamp": raw_data.get("last_updated", datetime.now(SWISS_TZ).isoformat())
             }
         
         return {
@@ -40,5 +43,5 @@ class ZurichCollector(BaseParkingCollector):
             "data": {
                 "parkings": parkings
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(SWISS_TZ).isoformat()
         }

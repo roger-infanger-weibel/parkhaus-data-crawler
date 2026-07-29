@@ -8,6 +8,9 @@ import os
 import time
 from datetime import datetime
 from abc import ABC, abstractmethod
+from zoneinfo import ZoneInfo
+
+SWISS_TZ = ZoneInfo("Europe/Zurich")
 
 
 class BaseParkingCollector(ABC):
@@ -61,26 +64,26 @@ class BaseParkingCollector(ABC):
                 response.raise_for_status()
                 data = response.json()
                 if attempt > 0:
-                    print(f"[{datetime.now()}] {self.city_name}: Successfully retrieved data on attempt {attempt + 1}")
+                    print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Successfully retrieved data on attempt {attempt + 1}")
                 return data
 
             except requests.exceptions.Timeout as e:
                 last_exception = e
                 wait_time = min(2 ** (attempt + 1), 60)
                 if attempt < max_retries - 1:
-                    print(f"[{datetime.now()}] {self.city_name}: Timeout (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s before retry...")
+                    print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Timeout (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s before retry...")
                     time.sleep(wait_time)
                 else:
-                    print(f"[{datetime.now()}] {self.city_name}: Timeout after {max_retries} attempts (waited {wait_time}s max)")
+                    print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Timeout after {max_retries} attempts (waited {wait_time}s max)")
 
             except requests.exceptions.ConnectionError as e:
                 last_exception = e
                 wait_time = min(2 ** (attempt + 1), 60)
                 if attempt < max_retries - 1:
-                    print(f"[{datetime.now()}] {self.city_name}: Connection error (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s...")
+                    print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Connection error (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s...")
                     time.sleep(wait_time)
                 else:
-                    print(f"[{datetime.now()}] {self.city_name}: Connection error after {max_retries} attempts")
+                    print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Connection error after {max_retries} attempts")
 
             except requests.exceptions.HTTPError as e:
                 last_exception = e
@@ -89,25 +92,25 @@ class BaseParkingCollector(ABC):
                 if status_code in [429, 500, 502, 503, 504]:
                     wait_time = min(2 ** (attempt + 1), 60)
                     if attempt < max_retries - 1:
-                        print(f"[{datetime.now()}] {self.city_name}: Server error {status_code} (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s...")
+                        print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Server error {status_code} (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s...")
                         time.sleep(wait_time)
                     else:
-                        print(f"[{datetime.now()}] {self.city_name}: Server error {status_code} after {max_retries} attempts")
+                        print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Server error {status_code} after {max_retries} attempts")
                 else:
-                    print(f"[{datetime.now()}] {self.city_name}: HTTP error {status_code} (not retryable)")
+                    print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: HTTP error {status_code} (not retryable)")
                     raise
 
             except requests.exceptions.JSONDecodeError as e:
                 last_exception = e
-                print(f"[{datetime.now()}] {self.city_name}: Invalid JSON response")
+                print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Invalid JSON response")
                 raise
 
             except requests.RequestException as e:
                 last_exception = e
-                print(f"[{datetime.now()}] {self.city_name}: Request error: {str(e)[:100]}")
+                print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Request error: {str(e)[:100]}")
                 raise
 
-        print(f"[{datetime.now()}] Error fetching data for {self.city_name}: All {max_retries} retry attempts failed")
+        print(f"[{datetime.now(SWISS_TZ)}] Error fetching data for {self.city_name}: All {max_retries} retry attempts failed")
         raise last_exception if last_exception else Exception("Failed to fetch data after all retries")
 
     @abstractmethod
@@ -153,7 +156,7 @@ class BaseParkingCollector(ABC):
         if not data:
             return {'success': False, 'inserted': 0, 'duplicates': 0, 'failed': 0, 'error': 'No data'}
 
-        now = datetime.now()
+        now = datetime.now(SWISS_TZ)
         date_str = now.strftime("%Y-%m-%d")
 
         try:
@@ -169,7 +172,7 @@ class BaseParkingCollector(ABC):
             if fetch_ts:
                 try:
                     dt = datetime.fromisoformat(fetch_ts.replace('Z', '+00:00'))
-                    fetch_ts = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    fetch_ts = dt.astimezone(SWISS_TZ).strftime("%Y-%m-%d %H:%M:%S")
                 except ValueError:
                     fetch_ts = now.strftime("%Y-%m-%d %H:%M:%S")
             else:
@@ -239,11 +242,11 @@ class BaseParkingCollector(ABC):
             dict: Statistics of the collection result
         """
         try:
-            print(f"[{datetime.now()}] {self.city_name}: Fetching data...")
+            print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Fetching data...")
             raw_data = self.fetch_raw_data()
 
             if not raw_data:
-                print(f"[{datetime.now()}] {self.city_name}: No data received from API")
+                print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: No data received from API")
                 return {
                     'success': False,
                     'inserted': 0,
@@ -254,11 +257,11 @@ class BaseParkingCollector(ABC):
                     'simulation_mode': self.simulation_mode
                 }
 
-            print(f"[{datetime.now()}] {self.city_name}: Normalizing data...")
+            print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Normalizing data...")
             normalized_data = self.normalize_data(raw_data)
 
             if not normalized_data:
-                print(f"[{datetime.now()}] {self.city_name}: Failed to normalize data (check API format)")
+                print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Failed to normalize data (check API format)")
                 return {
                     'success': False,
                     'inserted': 0,
@@ -269,11 +272,11 @@ class BaseParkingCollector(ABC):
                     'simulation_mode': self.simulation_mode
                 }
 
-            print(f"[{datetime.now()}] {self.city_name}: Saving data...")
+            print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Saving data...")
             return self.save_data(normalized_data)
 
         except requests.exceptions.Timeout as e:
-            print(f"[{datetime.now()}] {self.city_name}: Timeout - API is slow or unreachable")
+            print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Timeout - API is slow or unreachable")
             return {
                 'success': False,
                 'inserted': 0,
@@ -284,7 +287,7 @@ class BaseParkingCollector(ABC):
                 'simulation_mode': self.simulation_mode
             }
         except requests.exceptions.ConnectionError as e:
-            print(f"[{datetime.now()}] {self.city_name}: Connection error - network issue or API down")
+            print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Connection error - network issue or API down")
             return {
                 'success': False,
                 'inserted': 0,
@@ -296,7 +299,7 @@ class BaseParkingCollector(ABC):
             }
         except Exception as e:
             error_msg = str(e)[:200]
-            print(f"[{datetime.now()}] {self.city_name}: Collection error: {error_msg}")
+            print(f"[{datetime.now(SWISS_TZ)}] {self.city_name}: Collection error: {error_msg}")
             return {
                 'success': False,
                 'inserted': 0,

@@ -13,6 +13,9 @@ import os
 import sys
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+SWISS_TZ = ZoneInfo("Europe/Zurich")
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -161,7 +164,7 @@ def main():
 
     mode_label = "SIMULATION MODE" if args.simulation else "NORMAL MODE"
     print("Job started")
-    print(f"Swiss Parking Monitor - Starting at {datetime.now()} [{mode_label}]")
+    print(f"Swiss Parking Monitor - Starting at {datetime.now(SWISS_TZ)} [{mode_label}]")
 
     results = collect_all_cities(config, simulation_mode=args.simulation)
 
