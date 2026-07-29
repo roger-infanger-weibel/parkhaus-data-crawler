@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, date
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,30 +17,125 @@ DB_PROD = os.environ.get('DB_DATABASE_PROD', 'ph_fetch_prod')
 DB_TEST = os.environ.get('DB_DATABASE_TEST', 'ph_fetch_test')
 
 def get_db_name():
-    """Get database name from query parameter 'env' (prod/test)."""
     env = request.args.get('env', 'prod').lower()
     return DB_PROD if env == 'prod' else DB_TEST
 
 def get_conn():
-    """Get a database connection for the selected environment."""
     return db_utils.get_connection(database_override=get_db_name())
 
 @app.route('/api/environments')
 def get_environments():
-    return jsonify({
-        'prod': DB_PROD,
-        'test': DB_TEST
-    })
+    return jsonify({'prod': DB_PROD, 'test': DB_TEST})
 
 @app.route('/api/cities')
 def get_cities():
     try:
         conn = get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT city FROM pls_fetch_current ORDER BY city")
-        cities = [row[0] for row in cursor.fetchall()]
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, name, url, latitude, longitude, collector, api_url FROM cities ORDER BY name")
+        rows = cursor.fetchall()
         conn.close()
-        return jsonify(cities)
+        for row in rows:
+            if row.get('latitude'):
+                row['latitude'] = float(row['latitude'])
+            if row.get('longitude'):
+                row['longitude'] = float(row['longitude'])
+        return jsonify(rows)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/groups/<city>')
+def get_groups(city):
+    try:
+        conn = get_conn()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT name, parking_group
+            FROM parkhaeuser
+            WHERE city_id = %s AND is_active = 1
+            ORDER BY parking_group, name
+        """, (city,))
+        rows = cursor.fetchall()
+        conn.close()
+
+        groups = {}
+        for row in rows:
+            group_name = row['parking_group'] or 'Andere'
+            if group_name not in groups:
+                groups[group_name] = []
+            groups[group_name].append(row['name'])
+
+        result = [{"name": name, "parkings": parkings} for name, parkings in groups.items()]
+        result.append({"name": "All", "parkings": []})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/events/<city>/<date_str>')
+def get_events(city, date_str):
+    try:
+        conn = get_conn()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT e.id, e.title, e.venue, e.city, e.start_time, e.end_time,
+                   e.description, e.category, e.peak_occupancy_bonus
+            FROM local_events e
+            WHERE e.city = %s AND DATE(e.start_time) = %s
+            ORDER BY e.start_time
+        """, (city, date_str))
+        events = cursor.fetchall()
+
+        event_ids = [e['id'] for e in events]
+        parkhaus_map = {}
+        if event_ids:
+            placeholders = ','.join(['%s'] * len(event_ids))
+            cursor.execute(f"""
+                SELECT ep.event_id, p.name
+                FROM event_parkhaus ep
+                JOIN parkhaeuser p ON ep.parkhaus_id = p.id
+                WHERE ep.event_id IN ({placeholders})
+            """, event_ids)
+            for row in cursor.fetchall():
+                parkhaus_map.setdefault(row['event_id'], []).append(row['name'])
+
+        conn.close()
+
+        for event in events:
+            if isinstance(event.get('start_time'), datetime):
+                event['start_time'] = event['start_time'].isoformat()
+            if isinstance(event.get('end_time'), datetime):
+                event['end_time'] = event['end_time'].isoformat()
+            if event.get('peak_occupancy_bonus') is not None:
+                event['peak_occupancy_bonus'] = float(event['peak_occupancy_bonus'])
+            event['parkings'] = parkhaus_map.get(event['id'], [])
+
+        return jsonify(events)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/weather/<city>/<date_str>')
+def get_weather(city, date_str):
+    try:
+        conn = get_conn()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT timestamp, temperature, precipitation
+            FROM weather_forecasts
+            WHERE city_id = %s AND DATE(timestamp) = %s
+            ORDER BY timestamp
+        """, (city, date_str))
+        rows = cursor.fetchall()
+        conn.close()
+
+        for row in rows:
+            if isinstance(row.get('timestamp'), datetime):
+                row['timestamp'] = row['timestamp'].isoformat()
+            if row.get('temperature') is not None:
+                row['temperature'] = float(row['temperature'])
+            if row.get('precipitation') is not None:
+                row['precipitation'] = float(row['precipitation'])
+
+        return jsonify(rows)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -58,8 +153,8 @@ def get_dates(city):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/data/<city>/<date>')
-def get_data(city, date):
+@app.route('/api/data/<city>/<date_str>')
+def get_data(city, date_str):
     try:
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
@@ -69,7 +164,7 @@ def get_data(city, date):
             WHERE city = %s AND day = %s
             ORDER BY fetch_ts ASC
         """
-        cursor.execute(query, (city, date))
+        cursor.execute(query, (city, date_str))
         rows = cursor.fetchall()
         conn.close()
 
@@ -86,8 +181,7 @@ def get_logs():
     try:
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT timestamp, severity, text FROM log ORDER BY timestamp DESC"
-        cursor.execute(query)
+        cursor.execute("SELECT timestamp, severity, text FROM log ORDER BY timestamp DESC")
         rows = cursor.fetchall()
         conn.close()
 
@@ -104,13 +198,12 @@ def get_daily_log_counts():
     try:
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
-        query = """
+        cursor.execute("""
             SELECT DATE(timestamp) as day, COUNT(*) as count
             FROM log
             GROUP BY DATE(timestamp)
             ORDER BY day DESC
-        """
-        cursor.execute(query)
+        """)
         rows = cursor.fetchall()
         conn.close()
 
@@ -127,7 +220,7 @@ def get_weekly_log_stats():
     try:
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
-        query = """
+        cursor.execute("""
             SELECT
                 YEARWEEK(timestamp, 3) as week_code,
                 MIN(DATE(timestamp)) as week_start,
@@ -137,8 +230,7 @@ def get_weekly_log_stats():
             FROM log
             GROUP BY week_code, parkhaus, severity
             ORDER BY week_code DESC, parkhaus
-        """
-        cursor.execute(query)
+        """)
         rows = cursor.fetchall()
         conn.close()
 
@@ -155,33 +247,25 @@ def get_stuck_parking():
     try:
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
-        query = """
+        cursor.execute("""
             SELECT
-                city,
-                name,
-                day,
-                MIN(free) as min_free,
-                MAX(free) as max_free,
+                city, name, day,
+                MIN(free) as min_free, MAX(free) as max_free,
                 COUNT(*) as record_count,
-                MIN(fetch_ts) as first_fetch,
-                MAX(fetch_ts) as last_fetch
+                MIN(fetch_ts) as first_fetch, MAX(fetch_ts) as last_fetch
             FROM pls_fetch_current
             WHERE fetch_ts >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
             GROUP BY city, name, day
             HAVING MIN(free) = MAX(free)
             ORDER BY city, name, day DESC
-        """
-        cursor.execute(query)
+        """)
         rows = cursor.fetchall()
         conn.close()
 
         for row in rows:
-            if isinstance(row.get('day'), datetime):
-                row['day'] = row['day'].isoformat()
-            if isinstance(row.get('first_fetch'), datetime):
-                row['first_fetch'] = row['first_fetch'].isoformat()
-            if isinstance(row.get('last_fetch'), datetime):
-                row['last_fetch'] = row['last_fetch'].isoformat()
+            for field in ('day', 'first_fetch', 'last_fetch'):
+                if isinstance(row.get(field), (datetime, date)):
+                    row[field] = row[field].isoformat()
 
         return jsonify(rows)
     except Exception as e:
@@ -196,18 +280,6 @@ def index():
 @app.route('/logs')
 def logs():
     return send_from_directory(BASE_DIR, 'logs.html')
-
-@app.route('/cities.json')
-def serve_cities_json():
-    return send_from_directory(BASE_DIR, 'cities.json')
-
-@app.route('/groups.json')
-def serve_groups_json():
-    return send_from_directory(BASE_DIR, 'groups.json')
-
-@app.route('/events.json')
-def serve_events_json():
-    return send_from_directory(BASE_DIR, 'events.json')
 
 if __name__ == '__main__':
     print(f"Server base directory: {BASE_DIR}")

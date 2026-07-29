@@ -185,13 +185,6 @@
 
             async function loadCities() {
                 try {
-                    // Fetch official URLs and descriptions
-                    const configResponse = await fetch('/cities.json');
-                    if (configResponse.ok) {
-                        const configData = await configResponse.json();
-                        FULL_CITY_CONFIG = configData.cities;
-                    }
-
                     const response = await fetch(apiUrl('/cities'));
                     if (!response.ok) throw new Error("Failed to fetch cities");
                     const cities = await response.json();
@@ -199,24 +192,23 @@
                     const select = document.getElementById('city-select');
                     select.innerHTML = '';
 
-                    const DISPLAY_NAMES = {
-                        'stgallen': 'St.Gallen',
-                        'zurich': 'Zürich'
-                    };
-
-                    cities.forEach(cityId => {
+                    FULL_CITY_CONFIG = {};
+                    cities.forEach(city => {
                         const option = document.createElement('option');
-                        option.value = cityId;
-                        // Use mapping or capitalize first letter for display name
-                        option.text = DISPLAY_NAMES[cityId] || (cityId.charAt(0).toUpperCase() + cityId.slice(1));
+                        option.value = city.id;
+                        option.text = city.name;
                         select.add(option);
 
-                        // Simple color generation or default map
-                        // ideally this comes from DB too, but for now we generate/mock it
-                        if (!CITY_CONFIG[cityId]) {
-                            CITY_CONFIG[cityId] = {
-                                name: option.text,
-                                color: stringToColor(cityId)
+                        FULL_CITY_CONFIG[city.id] = {
+                            name: city.name,
+                            official_url: city.url,
+                            api_url: city.api_url
+                        };
+
+                        if (!CITY_CONFIG[city.id]) {
+                            CITY_CONFIG[city.id] = {
+                                name: city.name,
+                                color: stringToColor(city.id)
                             };
                         }
                     });
@@ -230,7 +222,6 @@
                         select.value = lastCity;
                     }
 
-                    // Trigger initial load
                     onCityChange();
 
                 } catch (e) {
@@ -249,12 +240,14 @@
                 return '#' + "00000".substring(0, 6 - c.length) + c;
             }
 
-            async function loadGroups() {
+            async function loadGroups(city) {
+                if (!city) city = getCurrentCity();
+                if (!city) return;
                 try {
-                    const response = await fetch('groups.json');
-                    if (!response.ok) throw new Error("Failed to fetch groups config");
-                    GROUP_CONFIG = await response.json();
-                    updateGroupSelect(); // call this to update in case groups loaded after cities
+                    const response = await fetch(apiUrl(`/groups/${city}`));
+                    if (!response.ok) throw new Error("Failed to fetch groups");
+                    GROUP_CONFIG[city] = await response.json();
+                    updateGroupSelect();
                 } catch (error) {
                     console.error("Error loading groups:", error);
                 }
@@ -298,7 +291,7 @@
             function onCityChange() {
                 const cityId = getCurrentCity();
                 savePreferences();
-                updateGroupSelect();
+                loadGroups(cityId);
                 updateOfficialLink();
                 loadDates();
             }
@@ -748,8 +741,6 @@
                 });
             }
 
-            let EVENT_DATA = null;
-
             async function loadEvents() {
                 const city = getCurrentCity();
                 const dateSelect = document.getElementById('date-select');
@@ -758,66 +749,53 @@
 
                 if (!date) return;
 
-                // Only show for Luzern for now as per user request/mock data context
-                // The user specifically asked to map events for Luzern examples.
-                if (city !== 'luzern') {
-                    section.style.display = 'none';
-                    return;
-                }
-                section.style.display = 'block';
-
                 try {
-                    if (!EVENT_DATA) {
-                        const response = await fetch('/events.json');
-                        if (!response.ok) throw new Error("Failed to fetch events");
-                        EVENT_DATA = await response.json();
-                    }
+                    const response = await fetch(apiUrl(`/events/${city}/${date}`));
+                    if (!response.ok) throw new Error("Failed to fetch events");
+                    const events = await response.json();
 
-                    renderEvents(city, date);
+                    renderEvents(events);
                 } catch (e) {
                     console.error("Error loading events", e);
                     document.getElementById('events-loading').innerText = "Failed to load event data.";
                 }
             }
 
-            function renderEvents(city, date) {
+            function renderEvents(events) {
                 const tbody = document.getElementById('events-table-body');
                 const loading = document.getElementById('events-loading');
                 const empty = document.getElementById('events-empty');
                 const table = document.getElementById('events-table');
+                const section = document.getElementById('events-section');
 
                 tbody.innerHTML = '';
                 loading.style.display = 'none';
 
-                // Simple date string match (YYYY-MM-DD)
-                const events = EVENT_DATA.events.filter(e => e.start.startsWith(date));
-                const mappings = EVENT_DATA.mappings;
-
                 if (events.length === 0) {
                     empty.style.display = 'block';
                     table.style.display = 'none';
+                    section.style.display = 'none';
                     return;
                 }
 
+                section.style.display = 'block';
                 empty.style.display = 'none';
                 table.style.display = 'table';
 
                 events.forEach(event => {
-                    const dt = new Date(event.start);
+                    const dt = new Date(event.start_time);
                     const timeStr = dt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
 
-                    const mapping = mappings[event.location];
                     let parkingHtml = '<em>No specific mapping</em>';
-                    if (mapping && mapping.parkings) {
-                        // We could also highlight if they are full using the existing data if we wanted to be fancy
-                        parkingHtml = mapping.parkings.map(p => `<span class="badge bg-secondary me-1">${p}</span>`).join('');
+                    if (event.parkings && event.parkings.length > 0) {
+                        parkingHtml = event.parkings.map(p => `<span class="badge bg-secondary me-1">${p}</span>`).join('');
                     }
 
                     const row = `
                         <tr>
                             <td><strong>${timeStr}</strong></td>
                             <td>${event.title}<br><small class="text-muted">${event.description || ''}</small></td>
-                            <td>${event.location} ${mapping?.url ? `<a href="${mapping.url}" target="_blank">🔗</a>` : ''}</td>
+                            <td>${event.venue || ''}</td>
                             <td>${parkingHtml}</td>
                         </tr>
                     `;
@@ -877,10 +855,8 @@
             }
 
             // Initial load
-            loadGroups().then(() => {
-                loadCities();
-                checkCookieConsent();
-            });
+            loadCities();
+            checkCookieConsent();
         </script>
 
         <!-- Cookie Consent Banner -->
