@@ -129,6 +129,29 @@
                 <canvas id="parkingChart"></canvas>
             </div>
 
+            <!-- Weather Section -->
+            <div class="row mt-4 mb-4" id="weather-section" style="display: none;">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">🌤 Weather Forecast</h5>
+                            <small id="weather-summary" class="text-white-50"></small>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0" id="weather-table">
+                                    <thead>
+                                        <tr id="weather-hours-row"></tr>
+                                        <tr id="weather-temp-row"></tr>
+                                        <tr id="weather-rain-row"></tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Events Section -->
             <div class="row mt-4 mb-4" id="events-section" style="display: none;">
                 <div class="col-12">
@@ -164,6 +187,8 @@
             Chart.register(ChartDataLabels);
             let myChart = null;
             let GROUP_CONFIG = {};
+            let WEATHER_DATA = [];
+            let EVENTS_DATA = [];
             const API_BASE = "/api";
 
             function getEnv() {
@@ -370,14 +395,21 @@
                 if (!date) return;
 
                 try {
-                    const response = await fetch(apiUrl(`/data/${city}/${date}`));
-                    if (!response.ok) throw new Error("Failed to fetch data");
-                    const flatData = await response.json();
+                    const [dataRes, weatherRes, eventsRes] = await Promise.all([
+                        fetch(apiUrl(`/data/${city}/${date}`)),
+                        fetch(apiUrl(`/weather/${city}/${date}`)).catch(() => null),
+                        fetch(apiUrl(`/events/${city}/${date}`)).catch(() => null)
+                    ]);
+
+                    if (!dataRes.ok) throw new Error("Failed to fetch data");
+                    const flatData = await dataRes.json();
+
+                    WEATHER_DATA = (weatherRes && weatherRes.ok) ? await weatherRes.json() : [];
+                    EVENTS_DATA = (eventsRes && eventsRes.ok) ? await eventsRes.json() : [];
 
                     processData(flatData, city, date);
-
-                    // Trigger event loading based on the date
-                    loadEvents();
+                    renderWeather(WEATHER_DATA);
+                    renderEvents(EVENTS_DATA);
 
                 } catch (error) {
                     console.error('Error fetching data:', error);
@@ -449,7 +481,7 @@
                     });
                 });
 
-                // Forecast logic - next 4 hours
+                // Forecast logic - up to 24h with weather + events
                 const originalLength = labels.length;
                 if (isToday(dateStr) && originalLength > 1) {
                     const latestSnapshot = timeline[originalLength - 1];
@@ -467,8 +499,13 @@
                         }
                     }
 
-                    // Add 4 forecast points (every 60 mins)
-                    for (let i = 1; i <= 4; i++) {
+                    // Forecast until midnight (max 24h)
+                    const midnight = new Date(latestDt);
+                    midnight.setHours(23, 59, 0, 0);
+                    const hoursUntilMidnight = Math.min(24, Math.ceil((midnight - latestDt) / 3600000));
+                    const forecastHours = Math.max(1, hoursUntilMidnight);
+
+                    for (let i = 1; i <= forecastHours; i++) {
                         const forecastDt = new Date(latestDt.getTime() + i * 3600000);
                         const forecastTime = forecastDt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
                         labels.push(forecastTime);
@@ -480,11 +517,47 @@
 
                         const currentFree = latestSnapshot.data[pid] ? latestSnapshot.data[pid].free : 0;
                         const pastFree = pastSnapshot.data[pid] ? pastSnapshot.data[pid].free : currentFree;
-                        const trendPerHour = currentFree - pastFree;
+                        const baseTrend = currentFree - pastFree;
                         const total = latestSnapshot.data[pid] ? latestSnapshot.data[pid].total : 100;
 
-                        for (let i = 1; i <= 4; i++) {
-                            let pred = currentFree + (trendPerHour * i);
+                        for (let i = 1; i <= forecastHours; i++) {
+                            const forecastDt = new Date(latestDt.getTime() + i * 3600000);
+                            const hour = forecastDt.getHours();
+
+                            // Base: linear trend with decay (trend weakens over time)
+                            const decay = Math.pow(0.85, i - 1);
+                            let pred = currentFree + (baseTrend * i * decay);
+
+                            // Time-of-day pattern: busier midday, emptier at night
+                            let timeModifier = 0;
+                            if (hour >= 7 && hour <= 9) timeModifier = -total * 0.03;
+                            else if (hour >= 10 && hour <= 14) timeModifier = -total * 0.05;
+                            else if (hour >= 15 && hour <= 17) timeModifier = -total * 0.04;
+                            else if (hour >= 18 && hour <= 20) timeModifier = total * 0.03;
+                            else if (hour >= 21 || hour <= 5) timeModifier = total * 0.05;
+
+                            // Weather modifier: rain drives more people to park
+                            const weather = getWeatherAtHour(forecastDt);
+                            if (weather) {
+                                if (weather.precipitation > 5) timeModifier -= total * 0.08;
+                                else if (weather.precipitation > 1) timeModifier -= total * 0.04;
+                                else if (weather.precipitation > 0) timeModifier -= total * 0.02;
+
+                                if (weather.temperature > 30) timeModifier += total * 0.02;
+                            }
+
+                            // Event modifier: events near this parking fill it up
+                            const activeEvents = getActiveEvents(forecastDt);
+                            for (const evt of activeEvents) {
+                                const bonus = evt.peak_occupancy_bonus || 15;
+                                const affectedParkings = evt.parkings || [];
+                                const parkName = parkingDetails[pid];
+                                if (affectedParkings.length === 0 || affectedParkings.includes(parkName)) {
+                                    pred -= total * (bonus / 100);
+                                }
+                            }
+
+                            pred += timeModifier;
                             pred = Math.max(0, Math.min(total, Math.round(pred)));
                             ds.data.push(pred);
                         }
@@ -741,24 +814,79 @@
                 });
             }
 
-            async function loadEvents() {
-                const city = getCurrentCity();
-                const dateSelect = document.getElementById('date-select');
-                const date = dateSelect ? dateSelect.value : null;
-                const section = document.getElementById('events-section');
+            function renderWeather(weatherData) {
+                const section = document.getElementById('weather-section');
+                const hoursRow = document.getElementById('weather-hours-row');
+                const tempRow = document.getElementById('weather-temp-row');
+                const rainRow = document.getElementById('weather-rain-row');
+                const summary = document.getElementById('weather-summary');
 
-                if (!date) return;
-
-                try {
-                    const response = await fetch(apiUrl(`/events/${city}/${date}`));
-                    if (!response.ok) throw new Error("Failed to fetch events");
-                    const events = await response.json();
-
-                    renderEvents(events);
-                } catch (e) {
-                    console.error("Error loading events", e);
-                    document.getElementById('events-loading').innerText = "Failed to load event data.";
+                if (!weatherData || weatherData.length === 0) {
+                    section.style.display = 'none';
+                    return;
                 }
+
+                section.style.display = 'block';
+                hoursRow.innerHTML = '<th class="text-muted" style="min-width:40px">Hour</th>';
+                tempRow.innerHTML = '<th class="text-muted">Temp</th>';
+                rainRow.innerHTML = '<th class="text-muted">Rain</th>';
+
+                let minTemp = Infinity, maxTemp = -Infinity, totalRain = 0;
+
+                weatherData.forEach(w => {
+                    const dt = new Date(w.timestamp);
+                    const hour = dt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+                    const temp = w.temperature != null ? w.temperature : '-';
+                    const rain = w.precipitation != null ? w.precipitation : 0;
+
+                    if (typeof temp === 'number') {
+                        if (temp < minTemp) minTemp = temp;
+                        if (temp > maxTemp) maxTemp = temp;
+                    }
+                    totalRain += rain;
+
+                    let tempColor = '#6c757d';
+                    if (typeof temp === 'number') {
+                        if (temp >= 30) tempColor = '#dc3545';
+                        else if (temp >= 25) tempColor = '#fd7e14';
+                        else if (temp >= 15) tempColor = '#28a745';
+                        else if (temp >= 5) tempColor = '#17a2b8';
+                        else tempColor = '#0d6efd';
+                    }
+
+                    let rainBg = '';
+                    if (rain > 5) rainBg = 'background-color: rgba(13,110,253,0.3)';
+                    else if (rain > 1) rainBg = 'background-color: rgba(13,110,253,0.15)';
+                    else if (rain > 0) rainBg = 'background-color: rgba(13,110,253,0.05)';
+
+                    hoursRow.innerHTML += `<th class="text-center text-muted" style="font-weight:normal;font-size:0.8em">${hour}</th>`;
+                    tempRow.innerHTML += `<td class="text-center" style="color:${tempColor};font-weight:bold;font-size:0.85em">${typeof temp === 'number' ? temp.toFixed(1) + '°' : '-'}</td>`;
+                    rainRow.innerHTML += `<td class="text-center" style="font-size:0.85em;${rainBg}">${rain > 0 ? rain.toFixed(1) + ' mm' : '-'}</td>`;
+                });
+
+                if (minTemp !== Infinity) {
+                    summary.textContent = `${minTemp.toFixed(0)}°–${maxTemp.toFixed(0)}°C | ${totalRain > 0 ? totalRain.toFixed(1) + ' mm rain' : 'No rain'}`;
+                }
+            }
+
+            function getWeatherAtHour(targetDt) {
+                if (!WEATHER_DATA || WEATHER_DATA.length === 0) return null;
+                let closest = null, minDiff = Infinity;
+                for (const w of WEATHER_DATA) {
+                    const diff = Math.abs(new Date(w.timestamp) - targetDt);
+                    if (diff < minDiff) { minDiff = diff; closest = w; }
+                }
+                if (minDiff > 3600000) return null;
+                return closest;
+            }
+
+            function getActiveEvents(targetDt) {
+                if (!EVENTS_DATA || EVENTS_DATA.length === 0) return [];
+                return EVENTS_DATA.filter(e => {
+                    const start = new Date(e.start_time);
+                    const end = e.end_time ? new Date(e.end_time) : new Date(start.getTime() + 3 * 3600000);
+                    return targetDt >= new Date(start.getTime() - 3600000) && targetDt <= end;
+                });
             }
 
             function renderEvents(events) {
