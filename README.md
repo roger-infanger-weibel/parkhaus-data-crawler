@@ -21,9 +21,10 @@ parkhaus-data-crawler/
 │   ├── db_utils.py
 │   ├── index.html / logs.html
 └── linux-cmd/                  ← Linux Start-Skripte
-    ├── start-prod.sh
-    └── start-test.sh
-    └── copy-github.sh
+    └── copy-github.sh          ← Refresh Local Github Folder
+    └── start-flask.sh          ← Startup Flask Server
+    ├── start-prod.sh           ← Startup Prod Crawler
+    └── start-test.sh           ← Startup Test Crawler
 ```
 
 ---
