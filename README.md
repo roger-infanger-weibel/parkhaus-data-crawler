@@ -20,10 +20,10 @@ parkhaus-data-crawler/
 │   ├── web_server.py
 │   ├── db_utils.py
 │   ├── index.html / logs.html
-│   └── cities.json / groups.json / events.json
 └── linux-cmd/                  ← Linux Start-Skripte
     ├── start-prod.sh
     └── start-test.sh
+    └── copy-github.sh
 ```
 
 ---
