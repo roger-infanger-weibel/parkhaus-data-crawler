@@ -172,7 +172,9 @@ class BaseParkingCollector(ABC):
             if fetch_ts:
                 try:
                     dt = datetime.fromisoformat(fetch_ts.replace('Z', '+00:00'))
-                    fetch_ts = dt.astimezone(SWISS_TZ).strftime("%Y-%m-%d %H:%M:%S")
+                    if dt.tzinfo is not None:
+                        dt = dt.astimezone(SWISS_TZ)
+                    fetch_ts = dt.strftime("%Y-%m-%d %H:%M:%S")
                 except ValueError:
                     fetch_ts = now.strftime("%Y-%m-%d %H:%M:%S")
             else:
