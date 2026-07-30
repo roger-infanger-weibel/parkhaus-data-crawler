@@ -8,10 +8,11 @@ body { background-color: #f4f6f9; }
 .badge-free-mid  { background-color: #fd7e14; }
 .badge-free-low  { background-color: #dc3545; }
 
-/* Rueckblick: nur die Veraenderung, farblich klar von den Prognose-Badges
-   getrennt (Text statt Badge) */
+/* Rueckblick: nur die Veraenderung, als farbiger Text statt Badge.
+   gruen = Plaetze wurden frei (Autos weggefahren)
+   rot   = Plaetze wurden belegt (Autos dazugekommen) */
 .delta-up   { color: #198754; font-weight: 600; }
-.delta-down { color: #b02a37; font-weight: 600; }
+.delta-down { color: #dc3545; font-weight: 600; }
 .table-hover tbody tr { cursor: pointer; }
 .skill-pos { color: #198754; font-weight: 600; }
 .skill-neg { color: #dc3545; font-weight: 600; }

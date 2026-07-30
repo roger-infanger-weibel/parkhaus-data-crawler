@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dokumentation – Parkhaus KI-Prognose</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/app.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand navbar-dark bg-dark px-3 mb-4">
+  <a class="navbar-brand" href="/">🅿️ Parkhaus <span>KI</span>-Prognose</a>
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item"><a class="nav-link" href="/">Prognose</a></li>
+    <li class="nav-item"><a class="nav-link" href="/accuracy.html">Genauigkeit</a></li>
+    <li class="nav-item"><a class="nav-link" href="/chat.html">Chat-Assistent</a></li>
+    <li class="nav-item"><a class="nav-link active" href="/doku.html">Dokumentation</a></li>
+  </ul>
+  <div class="dropdown me-3">
+    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
+            data-bs-toggle="dropdown" aria-expanded="false">Links</button>
+    <ul class="dropdown-menu dropdown-menu-end" id="link-menu"></ul>
+  </div>
+  <select id="env-select" class="form-select form-select-sm w-auto">
+    <option value="prod">Prod</option>
+    <option value="test">Test</option>
+  </select>
+</nav>
+
+<div class="container doku" style="max-width: 900px;">
+
+  <h2 class="mb-3">Wie diese Anwendung funktioniert</h2>
+  <p class="lead">
+    Sie sagt voraus, wie viele Parkplätze in den Parkhäusern von Luzern, Basel,
+    Bern, Zürich und St. Gallen in 1, 2, 4 und 8 Stunden frei sein werden — und
+    misst laufend nach, wie gut diese Vorhersagen tatsächlich waren.
+  </p>
+
+  <div class="card mb-4"><div class="card-body">
+    <h5 class="card-title">Die drei Seiten</h5>
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Prognose</dt>
+      <dd class="col-sm-9">Pro Parkhaus die Veränderung der letzten 2 Stunden,
+        der aktuelle Stand und die Vorhersage für die nächsten 8 Stunden.
+        Ein Klick auf eine Zeile zeigt den Tagesverlauf mit Wetter und Events.</dd>
+      <dt class="col-sm-3">Genauigkeit</dt>
+      <dd class="col-sm-9">Wie stark die Prognosen im Schnitt danebenlagen —
+        pro Parkhaus, pro Stadt und insgesamt.</dd>
+      <dt class="col-sm-3">Chat-Assistent</dt>
+      <dd class="col-sm-9">Fragen in normaler Sprache stellen, etwa
+        «Wo parke ich morgen um 19 Uhr in Luzern?».</dd>
+    </dl>
+  </div></div>
+
+  <h4>Woher die Daten kommen</h4>
+  <table class="table table-sm">
+    <thead><tr><th>Daten</th><th>Quelle</th><th>Wie oft</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Belegung</strong><br><small class="text-muted">freie und
+          gesamte Plätze je Parkhaus</small></td>
+        <td>Die offiziellen Parkleitsysteme der fünf Städte
+          (Luzern PLS, Basel und Zürich über ParkenDD, St. Gallen Open Data,
+          Bern XML-Schnittstelle)</td>
+        <td>alle 15 Minuten</td>
+      </tr>
+      <tr>
+        <td><strong>Wetter</strong><br><small class="text-muted">Temperatur,
+          Niederschlag</small></td>
+        <td><a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>,
+          stündlich je Stadt — Vergangenheit und 7-Tage-Vorhersage</td>
+        <td>zweimal täglich</td>
+      </tr>
+      <tr>
+        <td><strong>Veranstaltungen</strong></td>
+        <td>Theater, Konzerte und ähnliche Anlässe mit den betroffenen
+          Parkhäusern</td>
+        <td>zweimal täglich</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-warning">
+    <strong>Einschränkung bei den Events:</strong> die Veranstaltungen stammen
+    derzeit nicht aus einer echten Event-Datenbank, sondern werden nach einem
+    festen Muster erzeugt (wiederkehrende Termine für Stadttheater und KKL
+    Luzern sowie Theater 11 Zürich, jeweils Freitag bis Sonntag). Sie bilden
+    also den typischen Wochenrhythmus ab, nicht das tatsächliche Programm.
+    Für die anderen Städte sind gar keine Events erfasst.
+  </div>
+
+  <h4>Wo künstliche Intelligenz eingesetzt wird — und wo nicht</h4>
+  <p>
+    Der Kern ist ein <strong>maschinelles Lernverfahren</strong> (Gradient
+    Boosting, konkret LightGBM), das aus der bisherigen Historie gelernt hat,
+    wie sich die Belegung entwickelt. Es gibt vier eigene Modelle, je eines für
+    1, 2, 4 und 8 Stunden im Voraus — weil eine Vorhersage über eine Stunde
+    ganz anderen Mustern folgt als eine über acht.
+  </p>
+  <p>Was die Modelle als Anhaltspunkte verwenden:</p>
+  <ul>
+    <li>den <strong>aktuellen Stand</strong> und die Werte von vor 1, 2 und 24
+      Stunden sowie von vor einer Woche</li>
+    <li><strong>Uhrzeit und Wochentag</strong> des Zielzeitpunkts</li>
+    <li>den <strong>üblichen Wert</strong> dieses Parkhauses zu dieser Zeit</li>
+    <li><strong>Wetter</strong> zum Zielzeitpunkt (Temperatur, Regen)</li>
+    <li><strong>Veranstaltungen</strong>, die dieses Parkhaus betreffen</li>
+    <li>welches <strong>Parkhaus</strong> und welche Stadt es ist</li>
+  </ul>
+  <p>
+    Zum Vergleich läuft immer ein bewusst einfaches <strong>Basismodell</strong>
+    mit: es nimmt schlicht den Durchschnitt dieses Parkhauses zu dieser Uhrzeit
+    an diesem Wochentag. So lässt sich auf der Seite «Genauigkeit» jederzeit
+    ablesen, wie viel das gelernte Modell tatsächlich besser ist — statt es
+    einfach behaupten zu müssen.
+  </p>
+
+  <div class="alert alert-secondary">
+    <strong>Der Chat-Assistent ist keine KI.</strong> Er erkennt Fragen über
+    feste Regeln und Schlüsselwörter und beantwortet sie aus der Datenbank. Er
+    versteht «Wo parke ich morgen um 19 Uhr in Luzern?», scheitert aber an frei
+    formulierten Fragen ausserhalb seiner Muster. Er ist so gebaut, dass später
+    ein Sprachmodell dahintergehängt werden kann.
+  </div>
+
+  <h4>Wie gut die Prognosen sind</h4>
+  <p>
+    Jede erzeugte Prognose wird gespeichert und später mit dem tatsächlich
+    gemessenen Wert verglichen. Angegeben ist der <strong>mittlere Fehler in
+    Parkplätzen</strong>: «±6» heisst, die Vorhersage lag im Schnitt um sechs
+    Plätze daneben — mal darüber, mal darunter.
+  </p>
+  <p>
+    Je weiter in die Zukunft, desto ungenauer. Aktuelle Werte über alle Städte
+    (die Seite <a href="/accuracy.html">Genauigkeit</a> zeigt den Live-Stand):
+  </p>
+  <table class="table table-sm w-auto">
+    <thead><tr><th>Vorhersage</th><th class="text-end">gelerntes Modell</th>
+      <th class="text-end">einfacher Durchschnitt</th></tr></thead>
+    <tbody>
+      <tr><td>+1 Stunde</td><td class="text-end">±6</td><td class="text-end">±34</td></tr>
+      <tr><td>+2 Stunden</td><td class="text-end">±11</td><td class="text-end">±34</td></tr>
+      <tr><td>+4 Stunden</td><td class="text-end">±20</td><td class="text-end">±34</td></tr>
+      <tr><td>+8 Stunden</td><td class="text-end">±26</td><td class="text-end">±34</td></tr>
+    </tbody>
+  </table>
+  <p class="text-muted small">
+    Grosse Parkhäuser haben naturgemäss grössere absolute Fehler als kleine.
+    Auf der Genauigkeitsseite steht deshalb zusätzlich der Fehler in
+    Belegungsprozent, der sich über verschieden grosse Häuser vergleichen lässt.
+  </p>
+
+  <hr class="my-5">
+
+  <h3>Technische Details</h3>
+  <p class="text-muted">Ab hier wird es konkret — für alle, die es genauer wissen wollen.</p>
+
+  <h5 class="mt-4">Verarbeitungskette</h5>
+  <ol>
+    <li><strong>Scanner</strong> (eigener Dienst) holt alle 15 Minuten die
+      Stadt-APIs ab und schreibt nach <code>pls_fetch_current</code>
+      (<code>day, fetch_ts, city, id, name, free, total</code>).</li>
+    <li><strong>Rasterung:</strong> die Messwerte werden auf ein striktes
+      15-Minuten-Raster gelegt (letzter Wert je Slot). Lücken bis zu einer
+      Stunde werden fortgeschrieben, längere bleiben leer und fallen aus dem
+      Training heraus.</li>
+    <li><strong>Zielgrösse</strong> ist nicht die Zahl freier Plätze, sondern
+      die <em>Belegungsquote</em> <code>(total − free) / total</code> zwischen 0
+      und 1. Nur so lässt sich ein gemeinsames Modell über Häuser mit 50 und
+      mit 1100 Plätzen trainieren. Zurückgerechnet wird über das zuletzt
+      bekannte <code>total</code>.</li>
+    <li><strong>Prognose</strong> alle 15 Minuten für jedes Parkhaus × 4
+      Horizonte × 2 Modelle, gespeichert in <code>ai_predictions</code>.</li>
+    <li><strong>Auswertung</strong> alle 15 Minuten: gereifte Prognosen werden
+      dem nächstgelegenen Messwert innerhalb von ±20 Minuten zugeordnet, der
+      Fehler berechnet und in <code>ai_accuracy_daily</code> verdichtet.</li>
+  </ol>
+
+  <h5 class="mt-4">Modell</h5>
+  <ul>
+    <li><strong>LightGBM</strong>, Zielfunktion <code>regression_l1</code>
+      (robust gegen Ausreisser), 600 Bäume. Fällt die Bibliothek aus, springt
+      automatisch <code>HistGradientBoostingRegressor</code> aus scikit-learn ein.</li>
+    <li><strong>Ein globales Modell pro Horizont</strong> über alle Städte, mit
+      Parkhaus und Stadt als kategoriale Merkmale. Ein einzelnes Haus liefert
+      nur rund 96 Messwerte pro Tag — gemeinsam gelernt profitieren kleine
+      Häuser von den Mustern der grossen.</li>
+    <li><strong>Merkmale:</strong> Stunde, Viertelstunde, Wochentag, Monat
+      (auch als Sinus/Kosinus), Belegung jetzt sowie vor 1 h, 2 h, 24 h und
+      7 Tagen, Veränderung der letzten Stunde, gleitende Mittel über 3 h und
+      24 h samt Streuung, saisonaler Erwartungswert, Temperatur, Niederschlag,
+      Regen-Flag, Event aktiv / in Kürze / Zuschlag, Stadt, Parkhaus,
+      <code>log(total)</code>. Fehlende Werte bleiben fehlend — beide
+      Bibliotheken kommen damit nativ zurecht.</li>
+    <li><strong>Training</strong> nachts um 03:30 über die letzten 120 Tage
+      (auf kleinen Servern per <code>AI_TRAIN_DAYS</code> reduzierbar). Die
+      letzten 14 Tage dienen als Testfenster und fliessen nicht ins Lernen ein.</li>
+    <li><strong>Absicherung:</strong> ein frisch trainiertes Modell wird nur
+      aktiv, wenn es höchstens 10 % schlechter ist als das laufende. Nach einem
+      Datenausfall verdrängt so kein schlechtes Modell ein gutes.</li>
+  </ul>
+
+  <h5 class="mt-4">Basismodell</h5>
+  <p>
+    Mittelwert der Belegung je (Parkhaus, Wochentag, Stunde, Viertelstunde) über
+    acht Wochen, mit Rückfallkette auf Stundenmittel, Stadtmittel und
+    Hausmittel. Dazu additive Zuschläge für aktive Events und für Regen über
+    0,5 mm. Bewusst simpel — es ist der Massstab, nicht der Kandidat.
+  </p>
+
+  <h5 class="mt-4">Fehlermasse</h5>
+  <ul>
+    <li><strong>MAE in Plätzen</strong> — anschaulich, aber abhängig von der
+      Hausgrösse.</li>
+    <li><strong>MAE in Belegungsprozentpunkten</strong> — über verschieden
+      grosse Häuser vergleichbar.</li>
+    <li><strong>Bias</strong> — zeigt systematisches Über- oder Unterschätzen.</li>
+    <li><strong>Skill-Score</strong> <code>1 − MAE(Modell) / MAE(Basis)</code>:
+      0,84 heisst 84 % weniger Fehler als der einfache Durchschnitt.</li>
+    <li>Bewusst <em>kein</em> MAPE: zur Stosszeit geht die Zahl freier Plätze
+      gegen null, und der prozentuale Fehler würde ins Unendliche laufen.</li>
+  </ul>
+
+  <h5 class="mt-4">Parkhaus-Zuordnung</h5>
+  <p>
+    Messwerte und Stammdaten verwenden nicht dieselben Kennungen: in Basel und
+    Zürich stimmen sie überein, Luzern und St. Gallen liefern Kürzel wie
+    <code>SP03</code>, und Bern dreht die Wortreihenfolge um («Bahnhof Parking»
+    gegenüber «Bern Parkhaus Bahnhof»). Die Zuordnung geschieht deshalb an einer
+    einzigen Stelle über exakte Kennung, Namensvergleich und Wortmengen-Abgleich
+    und liegt in <code>ai_parkhaus_map</code>. Häuser ohne Treffer werden
+    trotzdem prognostiziert, nur ohne Event-Bezug.
+  </p>
+
+  <h5 class="mt-4">Schnittstelle</h5>
+  <p>Alle Endpunkte akzeptieren <code>?env=prod|test</code>. Vollständige,
+    interaktive Beschreibung unter <a href="/docs" target="_blank">/docs</a>.</p>
+  <table class="table table-sm">
+    <tbody>
+      <tr><td><code>/api/forecast/current/{stadt}</code></td><td>Aktuelle Werte und Prognosen aller Häuser</td></tr>
+      <tr><td><code>/api/forecast/parkhaus/{stadt}/{id}</code></td><td>Verlauf und Prognosen eines Hauses</td></tr>
+      <tr><td><code>/api/forecast/best/{stadt}</code></td><td>Empfehlung für einen Zeitpunkt</td></tr>
+      <tr><td><code>/api/accuracy/summary</code></td><td>Genauigkeit gesamt und je Stadt</td></tr>
+      <tr><td><code>/api/accuracy/timeseries</code></td><td>Verlauf der Genauigkeit</td></tr>
+      <tr><td><code>/api/chat</code></td><td>Chat-Assistent (POST)</td></tr>
+      <tr><td><code>/api/health</code></td><td>Zustand, aktive Modelle, Job-Zeiten</td></tr>
+    </tbody>
+  </table>
+
+  <h5 class="mt-4">Technischer Aufbau</h5>
+  <p>
+    Python mit FastAPI und uvicorn auf Port 8080, Datenhaltung in MariaDB,
+    Oberfläche als statisches HTML mit Bootstrap und Chart.js ohne Build-Schritt.
+    Die Hintergrundaufgaben (Prognose, Auswertung, Zuordnung, Training) laufen
+    über APScheduler im selben Prozess, fest auf die Zeitzone Europe/Zurich
+    gesetzt. Die Anwendung liest die bestehenden Tabellen nur und schreibt
+    ausschliesslich in eigene Tabellen mit dem Präfix <code>ai_</code>.
+  </p>
+
+  <footer class="text-muted small py-4">FastAPI-ML · Version 2026-07-30</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+</body>
+</html>

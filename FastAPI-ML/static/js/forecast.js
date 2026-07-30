@@ -30,11 +30,17 @@ function horizonCell(house, h) {
 function historyCell(house, offset) {
   const entry = house.history?.[offset];
   if (!entry) return '<td class="text-end text-muted">–</td>';
+  // delta = frei jetzt minus frei damals:
+  //   positiv  -> Autos sind weggefahren, mehr Platz  -> gruen
+  //   negativ  -> Autos sind dazugekommen, weniger Platz -> rot
   const d = entry.delta;
   const arrow = d > 0 ? '▲' : (d < 0 ? '▼' : '=');
   const cls = d > 0 ? 'delta-up' : (d < 0 ? 'delta-down' : 'text-muted');
   const title = `vor ${offset} h: ${entry.free} frei (${fmtTs(entry.ts)})`;
-  return `<td class="text-end ${cls}" title="${title}">${arrow}${d === 0 ? '' : Math.abs(d)}</td>`;
+  // Klasse am span, nicht am td: Bootstrap setzt die Textfarbe der Zelle
+  // selbst und wuerde sie sonst ueberschreiben.
+  return `<td class="text-end" title="${title}">` +
+    `<span class="${cls}">${arrow}${d === 0 ? '' : Math.abs(d)}</span></td>`;
 }
 
 async function loadForecasts() {
