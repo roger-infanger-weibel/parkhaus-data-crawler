@@ -58,3 +58,8 @@ done
 echo
 echo "Logs ansehen:      journalctl -u parkhaus-fastapi-ml -f"
 echo "Dienst neustarten: systemctl restart parkhaus-fastapi-ml"
+echo
+echo "Port 8080 ist damit noch NICHT von aussen erreichbar. Zusaetzlich noetig:"
+echo "  firewall-cmd --permanent --add-port=8080/tcp && firewall-cmd --reload"
+echo "  sowie eine Regel fuer TCP 8080 im IONOS Cloud Panel."
+echo "Details: linux-cmd/README.md"
