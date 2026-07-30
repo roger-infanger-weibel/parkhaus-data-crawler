@@ -9,6 +9,8 @@
 # Startskripte beenden vorher jeweils den alten Prozess (pkill), es entstehen
 # also keine Doppelstarts.
 
+timedatectl set-timezone Europe/Zurich && date
+
 cd "$(dirname "$0")" || exit 1
 
 echo "=== Start $(date '+%Y-%m-%d %H:%M:%S') ==="
