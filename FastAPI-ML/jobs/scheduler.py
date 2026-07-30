@@ -15,6 +15,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 import config
+from core.timeutil import SWISS_TZ
 
 logger = logging.getLogger(__name__)
 
@@ -44,17 +45,21 @@ def start() -> AsyncIOScheduler:
 
     env = config.DEFAULT_ENV
     sched = AsyncIOScheduler(
-        job_defaults={"misfire_grace_time": 300, "coalesce": True, "max_instances": 1}
+        timezone=SWISS_TZ,
+        job_defaults={"misfire_grace_time": 300, "coalesce": True, "max_instances": 1},
     )
+    # Zeitzone explizit: der Server laeuft auf UTC, die Daten und now_local()
+    # aber auf Europe/Zurich - ohne das liefe das naechtliche Training um
+    # 05:30 statt 03:30 Ortszeit.
     sched.add_job(_wrap("predict", lambda: predict.run(env)),
-                  CronTrigger(minute="10,25,40,55"), id="predict")
+                  CronTrigger(minute="10,25,40,55", timezone=SWISS_TZ), id="predict")
     sched.add_job(_wrap("evaluate", lambda: evaluate.run(env)),
-                  CronTrigger(minute="13,28,43,58"), id="evaluate")
+                  CronTrigger(minute="13,28,43,58", timezone=SWISS_TZ), id="evaluate")
     sched.add_job(_wrap("mapping", lambda: build_mapping(env)),
-                  CronTrigger(hour=3, minute=15), id="mapping")
+                  CronTrigger(hour=3, minute=15, timezone=SWISS_TZ), id="mapping")
     if config.RETRAIN_ENABLED:
         sched.add_job(_wrap("retrain", lambda: train.run(env, config.TRAIN_DAYS)),
-                      CronTrigger(hour=3, minute=30), id="retrain")
+                      CronTrigger(hour=3, minute=30, timezone=SWISS_TZ), id="retrain")
     else:
         logger.info("Naechtliches Training deaktiviert (AI_RETRAIN_ENABLED=0)")
     sched.start()
