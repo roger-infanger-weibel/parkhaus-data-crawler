@@ -296,6 +296,7 @@
                 select.innerHTML = '<option value="all">All</option>';
 
                 groups.forEach((group, index) => {
+                    if (group.name === "All") return;
                     const option = document.createElement('option');
                     option.value = index;
                     option.text = group.name;
@@ -397,7 +398,9 @@
 
             function getSelectedParkings() {
                 const parkingSelect = document.getElementById('parking-select');
-                return Array.from(parkingSelect.selectedOptions).map(o => o.value);
+                const selected = Array.from(parkingSelect.selectedOptions).map(o => o.value);
+                if (selected.length === 0) return null;
+                return selected;
             }
 
             async function loadDates() {
@@ -627,10 +630,7 @@
                 const datasets = data.datasets;
                 const selectedParkings = getSelectedParkings();
 
-                let visibleParkings = null;
-                if (selectedParkings.length > 0) {
-                    visibleParkings = selectedParkings;
-                }
+                let visibleParkings = selectedParkings;
 
                 let filteredDatasets = datasets.map(ds => ({
                     ...ds,
