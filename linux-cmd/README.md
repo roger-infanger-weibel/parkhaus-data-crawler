@@ -123,6 +123,27 @@ Die alten Skripte `start-prod.sh`, `start-test.sh`, `start-flask.sh` und
 `start-fastapi-ml.sh` funktionieren weiterhin für manuelle Starts. Nicht
 gleichzeitig mit den systemd-Diensten verwenden, sonst laufen Prozesse doppelt.
 
+## Training immer mit Speicherlimit starten
+
+Ein Training ohne Limit kann den ganzen Server ins Swappen bringen. Dann
+reagiert nichts mehr — auch SSH nicht, und der Prozess lässt sich nicht mehr
+abbrechen. Deshalb **nie direkt** `python3 -m forecast.train` aufrufen, sondern:
+
+```bash
+cd /root/FastAPI-ML
+systemd-run --scope -p MemoryMax=1G --collect \
+  python3 -m forecast.train --env prod
+```
+
+`systemd-run --scope` braucht keine Service-Datei und funktioniert auf jedem
+systemd-System. Reisst das Training das Limit, killt der Kernel nur diesen
+einen Prozess — der Server bleibt bedienbar. Dasselbe danach mit `--env test`.
+
+Voraussetzung ist der aktuelle Codestand: seit dem Streaming-Fix werden die
+Messwerte stadtweise geladen (~123 MB statt mehrerer GB). **Vorher unbedingt
+`git pull`** — mit dem alten Stand läuft der Server auch mit Limit in einen
+Abbruch.
+
 ## Speicher: das Training kann den Server lahmlegen
 
 Das Modelltraining hält das gesamte Zeitfenster im Arbeitsspeicher:
