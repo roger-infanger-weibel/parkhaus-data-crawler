@@ -1,0 +1,89 @@
+{
+  "status": "success",
+  "city": "bern",
+  "data": {
+    "parkings": {
+      "p01": {
+        "id": "p01",
+        "name": "Bahnhof Parking",
+        "free": 122,
+        "total": 600,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p03": {
+        "id": "p03",
+        "name": "Rathaus Parking",
+        "free": 261,
+        "total": 490,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p02": {
+        "id": "p02",
+        "name": "Metro Parking",
+        "free": 41,
+        "total": 425,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p05": {
+        "id": "p05",
+        "name": "Mobiliar Parking",
+        "free": 16,
+        "total": 85,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p04": {
+        "id": "p04",
+        "name": "Parking City West",
+        "free": 158,
+        "total": 419,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p_r": {
+        "id": "p_r",
+        "name": "Park + Ride Neufeld",
+        "free": 119,
+        "total": 600,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p06": {
+        "id": "p06",
+        "name": "Casinoparking",
+        "free": 103,
+        "total": 448,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p08": {
+        "id": "p08",
+        "name": "Expo Parking",
+        "free": 597,
+        "total": 618,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p10": {
+        "id": "p10",
+        "name": "Kursaal Parking",
+        "free": 142,
+        "total": 257,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      },
+      "p01b": {
+        "id": "p01b",
+        "name": "SBB Kurzparking",
+        "free": 22,
+        "total": 83,
+        "status": "open",
+        "timestamp": "2026-07-15T14:55:47"
+      }
+    }
+  },
+  "timestamp": "2026-07-15T14:55:47"
+}

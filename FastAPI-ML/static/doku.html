@@ -232,6 +232,74 @@
     trotzdem prognostiziert, nur ohne Event-Bezug.
   </p>
 
+  <h5 class="mt-4">Tabellen in der Datenbank</h5>
+  <p>
+    MariaDB, zweimal parallel vorhanden: <code>ph_fetch_prod</code> für den
+    Betrieb und <code>ph_fetch_test</code> zum Erproben neuer Scanner-Versionen.
+    Die Umschaltung oben rechts wählt zwischen beiden.
+  </p>
+
+  <p class="mb-1"><strong>Vom Scanner befüllt</strong> — die KI-Anwendung liest
+    diese Tabellen nur:</p>
+  <table class="table table-sm">
+    <thead><tr><th>Tabelle</th><th>Inhalt</th><th class="text-end">Umfang</th></tr></thead>
+    <tbody>
+      <tr><td><code>pls_fetch_current</code></td>
+        <td>Alle Messwerte: <code>day, fetch_ts, city, id, name, free, total</code>.
+          Schlüssel ist (Tag, Stadt, Parkhaus, Zeitstempel). Herzstück der Historie.</td>
+        <td class="text-end">~1,5 Mio.</td></tr>
+      <tr><td><code>weather_forecasts</code></td>
+        <td>Stundenwetter je Stadt: <code>city_id, timestamp, temperature,
+          precipitation</code> — Vergangenheit und Vorhersage in derselben Tabelle.</td>
+        <td class="text-end">~26 000</td></tr>
+      <tr><td><code>local_events</code></td>
+        <td>Veranstaltungen mit Beginn, Ende, Kategorie und einem Zuschlag
+          <code>peak_occupancy_bonus</code> für die erwartete Mehrbelegung.</td>
+        <td class="text-end">160</td></tr>
+      <tr><td><code>event_parkhaus</code></td>
+        <td>Zuordnung, welche Parkhäuser ein Event betrifft.</td>
+        <td class="text-end">448</td></tr>
+      <tr><td><code>cities</code></td>
+        <td>Die fünf Städte mit Koordinaten und der jeweiligen API-Adresse.</td>
+        <td class="text-end">5</td></tr>
+      <tr><td><code>parkhaeuser</code></td>
+        <td>Stammdaten der Parkhäuser inklusive Gruppierung
+          (<code>parking_group</code>).</td>
+        <td class="text-end">85</td></tr>
+      <tr><td><code>log</code></td>
+        <td>Protokoll der Scanner-Läufe.</td>
+        <td class="text-end">~88 000</td></tr>
+      <tr><td><code>view_parkhaus_sax_strings</code></td>
+        <td>Sicht, die Tagesverläufe als Zeichenkette abbildet (SAX-Kodierung) —
+          wird von dieser Anwendung nicht verwendet.</td>
+        <td class="text-end">~15 000</td></tr>
+    </tbody>
+  </table>
+
+  <p class="mb-1"><strong>Von der KI-Anwendung angelegt</strong> — alle mit dem
+    Präfix <code>ai_</code>, damit die beiden Systeme sauber getrennt bleiben:</p>
+  <table class="table table-sm">
+    <thead><tr><th>Tabelle</th><th>Inhalt</th></tr></thead>
+    <tbody>
+      <tr><td><code>ai_predictions</code></td>
+        <td>Jede erzeugte Prognose mit Entstehungszeit, Zielzeit, Horizont und
+          Modell — und, sobald der Zeitpunkt vorbei ist, der tatsächlich
+          gemessene Wert samt Abweichung. Hier entsteht das Genauigkeits-Monitoring.</td></tr>
+      <tr><td><code>ai_accuracy_daily</code></td>
+        <td>Tagesweise verdichtete Fehlerwerte je Parkhaus, je Stadt und
+          insgesamt. Die Genauigkeitsseite liest nur diese Tabelle, nicht die
+          Millionen Einzelprognosen.</td></tr>
+      <tr><td><code>ai_model_runs</code></td>
+        <td>Jeder Trainingslauf mit Zeitpunkt, Datenmenge, Testfehler und dem
+          Vermerk, welches Modell gerade aktiv ist.</td></tr>
+      <tr><td><code>ai_parkhaus_map</code></td>
+        <td>Die Zuordnung zwischen den Kennungen der Messwerte und jenen der
+          Stammdaten, samt verwendeter Methode.</td></tr>
+      <tr><td><code>ai_chat_log</code></td>
+        <td>Verlauf des Chat-Assistenten mit erkannter Absicht.</td></tr>
+    </tbody>
+  </table>
+
   <h5 class="mt-4">Schnittstelle</h5>
   <p>Alle Endpunkte akzeptieren <code>?env=prod|test</code>. Vollständige,
     interaktive Beschreibung unter <a href="/docs" target="_blank">/docs</a>.</p>

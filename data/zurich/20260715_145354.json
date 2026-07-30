@@ -1,0 +1,297 @@
+{
+  "status": "success",
+  "city": "zurich",
+  "data": {
+    "parkings": {
+      "zuerichparkhausaccu": {
+        "id": "zuerichparkhausaccu",
+        "name": "Accu",
+        "free": 0,
+        "total": 194,
+        "status": "nodata",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausalbisriederplatz": {
+        "id": "zuerichparkhausalbisriederplatz",
+        "name": "Albisriederplatz",
+        "free": 49,
+        "total": 66,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausbleicherweg": {
+        "id": "zuerichparkhausbleicherweg",
+        "name": "Bleicherweg",
+        "free": 13,
+        "total": 275,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhauscentereleven": {
+        "id": "zuerichparkhauscentereleven",
+        "name": "Center Eleven",
+        "free": 0,
+        "total": 342,
+        "status": "nodata",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhauscityparking": {
+        "id": "zuerichparkhauscityparking",
+        "name": "City Parking",
+        "free": 241,
+        "total": 620,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhauscityport": {
+        "id": "zuerichparkhauscityport",
+        "name": "Cityport",
+        "free": 0,
+        "total": 153,
+        "status": "nodata",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhauscrowneplaza": {
+        "id": "zuerichparkhauscrowneplaza",
+        "name": "Crowne Plaza",
+        "free": 66,
+        "total": 520,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausdorflinde": {
+        "id": "zuerichparkhausdorflinde",
+        "name": "Dorflinde",
+        "free": 30,
+        "total": 98,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausfeldegg": {
+        "id": "zuerichparkhausfeldegg",
+        "name": "Feldegg",
+        "free": 53,
+        "total": 346,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausglobus": {
+        "id": "zuerichparkhausglobus",
+        "name": "Globus",
+        "free": 3,
+        "total": 178,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhaushardauii": {
+        "id": "zuerichparkhaushardauii",
+        "name": "Hardau II",
+        "free": 67,
+        "total": 982,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhaushauptbahnhof": {
+        "id": "zuerichparkhaushauptbahnhof",
+        "name": "Hauptbahnhof",
+        "free": 93,
+        "total": 176,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhaushelvetiaplatz": {
+        "id": "zuerichparkhaushelvetiaplatz",
+        "name": "Helvetiaplatz",
+        "free": 44,
+        "total": 0,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhaushohepromenade": {
+        "id": "zuerichparkhaushohepromenade",
+        "name": "Hohe Promenade",
+        "free": 262,
+        "total": 556,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausjelmoli": {
+        "id": "zuerichparkhausjelmoli",
+        "name": "Jelmoli",
+        "free": 57,
+        "total": 222,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausjungholz": {
+        "id": "zuerichparkhausjungholz",
+        "name": "Jungholz",
+        "free": 0,
+        "total": 124,
+        "status": "nodata",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausmaxbillplatz": {
+        "id": "zuerichparkhausmaxbillplatz",
+        "name": "Max-Bill-Platz",
+        "free": 0,
+        "total": 59,
+        "status": "nodata",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausmessezuerichag": {
+        "id": "zuerichparkhausmessezuerichag",
+        "name": "Messe Zürich AG",
+        "free": 999,
+        "total": 2000,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausnordhaus": {
+        "id": "zuerichparkhausnordhaus",
+        "name": "Nordhaus",
+        "free": 89,
+        "total": 175,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausoctavo": {
+        "id": "zuerichparkhausoctavo",
+        "name": "Octavo",
+        "free": 0,
+        "total": 123,
+        "status": "nodata",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausopéra": {
+        "id": "zuerichparkhausopéra",
+        "name": "Opéra",
+        "free": 47,
+        "total": 299,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhauspwest": {
+        "id": "zuerichparkhauspwest",
+        "name": "P West",
+        "free": 399,
+        "total": 1000,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausparkhyatt": {
+        "id": "zuerichparkhausparkhyatt",
+        "name": "Park Hyatt",
+        "free": 117,
+        "total": 267,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausparkside": {
+        "id": "zuerichparkhausparkside",
+        "name": "Parkside",
+        "free": 0,
+        "total": 38,
+        "status": "nodata",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhauspfingstweid": {
+        "id": "zuerichparkhauspfingstweid",
+        "name": "Pfingstweid",
+        "free": 146,
+        "total": 276,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausstampfenbach": {
+        "id": "zuerichparkhausstampfenbach",
+        "name": "Stampfenbach",
+        "free": 92,
+        "total": 237,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhaustalgarten": {
+        "id": "zuerichparkhaustalgarten",
+        "name": "Talgarten",
+        "free": 0,
+        "total": 110,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhaususznord": {
+        "id": "zuerichparkhaususznord",
+        "name": "USZ Nord",
+        "free": 0,
+        "total": 90,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausuniirchel": {
+        "id": "zuerichparkhausuniirchel",
+        "name": "Uni Irchel",
+        "free": 336,
+        "total": 1227,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausurania": {
+        "id": "zuerichparkhausurania",
+        "name": "Urania",
+        "free": 19,
+        "total": 607,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhausutoquai": {
+        "id": "zuerichparkhausutoquai",
+        "name": "Utoquai",
+        "free": 12,
+        "total": 175,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhauszueri11shopping": {
+        "id": "zuerichparkhauszueri11shopping",
+        "name": "Züri 11 Shopping",
+        "free": 62,
+        "total": 60,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkhauszuerichhorn": {
+        "id": "zuerichparkhauszuerichhorn",
+        "name": "Zürichhorn",
+        "free": 27,
+        "total": 245,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkplatztheater11": {
+        "id": "zuerichparkplatztheater11",
+        "name": "Theater 11",
+        "free": 148,
+        "total": 188,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichparkplatzuszsued": {
+        "id": "zuerichparkplatzuszsued",
+        "name": "USZ Süd",
+        "free": 0,
+        "total": 80,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      },
+      "zuerichpuls5parkgarage": {
+        "id": "zuerichpuls5parkgarage",
+        "name": "Puls 5 Parkgarage",
+        "free": 22,
+        "total": 0,
+        "status": "open",
+        "timestamp": "2026-07-15T10:11:37"
+      }
+    }
+  },
+  "timestamp": "2026-07-15T14:53:54.183130"
+}

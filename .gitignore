@@ -5,3 +5,5 @@ nohup.out
 fastapi-ml.log
 FastAPI-ML/models_store/*.joblib
 .pytest_cache/
+start-all.log
+fastapi-ml.log

@@ -22,7 +22,11 @@ function horizonCell(house, h) {
   const entry = house.horizons?.[h]?.[model()];
   if (!entry) return '<td class="text-end text-muted">–</td>';
   const cls = freeBadgeClass(entry.free, house.total);
-  return `<td class="text-end"><span class="badge ${cls}">${entry.free}</span></td>`;
+  // Zielzeit in den Tooltip: die Spalte heisst "+1 h", gemeint ist aber immer
+  // eine Stunde nach dem Prognosestand - nicht nach jetzt.
+  const title = `Prognose für ${fmtTs(entry.target_time)} Uhr`;
+  return `<td class="text-end" title="${title}">` +
+    `<span class="badge ${cls}">${entry.free}</span></td>`;
 }
 
 // Rueckblick: nur die Veraenderung bis jetzt. Der Ist-Wert von damals steht
@@ -47,8 +51,26 @@ async function loadForecasts() {
   const city = document.getElementById('city-select').value;
   const data = await Api.get(`/api/forecast/current/${city}`);
   current = data;
-  document.getElementById('slot-info').textContent =
-    data.slot ? `Prognosestand: ${fmtTs(data.slot)} Uhr` : 'Noch keine Prognosen vorhanden';
+  // Veraltete Prognosen deutlich kennzeichnen: die Spalten "+1 h" usw. zaehlen
+  // ab dem Prognosestand. Ist der alt, zeigen sie einen laengst vergangenen
+  // Zeitpunkt neben dem aktuellen Ist-Wert - das liest sich sonst wie ein
+  // dramatischer Einbruch, der gar keiner ist.
+  const info = document.getElementById('slot-info');
+  if (!data.slot) {
+    info.className = 'col-auto ms-auto text-danger small';
+    info.textContent = 'Noch keine Prognosen vorhanden';
+  } else {
+    const ageMin = Math.round((Date.now() - new Date(data.slot)) / 60000);
+    if (ageMin > 30) {
+      info.className = 'col-auto ms-auto text-danger small fw-semibold';
+      info.textContent = `⚠️ Prognose veraltet: Stand ${fmtTs(data.slot)} Uhr ` +
+        `(${ageMin} Min alt). Die Spalten +1 h bis +8 h zählen ab diesem ` +
+        `Zeitpunkt, nicht ab jetzt.`;
+    } else {
+      info.className = 'col-auto ms-auto text-muted small';
+      info.textContent = `Prognosestand: ${fmtTs(data.slot)} Uhr`;
+    }
+  }
   const rows = data.houses.map(h => `
     <tr data-pls="${h.pls_id}">
       <td>${h.name}${h.group ? `<br><small class="text-muted">${h.group}</small>` : ''}</td>
