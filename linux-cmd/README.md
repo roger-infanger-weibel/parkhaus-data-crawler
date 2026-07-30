@@ -36,7 +36,28 @@ An den Daten ändert sich nichts:
 - Die Datenbank läuft auf einem eigenen Host (94.231.94.132, bereits CEST)
   und ist von der Umstellung gar nicht betroffen.
 
-## Einmalige Einrichtung: Autostart
+## Autostart – einfache Variante (crontab)
+
+Alle vier Startskripte nach dem Booten ausführen, mehr nicht:
+
+```bash
+cp linux-cmd/start-all.sh /root/ && chmod +x /root/start-all.sh
+crontab -e
+```
+
+Diese eine Zeile eintragen:
+
+```
+@reboot sleep 60 && /root/start-all.sh >> /root/start-all.log 2>&1
+```
+
+Das `sleep 60` gibt dem Netzwerk Zeit, sonst scheitert der erste
+Datenbankzugriff. Testen ohne Reboot: `/root/start-all.sh` — die Skripte
+beenden jeweils den alten Prozess, es entstehen keine Doppelstarts.
+
+Prüfen, was der Autostart gemacht hat: `cat /root/start-all.log`.
+
+## Autostart – Variante mit systemd
 
 ```bash
 cd /root && bash linux-cmd/install-systemd.sh
