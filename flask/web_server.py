@@ -44,33 +44,51 @@ def get_cities():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def _normalize_name(name):
+    """Lowercase and strip all non-alphanumeric chars for fuzzy name matching."""
+    return ''.join(ch for ch in name.lower() if ch.isalnum())
+
 @app.route('/api/groups/<city>')
 def get_groups(city):
     try:
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
-            SELECT p.id AS parkhaus_id, p.name AS full_name, p.parking_group,
-                   pf.name AS short_name
-            FROM parkhaeuser p
-            LEFT JOIN (
-                SELECT id, name FROM pls_fetch_current
-                WHERE city = %s
-                GROUP BY id, name
-            ) pf ON pf.id = p.id
-            WHERE p.city_id = %s AND p.is_active = 1
-            ORDER BY p.parking_group, p.name
-        """, (city, city))
-        rows = cursor.fetchall()
+            SELECT id, name, parking_group
+            FROM parkhaeuser
+            WHERE city_id = %s AND is_active = 1
+            ORDER BY parking_group, name
+        """, (city,))
+        parkhaeuser = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT DISTINCT id, name FROM pls_fetch_current
+            WHERE city = %s
+        """, (city,))
+        pls_rows = cursor.fetchall()
         conn.close()
 
+        # Primary lookup: pls id == parkhaeuser id (works for Basel)
+        pls_by_id = {r['id']: r['name'] for r in pls_rows}
+
+        # Fallback: normalized short name contained in normalized full name/id
+        # (Luzern: pls id "SP03" vs parkhaeuser id "luzernparkhauskantonalbank")
+        pls_normalized = [(r['name'], _normalize_name(r['name'])) for r in pls_rows]
+
         groups = {}
-        for row in rows:
+        for row in parkhaeuser:
+            display_name = pls_by_id.get(row['id'])
+            if not display_name:
+                target = _normalize_name(row['name']) + _normalize_name(row['id'])
+                best = None
+                for short_name, norm in pls_normalized:
+                    if norm and norm in target:
+                        if best is None or len(norm) > len(_normalize_name(best)):
+                            best = short_name
+                display_name = best or row['name']
+
             group_name = row['parking_group'] or 'Andere'
-            if group_name not in groups:
-                groups[group_name] = []
-            display_name = row['short_name'] or row['full_name']
-            groups[group_name].append(display_name)
+            groups.setdefault(group_name, []).append(display_name)
 
         result = [{"name": name, "parkings": parkings} for name, parkings in groups.items()]
         result.append({"name": "All", "parkings": []})
