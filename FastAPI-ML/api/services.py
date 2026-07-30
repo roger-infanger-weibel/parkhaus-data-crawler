@@ -20,11 +20,14 @@ def load_active_baseline(env: str) -> Optional[BaselineModel]:
     )
     if not rows:
         return None
-    path = rows[0]["artifact_path"]
-    model = _baseline_cache.get(path)
-    if model is None and Path(path).exists():
+    stored = rows[0]["artifact_path"]
+    model = _baseline_cache.get(stored)
+    if model is None:
+        path = config.artifact_file(stored)
+        if not path.exists():
+            return None
         model = BaselineModel.load(path)
-        _baseline_cache[path] = model
+        _baseline_cache[stored] = model
     return model
 
 

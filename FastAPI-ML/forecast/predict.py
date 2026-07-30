@@ -25,11 +25,15 @@ HISTORY_DAYS = 8  # fuer 7d-Lag + 24h-Rolling
 _artifact_cache: dict[str, object] = {}
 
 
-def _load_artifact(path: str, loader):
-    model = _artifact_cache.get(path)
-    if model is None and Path(path).exists():
+def _load_artifact(stored: str, loader):
+    model = _artifact_cache.get(stored)
+    if model is None:
+        path = config.artifact_file(stored)
+        if not path.exists():
+            logger.error("Modelldatei fehlt: %s - Modell wird uebersprungen", path)
+            return None
         model = loader(path)
-        _artifact_cache[path] = model
+        _artifact_cache[stored] = model
     return model
 
 
@@ -54,13 +58,19 @@ def run(env: Optional[str] = None) -> dict:
     grid = features.build_grid(env, t0 - timedelta(days=HISTORY_DAYS), t0 + timedelta(minutes=15))
     grid = features.add_series_features(grid)
 
-    # Der Scanner schreibt nicht exakt auf dem Raster (Offset kann driften):
-    # falls der aktuelle Slot noch leer ist, den letzten Slot mit Daten nehmen.
-    base_rows = grid[grid["slot"] == t0]
-    if base_rows.empty or base_rows["occ"].isna().all():
-        t0 = t0 - timedelta(minutes=15)
-        base_rows = grid[grid["slot"] == t0]
-    base_rows = base_rows[base_rows["occ"].notna()]
+    # Der Scanner schreibt nicht exakt auf dem Raster, und bei einer Stoerung
+    # koennen die letzten Slots ganz fehlen: immer den juengsten Slot nehmen,
+    # der tatsaechlich Messwerte hat. Wie alt der sein darf, begrenzt bereits
+    # latest_snapshots (max_age_hours).
+    with_data = grid[grid["occ"].notna() & (grid["slot"] <= t0)]
+    if with_data.empty:
+        logger.warning("Keine Rasterpunkte mit Messwerten - keine Prognosen")
+        return {"predictions": 0}
+    latest_slot = with_data["slot"].max()
+    if latest_slot != t0:
+        logger.info("Slot %s ohne Daten - verwende %s", t0, latest_slot)
+        t0 = latest_slot.to_pydatetime()
+    base_rows = with_data[with_data["slot"] == latest_slot]
     base_rows = base_rows[base_rows.apply(
         lambda r: (r["city"], r["pls_id"]) in fresh, axis=1)]
     if base_rows.empty:

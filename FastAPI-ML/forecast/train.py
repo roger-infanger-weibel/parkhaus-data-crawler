@@ -11,6 +11,7 @@ import argparse
 import gc
 import json
 import logging
+from pathlib import Path
 from datetime import timedelta
 from typing import Optional
 
@@ -60,7 +61,9 @@ def _insert_run(env, model_type, horizon_h, now, n_rows, train_from, train_to,
                 (model_type, horizon_h, now, n_rows, train_from, train_to,
                  None if np.isnan(mae_free) else round(mae_free, 3),
                  None if np.isnan(mae_occ) else round(mae_occ, 3),
-                 json.dumps(params), str(artifact_path)),
+                 # nur der Dateiname - so funktionieren Modelle auch, wenn sie
+                 # auf einer anderen Maschine trainiert und kopiert wurden
+                 json.dumps(params), Path(artifact_path).name),
             )
             run_id = cursor.lastrowid
         conn.commit()

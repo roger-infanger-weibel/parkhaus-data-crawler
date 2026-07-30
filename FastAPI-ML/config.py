@@ -45,6 +45,20 @@ RETRAIN_ENABLED = _flag("AI_RETRAIN_ENABLED")
 HORIZONS = (1, 2, 4, 8)  # Prognosehorizonte in Stunden
 
 
+def artifact_file(stored: str) -> Path:
+    """Modelldatei aus dem DB-Eintrag aufloesen.
+
+    In ai_model_runs steht nur der Dateiname, damit Modelle, die auf einer
+    anderen Maschine trainiert wurden, nach dem Kopieren nach models_store/
+    gefunden werden. Aeltere Eintraege mit absolutem Pfad werden akzeptiert,
+    solange die Datei dort existiert.
+    """
+    path = Path(stored)
+    if path.is_absolute() and path.exists():
+        return path
+    return MODELS_DIR / path.name
+
+
 def db_name(env: Optional[str] = None) -> str:
     """Datenbankname fuer 'prod' oder 'test' (Default: DEFAULT_ENV)."""
     env = (env or DEFAULT_ENV).lower()
