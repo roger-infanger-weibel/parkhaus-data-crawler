@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -20,7 +21,7 @@ def parkhaus(city: str, pls_id: str, hours: int = Query(24, ge=1, le=168),
 
 
 @router.get("/best/{city}")
-def best(city: str, at: str | None = None, min_free: int = Query(0, ge=0),
+def best(city: str, at: Optional[str] = None, min_free: int = Query(0, ge=0),
          env: str = Depends(get_env)):
     at_dt = None
     if at:

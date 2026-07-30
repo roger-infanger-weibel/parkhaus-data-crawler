@@ -5,6 +5,7 @@ sie macht ein globales Modell ueber Haeuser sehr unterschiedlicher Groesse
 moeglich. Rueckrechnung in freie Plaetze ueber das letzte bekannte total.
 """
 from datetime import datetime, timedelta
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -34,8 +35,8 @@ FEATURE_COLUMNS = [
 CATEGORICAL_COLUMNS = ["city", "pls_key"]
 
 
-def build_grid(env: str | None, start: datetime, end: datetime,
-               city: str | None = None, pls_id: str | None = None) -> pd.DataFrame:
+def build_grid(env: Optional[str], start: datetime, end: datetime,
+               city: Optional[str] = None, pls_id: Optional[str] = None) -> pd.DataFrame:
     """Belegung auf striktem 15-Min-Raster pro (city, pls_id).
 
     Luecken bis 1 h werden forward-gefuellt, laengere bleiben NaN.

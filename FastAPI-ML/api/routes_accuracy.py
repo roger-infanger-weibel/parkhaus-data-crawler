@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -65,7 +66,7 @@ def summary(days: int = Query(14, ge=1, le=120), env: str = Depends(get_env)):
 
 @router.get("/parkhaus/{city}")
 def per_parkhaus(city: str, days: int = Query(14, ge=1, le=120),
-                 horizon: int | None = Query(None),
+                 horizon: Optional[int] = Query(None),
                  env: str = Depends(get_env)):
     since = (now_local() - timedelta(days=days)).date()
     sql = """

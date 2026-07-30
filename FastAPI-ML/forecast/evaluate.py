@@ -10,6 +10,7 @@ import argparse
 import logging
 from bisect import bisect_left
 from datetime import timedelta
+from typing import Optional
 
 import config
 import db
@@ -21,7 +22,7 @@ TOLERANCE = timedelta(minutes=20)
 BATCH_LIMIT = 20000
 
 
-def _nearest(actuals: list[tuple], target) -> tuple | None:
+def _nearest(actuals: list[tuple], target) -> Optional[tuple]:
     """Naechster (fetch_ts, free, total)-Eintrag innerhalb der Toleranz."""
     if not actuals:
         return None
@@ -66,7 +67,7 @@ def _rebuild_daily(env, days: set) -> None:
             )
 
 
-def run(env: str | None = None) -> dict:
+def run(env: Optional[str] = None) -> dict:
     env = env or config.DEFAULT_ENV
     now = now_local()
     pending = db.query(

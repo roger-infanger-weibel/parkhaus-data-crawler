@@ -1,5 +1,6 @@
 """Alle Lese-Zugriffe auf die bestehenden Tabellen (read-only)."""
 from datetime import datetime, timedelta
+from typing import Optional
 
 import pandas as pd
 
@@ -7,13 +8,13 @@ import db
 from core.timeutil import now_local
 
 
-def get_cities(env: str | None = None) -> list[dict]:
+def get_cities(env: Optional[str] = None) -> list[dict]:
     return db.query(
         "SELECT id, name, latitude, longitude FROM cities ORDER BY name", env=env
     )
 
 
-def get_mapping(env: str | None = None, city: str | None = None) -> list[dict]:
+def get_mapping(env: Optional[str] = None, city: Optional[str] = None) -> list[dict]:
     """ai_parkhaus_map inkl. Gruppenname aus parkhaeuser."""
     sql = """
         SELECT m.city, m.pls_id, m.pls_name, m.parkhaus_id, m.match_method,
@@ -28,7 +29,7 @@ def get_mapping(env: str | None = None, city: str | None = None) -> list[dict]:
     return db.query(sql + " ORDER BY m.city, m.pls_name", params, env=env)
 
 
-def latest_snapshots(env: str | None = None, city: str | None = None,
+def latest_snapshots(env: Optional[str] = None, city: Optional[str] = None,
                      max_age_hours: int = 2) -> list[dict]:
     """Neuster Messwert pro (city, pls_id), nicht aelter als max_age_hours."""
     cutoff = now_local() - timedelta(hours=max_age_hours)
@@ -49,10 +50,10 @@ def latest_snapshots(env: str | None = None, city: str | None = None,
     return db.query(sql, tuple(params), env=env)
 
 
-def occupancy_history(env: str | None = None, start: datetime | None = None,
-                      end: datetime | None = None,
-                      city: str | None = None,
-                      pls_id: str | None = None) -> pd.DataFrame:
+def occupancy_history(env: Optional[str] = None, start: Optional[datetime] = None,
+                      end: Optional[datetime] = None,
+                      city: Optional[str] = None,
+                      pls_id: Optional[str] = None) -> pd.DataFrame:
     """Belegungs-Rohdaten als DataFrame [city, pls_id, fetch_ts, free, total]."""
     sql = """
         SELECT city, id AS pls_id, fetch_ts, free, total
@@ -79,9 +80,9 @@ def occupancy_history(env: str | None = None, start: datetime | None = None,
     return df
 
 
-def weather_range(env: str | None = None, start: datetime | None = None,
-                  end: datetime | None = None,
-                  city: str | None = None) -> pd.DataFrame:
+def weather_range(env: Optional[str] = None, start: Optional[datetime] = None,
+                  end: Optional[datetime] = None,
+                  city: Optional[str] = None) -> pd.DataFrame:
     """Stundenwetter als DataFrame [city, ts, temperature, precipitation]."""
     sql = """
         SELECT city_id AS city, timestamp AS ts, temperature, precipitation
@@ -107,9 +108,9 @@ def weather_range(env: str | None = None, start: datetime | None = None,
     return df
 
 
-def events_range(env: str | None = None, start: datetime | None = None,
-                 end: datetime | None = None,
-                 city: str | None = None) -> pd.DataFrame:
+def events_range(env: Optional[str] = None, start: Optional[datetime] = None,
+                 end: Optional[datetime] = None,
+                 city: Optional[str] = None) -> pd.DataFrame:
     """Events inkl. betroffener pls_ids (via ai_parkhaus_map).
 
     DataFrame [event_id, city, start_time, end_time, bonus, pls_id, title, venue, category]

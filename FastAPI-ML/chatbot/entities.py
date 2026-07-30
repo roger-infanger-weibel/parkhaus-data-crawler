@@ -2,6 +2,7 @@
 import re
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
+from typing import Optional
 
 from core.identity import normalize_name, normalize_wordset
 
@@ -32,7 +33,7 @@ def fold(text: str) -> str:
     )
 
 
-def extract_city(folded: str) -> str | None:
+def extract_city(folded: str) -> Optional[str]:
     for city, keywords in CITY_KEYWORDS.items():
         for kw in keywords:
             if re.search(r"\b" + re.escape(kw) + r"\b", folded):
@@ -40,7 +41,7 @@ def extract_city(folded: str) -> str | None:
     return None
 
 
-def extract_time(folded: str, now: datetime) -> dict | None:
+def extract_time(folded: str, now: datetime) -> Optional[dict]:
     """Zielzeitpunkt aus deutschem Text.
 
     Liefert {'at': datetime, 'explicit': bool} oder None, wenn kein
@@ -106,7 +107,7 @@ def extract_time(folded: str, now: datetime) -> dict | None:
 
 
 def extract_parkhaus(folded: str, mapping: list[dict],
-                     city: str | None = None) -> dict | None:
+                     city: Optional[str] = None) -> Optional[dict]:
     """Fuzzy-Match des Textes gegen die Parkhaus-Namen aus ai_parkhaus_map.
 
     Verglichen werden nur unterscheidungskraeftige Wortstaemme (ohne
@@ -145,7 +146,7 @@ def extract_parkhaus(folded: str, mapping: list[dict],
     return None
 
 
-def extract_min_free(folded: str) -> int | None:
+def extract_min_free(folded: str) -> Optional[int]:
     m = re.search(r"\bmindestens\s+(\d+)\b", folded)
     return int(m.group(1)) if m else None
 

@@ -7,6 +7,7 @@ import argparse
 import logging
 from datetime import timedelta
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 
@@ -40,7 +41,7 @@ def _active_runs(env) -> dict:
     return {"ml": ml, "baseline": baseline}
 
 
-def run(env: str | None = None) -> dict:
+def run(env: Optional[str] = None) -> dict:
     env = env or config.DEFAULT_ENV
     t0 = floor_to_grid(now_local())
 
@@ -96,7 +97,7 @@ def run(env: str | None = None) -> dict:
             continue
         target = t0 + timedelta(hours=h)
 
-        preds: dict[str, tuple[int | None, pd.Series]] = {}
+        preds: dict[str, tuple[Optional[int], pd.Series]] = {}
         if h in ml_models:
             run_id, model = ml_models[h]
             preds["ml"] = (run_id, model.predict(frame))

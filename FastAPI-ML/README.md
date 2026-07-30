@@ -33,6 +33,9 @@ laufendes Genauigkeits-Monitoring und ein deutschsprachiger Chat-Assistent.
 
 ## Setup
 
+Voraussetzung: **Python 3.9 oder neuer** (der Server läuft auf 3.9,
+deshalb verzichtet der Code bewusst auf `X | None`-Syntax aus 3.10).
+
 ```bash
 cd FastAPI-ML
 pip install -r requirements.txt

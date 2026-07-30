@@ -11,6 +11,7 @@ import argparse
 import json
 import logging
 from datetime import timedelta
+from typing import Optional
 
 import numpy as np
 
@@ -103,7 +104,7 @@ def _cleanup_artifacts() -> None:
             old.unlink(missing_ok=True)
 
 
-def run(env: str | None = None, days: int = TRAIN_DAYS) -> dict:
+def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
     env = env or config.DEFAULT_ENV
     config.MODELS_DIR.mkdir(parents=True, exist_ok=True)
     now = now_local().replace(second=0, microsecond=0)

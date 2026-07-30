@@ -9,6 +9,7 @@ predict hat deshalb einen Fallback auf den letzten Slot mit Daten):
 """
 import logging
 from datetime import datetime
+from typing import Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -17,7 +18,7 @@ import config
 
 logger = logging.getLogger(__name__)
 
-_scheduler: AsyncIOScheduler | None = None
+_scheduler: Optional[AsyncIOScheduler] = None
 _last_runs: dict[str, dict] = {}
 
 

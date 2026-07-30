@@ -6,6 +6,7 @@ ueber die letzten 8 Wochen, mit Fallback-Kette:
 Additive Zuschlaege (Event-Bonus, Regen), geclippt auf [0, 1].
 """
 from dataclasses import dataclass, field
+from typing import Optional
 
 import joblib
 import pandas as pd
@@ -40,7 +41,7 @@ class BaselineModel:
         return self
 
     def predict_one(self, city: str, pls_id: str, target_slot,
-                    event_bonus: float = 0.0, precipitation: float = 0.0) -> float | None:
+                    event_bonus: float = 0.0, precipitation: float = 0.0) -> Optional[float]:
         wd, h, q = target_slot.weekday(), target_slot.hour, target_slot.minute // 15
         occ = self.slot_mean.get((city, pls_id, wd, h, q))
         if occ is None:

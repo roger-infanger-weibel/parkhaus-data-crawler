@@ -1,6 +1,7 @@
 """Zentrale Konfiguration. Liest die gemeinsame .env im Repo-Root."""
 import os
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -30,7 +31,7 @@ SCHEDULER_ENABLED = os.environ.get("AI_SCHEDULER_ENABLED", "1") not in ("0", "fa
 HORIZONS = (1, 2, 4, 8)  # Prognosehorizonte in Stunden
 
 
-def db_name(env: str | None = None) -> str:
+def db_name(env: Optional[str] = None) -> str:
     """Datenbankname fuer 'prod' oder 'test' (Default: DEFAULT_ENV)."""
     env = (env or DEFAULT_ENV).lower()
     return DB_DATABASE_PROD if env == "prod" else DB_DATABASE_TEST

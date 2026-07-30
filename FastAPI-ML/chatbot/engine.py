@@ -3,6 +3,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
+from typing import Optional
 
 import db
 from core import data_access as da
@@ -23,12 +24,12 @@ class ChatResponse:
     reply: str
     intent: str
     entities: dict
-    payload: dict | None = None
+    payload: Optional[dict] = None
 
 
 @dataclass
 class _Session:
-    pending_intent: str | None = None
+    pending_intent: Optional[str] = None
     entities: dict = field(default_factory=dict)
     updated: float = field(default_factory=time.time)
 

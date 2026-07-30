@@ -1,7 +1,9 @@
 """Gemeinsame Service-Funktionen fuer API-Router und Chatbot."""
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
+import config
 import db
 from core import data_access as da
 from core.timeutil import now_local
@@ -10,7 +12,7 @@ from forecast.baseline import BaselineModel
 _baseline_cache: dict[str, BaselineModel] = {}
 
 
-def load_active_baseline(env: str) -> BaselineModel | None:
+def load_active_baseline(env: str) -> Optional[BaselineModel]:
     rows = db.query(
         "SELECT artifact_path FROM ai_model_runs "
         "WHERE model_type = 'baseline' AND is_active = 1",
@@ -26,7 +28,7 @@ def load_active_baseline(env: str) -> BaselineModel | None:
     return model
 
 
-def latest_prediction_slot(env: str, city: str | None = None) -> datetime | None:
+def latest_prediction_slot(env: str, city: Optional[str] = None) -> Optional[datetime]:
     sql = "SELECT MAX(created_at) AS slot FROM ai_predictions"
     params: tuple = ()
     if city:
@@ -134,7 +136,7 @@ def house_detail(env: str, city: str, pls_id: str, hours: int = 24) -> dict:
     }
 
 
-def best_parking(env: str, city: str, at: datetime | None = None,
+def best_parking(env: str, city: str, at: Optional[datetime] = None,
                  min_free: int = 0, limit: int = 5) -> dict:
     """Parkhaus-Empfehlung fuer einen Zeitpunkt.
 
@@ -190,16 +192,25 @@ def best_parking(env: str, city: str, at: datetime | None = None,
         method = "baseline_seasonal"
 
     snapshots = {s["pls_id"]: s for s in da.latest_snapshots(env=env, city=city, max_age_hours=24)}
+
+    # Unsicherheitsangabe: nur der Fehler des Modells und Horizonts, aus dem
+    # die gezeigte Prognose stammt - sonst mischt sich der viel groessere
+    # Baseline-Fehler ein und die Angabe wird irrefuehrend.
+    model_types = sorted({r["model_type"] for r in per_house.values()}) or ["ml"]
+    horizon = min(config.HORIZONS, key=lambda h: abs(h - max(horizon_hours, 0)))
+    placeholders = ",".join(["%s"] * len(model_types))
     mae = {
         r["pls_id"]: float(r["mae"])
         for r in db.query(
-            """
-            SELECT pls_id, AVG(mae_free) AS mae
+            f"""
+            SELECT pls_id, SUM(mae_free * n) / SUM(n) AS mae
             FROM ai_accuracy_daily
             WHERE city = %s AND pls_id <> '' AND day >= %s
+              AND horizon_h = %s AND model_type IN ({placeholders})
             GROUP BY pls_id
             """,
-            (city, (now - timedelta(days=7)).date()), env=env,
+            tuple([city, (now - timedelta(days=7)).date(), horizon] + model_types),
+            env=env,
         )
     }
 

@@ -4,6 +4,7 @@ Eine Verbindung pro Operation - einfach und robust; die Zugriffsmuster der App
 (Batch-Jobs alle 15 Min, wenige UI-Requests) brauchen keinen Pool.
 """
 import logging
+from typing import Optional
 
 import pymysql
 import pymysql.cursors
@@ -13,7 +14,7 @@ import config
 logger = logging.getLogger(__name__)
 
 
-def get_conn(env: str | None = None) -> pymysql.connections.Connection:
+def get_conn(env: Optional[str] = None) -> pymysql.connections.Connection:
     return pymysql.connect(
         host=config.DB_HOST,
         port=config.DB_PORT,
@@ -26,7 +27,7 @@ def get_conn(env: str | None = None) -> pymysql.connections.Connection:
     )
 
 
-def query(sql: str, params=None, env: str | None = None) -> list[dict]:
+def query(sql: str, params=None, env: Optional[str] = None) -> list[dict]:
     """SELECT ausfuehren, Ergebnis als Liste von Dicts."""
     conn = get_conn(env)
     try:
@@ -37,7 +38,7 @@ def query(sql: str, params=None, env: str | None = None) -> list[dict]:
         conn.close()
 
 
-def execute(sql: str, params=None, env: str | None = None) -> int:
+def execute(sql: str, params=None, env: Optional[str] = None) -> int:
     """Einzelnes INSERT/UPDATE/DELETE mit Commit. Liefert rowcount."""
     conn = get_conn(env)
     try:
@@ -50,7 +51,7 @@ def execute(sql: str, params=None, env: str | None = None) -> int:
         conn.close()
 
 
-def executemany(sql: str, seq_params, env: str | None = None) -> int:
+def executemany(sql: str, seq_params, env: Optional[str] = None) -> int:
     """Batch-INSERT/UPDATE mit Commit. Liefert rowcount."""
     seq_params = list(seq_params)
     if not seq_params:

@@ -12,6 +12,7 @@ Tabelle ai_parkhaus_map, ueber die alle anderen Module joinen.
 """
 import argparse
 import logging
+from typing import Optional
 
 import db
 from core.timeutil import now_local
@@ -57,7 +58,7 @@ def normalize_wordset(name: str) -> frozenset[str]:
     return frozenset(result)
 
 
-def match_parkhaus(pls_id: str, pls_name: str, parkhaeuser: list[dict]) -> tuple[str | None, str]:
+def match_parkhaus(pls_id: str, pls_name: str, parkhaeuser: list[dict]) -> tuple[Optional[str], str]:
     """Bestes parkhaeuser-Match fuer einen pls-Eintrag: (parkhaus_id, methode)."""
     # a) exakte ID (basel, zurich)
     for ph in parkhaeuser:
@@ -95,7 +96,7 @@ def match_parkhaus(pls_id: str, pls_name: str, parkhaeuser: list[dict]) -> tuple
     return None, "none"
 
 
-def build_mapping(env: str | None = None) -> dict[str, int]:
+def build_mapping(env: Optional[str] = None) -> dict[str, int]:
     """ai_parkhaus_map neu aufbauen. Liefert Zaehler pro Match-Methode."""
     pls_rows = db.query(
         """
