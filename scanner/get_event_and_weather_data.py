@@ -120,7 +120,7 @@ def store_historical_events():
             end_time = current_day.replace(hour=22, minute=0, second=0)
             events_to_insert.append((
                 e_id, "Theateraufführung - Stadt Theater Luzern",
-                "Stadt Theater Luzern", "Luzern",
+                "Stadt Theater Luzern", "luzern",
                 start_time.strftime("%Y-%m-%d %H:%M:%S"),
                 end_time.strftime("%Y-%m-%d %H:%M:%S"),
                 "Klassisches Schauspiel im Herzen von Luzern. Hohe Nachfrage in den Parkhäusern Süd.",
@@ -138,7 +138,7 @@ def store_historical_events():
             end_time = current_day.replace(hour=21, minute=45, second=0)
             events_to_insert.append((
                 e_id, "Sinfoniekonzert - KKL Luzern",
-                "KKL Luzern (Konzertsaal)", "Luzern",
+                "KKL Luzern (Konzertsaal)", "luzern",
                 start_time.strftime("%Y-%m-%d %H:%M:%S"),
                 end_time.strftime("%Y-%m-%d %H:%M:%S"),
                 "Meisterkonzert im berühmten KKL direkt am See. Betrifft die Bahnhofsparkhäuser.",
@@ -155,7 +155,7 @@ def store_historical_events():
             end_time = current_day.replace(hour=22, minute=30, second=0)
             events_to_insert.append((
                 e_id, "Musical Chicago - Theater 11",
-                "Theater 11 Zürich", "Zürich",
+                "Theater 11 Zürich", "zurich",
                 start_time.strftime("%Y-%m-%d %H:%M:%S"),
                 end_time.strftime("%Y-%m-%d %H:%M:%S"),
                 "Broadway-Klassiker live im Zürcher Norden.",
