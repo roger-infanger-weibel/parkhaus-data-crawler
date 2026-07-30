@@ -131,13 +131,23 @@ abbrechen. Deshalb **nie direkt** `python3 -m forecast.train` aufrufen, sondern:
 
 ```bash
 cd /root/FastAPI-ML
-systemd-run --scope -p MemoryMax=1G --collect \
-  python3 -m forecast.train --env prod
+systemd-run --scope -p MemoryMax=1G -p MemorySwapMax=0 --collect \
+  python3 -m forecast.train --env prod --days 60
 ```
 
 `systemd-run --scope` braucht keine Service-Datei und funktioniert auf jedem
-systemd-System. Reisst das Training das Limit, killt der Kernel nur diesen
-einen Prozess — der Server bleibt bedienbar. Dasselbe danach mit `--env test`.
+systemd-System. Dasselbe danach mit `--env test`.
+
+Beide Angaben sind nötig:
+
+- **`MemorySwapMax=0`** ist der entscheidende Teil. Mit `MemoryMax` allein
+  lagert der Kernel den Prozess in den Swap aus, statt ihn zu beenden — die
+  Festplatte läuft heiss, und der ganze Server wird unbedienbar, obwohl das
+  Limit formal eingehalten wird. Erst ohne Swap wird der Prozess wirklich
+  abgebrochen.
+- **`--days 60`** explizit angeben. `AI_TRAIN_DAYS` aus der `.env` greift nur,
+  wenn diese auch gefunden wird (siehe Abschnitt «Wo liegt die .env?») —
+  sonst laufen stillschweigend 120 Tage, und die sprengen 1 GB.
 
 Voraussetzung ist der aktuelle Codestand: seit dem Streaming-Fix werden die
 Messwerte stadtweise geladen (~123 MB statt mehrerer GB). **Vorher unbedingt
