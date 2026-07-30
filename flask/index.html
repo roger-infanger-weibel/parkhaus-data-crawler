@@ -83,6 +83,13 @@
                 </select>
             </div>
             <div class="col-auto">
+                <label for="parking-select" class="col-form-label">Parking:</label>
+            </div>
+            <div class="col-auto">
+                <select id="parking-select" class="form-select" multiple size="4" style="min-width:200px" onchange="onParkingChange()">
+                </select>
+            </div>
+            <div class="col-auto">
                 <label for="date-select" class="col-form-label">Select Date:</label>
             </div>
             <div class="col-auto">
@@ -273,6 +280,7 @@
                     if (!response.ok) throw new Error("Failed to fetch groups");
                     GROUP_CONFIG[city] = await response.json();
                     updateGroupSelect();
+                    updateParkingSelect();
                 } catch (error) {
                     console.error("Error loading groups:", error);
                 }
@@ -348,10 +356,48 @@
                 const city = getCurrentCity();
                 const select = document.getElementById('group-select');
                 savePreferences();
+                updateParkingSelect();
 
                 if (myChart) {
                     renderChart(myChart.data.originalData);
                 }
+            }
+
+            function updateParkingSelect() {
+                const city = getCurrentCity();
+                const groupSelect = document.getElementById('group-select');
+                const parkingSelect = document.getElementById('parking-select');
+                const groups = GROUP_CONFIG[city] || [];
+                const selectedGroupIndex = groupSelect.value;
+
+                parkingSelect.innerHTML = '';
+
+                let parkings = [];
+                if (selectedGroupIndex === "all") {
+                    groups.forEach(g => { if (g.parkings && g.parkings.length > 0) parkings.push(...g.parkings); });
+                } else if (groups[selectedGroupIndex]) {
+                    parkings = groups[selectedGroupIndex].parkings || [];
+                }
+
+                parkings = [...new Set(parkings)].sort();
+                parkings.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.text = name;
+                    opt.selected = true;
+                    parkingSelect.add(opt);
+                });
+            }
+
+            function onParkingChange() {
+                if (myChart) {
+                    renderChart(myChart.data.originalData);
+                }
+            }
+
+            function getSelectedParkings() {
+                const parkingSelect = document.getElementById('parking-select');
+                return Array.from(parkingSelect.selectedOptions).map(o => o.value);
             }
 
             async function loadDates() {
@@ -577,15 +623,13 @@
 
                 const cityConfig = CITY_CONFIG[data.city] || { name: data.city };
 
-                // Filtering logic based on group selection
-                const groupSelect = document.getElementById('group-select');
-                const selectedGroupIndex = groupSelect.value;
-                const groups = GROUP_CONFIG[data.city] || [];
+                // Filtering logic based on parking dropdown selection
                 const datasets = data.datasets;
+                const selectedParkings = getSelectedParkings();
 
                 let visibleParkings = null;
-                if (selectedGroupIndex !== "all" && groups[selectedGroupIndex]) {
-                    visibleParkings = groups[selectedGroupIndex].parkings;
+                if (selectedParkings.length > 0) {
+                    visibleParkings = selectedParkings;
                 }
 
                 let filteredDatasets = datasets.map(ds => ({

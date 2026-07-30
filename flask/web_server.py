@@ -50,11 +50,17 @@ def get_groups(city):
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
-            SELECT name, parking_group
-            FROM parkhaeuser
-            WHERE city_id = %s AND is_active = 1
-            ORDER BY parking_group, name
-        """, (city,))
+            SELECT p.id AS parkhaus_id, p.name AS full_name, p.parking_group,
+                   pf.name AS short_name
+            FROM parkhaeuser p
+            LEFT JOIN (
+                SELECT id, name FROM pls_fetch_current
+                WHERE city = %s
+                GROUP BY id, name
+            ) pf ON pf.id = p.id
+            WHERE p.city_id = %s AND p.is_active = 1
+            ORDER BY p.parking_group, p.name
+        """, (city, city))
         rows = cursor.fetchall()
         conn.close()
 
@@ -63,7 +69,8 @@ def get_groups(city):
             group_name = row['parking_group'] or 'Andere'
             if group_name not in groups:
                 groups[group_name] = []
-            groups[group_name].append(row['name'])
+            display_name = row['short_name'] or row['full_name']
+            groups[group_name].append(display_name)
 
         result = [{"name": name, "parkings": parkings} for name, parkings in groups.items()]
         result.append({"name": "All", "parkings": []})
