@@ -12,7 +12,11 @@ router = APIRouter(prefix="/api", tags=["meta"])
 
 @router.get("/health")
 def health(env: str = Depends(get_env)):
-    status: dict = {"status": "ok", "env": env, "db": config.db_name(env)}
+    status: dict = {
+        "status": "ok", "env": env, "db": config.db_name(env),
+        "db_host": config.DB_HOST,
+        "env_files": config.ENV_FILES_LOADED or "KEINE .env gefunden - Standardwerte aktiv",
+    }
     try:
         runs = db.query(
             "SELECT model_type, horizon_h, trained_at, cv_mae_occ FROM ai_model_runs "

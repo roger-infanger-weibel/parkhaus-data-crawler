@@ -1,15 +1,36 @@
-"""Zentrale Konfiguration. Liest die gemeinsame .env im Repo-Root."""
+"""Zentrale Konfiguration und Laden der .env.
+
+Gesucht wird in dieser Reihenfolge (der erste Treffer gewinnt pro Variable):
+  1. AI_ENV_FILE, falls gesetzt - fuer .env-Dateien an beliebigem Ort
+  2. FastAPI-ML/.env
+  3. .env im Repo-Root (gemeinsam mit scanner/ und flask/)
+  4. .env oberhalb des Arbeitsverzeichnisses (wie load_dotenv() im Scanner)
+
+ENV_FILES_LOADED zeigt, was tatsaechlich gefunden wurde - /api/health gibt das
+aus, damit eine nicht gefundene .env nicht still zu Standardwerten fuehrt.
+"""
 import os
 from pathlib import Path
 from typing import Optional
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
 
-load_dotenv(REPO_ROOT / ".env")
-load_dotenv(BASE_DIR / ".env", override=True)
+_candidates = []
+if os.environ.get("AI_ENV_FILE"):
+    _candidates.append(Path(os.environ["AI_ENV_FILE"]).expanduser())
+_candidates += [BASE_DIR / ".env", REPO_ROOT / ".env"]
+_found_upwards = find_dotenv(usecwd=True)
+if _found_upwards:
+    _candidates.append(Path(_found_upwards))
+
+ENV_FILES_LOADED = []
+for _path in _candidates:
+    if _path.is_file() and str(_path) not in ENV_FILES_LOADED:
+        load_dotenv(_path)  # kein override: frueherer Treffer behaelt Vorrang
+        ENV_FILES_LOADED.append(str(_path))
 
 DB_HOST = os.environ.get("DB_HOST", "localhost")
 DB_PORT = int(os.environ.get("DB_PORT", "3306"))

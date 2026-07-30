@@ -62,6 +62,30 @@ Und im **IONOS Cloud Panel** unter Netzwerk → Firewall-Richtlinien eine Regel
 für TCP 8080 anlegen. Fehlt eine der beiden, läuft der Verbindungsversuch in
 einen Timeout (siehe Fehlersuche unten).
 
+## Wo liegt die .env?
+
+FastAPI-ML sucht in dieser Reihenfolge: `AI_ENV_FILE` (falls gesetzt),
+`FastAPI-ML/.env`, `.env` im Repo-Root, dann aufwärts vom Arbeitsverzeichnis.
+
+Liegt die Datei woanders — etwa in `/root/myenv/.env` — den Pfad in der Unit
+eintragen:
+
+```bash
+systemctl edit --full parkhaus-fastapi-ml
+# unter [Service] einfuegen:
+#   Environment=AI_ENV_FILE=/root/myenv/.env
+systemctl restart parkhaus-fastapi-ml
+```
+
+Kontrolle: `curl -sS http://localhost:8080/api/health` zeigt unter `env_files`,
+welche Datei geladen wurde, und unter `db_host`, wohin verbunden wird. Steht
+dort `KEINE .env gefunden`, läuft die App auf Standardwerten (localhost) —
+dann stimmen auch die Datenbanknamen nicht.
+
+Der Scanner sucht unabhängig davon selbst (`load_dotenv()` ab Arbeitsordner
+aufwärts) — er braucht seine `.env` in `scanner-prod/` bzw. `scanner-test/`
+oder in `/root`.
+
 ## Täglicher Betrieb
 
 ```bash

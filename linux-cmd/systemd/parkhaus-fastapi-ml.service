@@ -7,6 +7,8 @@ Wants=network-online.target
 Type=simple
 User=root
 WorkingDirectory=/root/FastAPI-ML
+# Liegt die .env nicht in /root oder /root/FastAPI-ML, hier den Pfad setzen:
+#Environment=AI_ENV_FILE=/root/myenv/.env
 # --workers 1 ist Pflicht, sonst laeuft der eingebaute Scheduler mehrfach.
 ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8080 --workers 1
 Restart=always
