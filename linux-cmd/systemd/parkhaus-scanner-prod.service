@@ -1,0 +1,18 @@
+[Unit]
+Description=Parkhaus Scanner PROD (sammelt Belegungsdaten alle 15 Minuten)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+# WorkingDirectory ist wichtig: db_utils liest die .env aus dem Arbeitsordner,
+# darueber entscheidet sich prod- oder test-Datenbank.
+WorkingDirectory=/root/scanner-prod
+ExecStart=/usr/bin/python3 -u scheduler-prod.py
+Restart=always
+RestartSec=30
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

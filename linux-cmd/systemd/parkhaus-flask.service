@@ -1,0 +1,16 @@
+[Unit]
+Description=Parkhaus Flask Dashboard (Port 80)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/flask
+ExecStart=/usr/bin/python3 -u web_server.py
+Restart=always
+RestartSec=10
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

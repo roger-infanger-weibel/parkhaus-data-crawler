@@ -1,0 +1,16 @@
+[Unit]
+Description=Parkhaus Scanner TEST (sammelt Belegungsdaten alle 15 Minuten)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/scanner-test
+ExecStart=/usr/bin/python3 -u scheduler-test.py
+Restart=always
+RestartSec=30
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

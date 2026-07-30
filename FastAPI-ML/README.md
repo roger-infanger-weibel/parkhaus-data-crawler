@@ -53,6 +53,28 @@ DB-Rechte: zur Laufzeit nur `SELECT, INSERT, UPDATE, DELETE`;
 `CREATE, ALTER, INDEX` braucht einzig das einmalige `init_db.py`
 (fuer ph_fetch_test und ph_fetch_prod bereits am 2026-07-30 ausgefuehrt).
 
+## Speicherbedarf des Trainings (wichtig auf kleinen Servern)
+
+Das Training haelt das gesamte Fenster im Arbeitsspeicher. Reicht der RAM
+nicht, geraet die Maschine ins Swappen und friert praktisch ein (der Scanner
+schreibt dann auch nicht mehr). Zwei Stellschrauben in der `.env`:
+
+```
+AI_TRAIN_DAYS=60         # kleineres Fenster = weniger Speicher
+AI_RETRAIN_ENABLED=0     # gar kein Training auf diesem Server
+```
+
+Mit `AI_RETRAIN_ENABLED=0` trainiert man auf einer anderen Maschine und kopiert
+nur die Modelldateien:
+
+```bash
+scp FastAPI-ML/models_store/*.joblib root@SERVER:/root/FastAPI-ML/models_store/
+```
+
+Das genuegt, weil in `ai_model_runs` nur der Dateiname steht - die Ziel-DB
+kennt den aktiven Lauf also bereits, sobald das Training gegen dieselbe
+Datenbank gelaufen ist.
+
 ## Deployment (Server)
 
 ```bash
@@ -64,8 +86,18 @@ python -m forecast.train --env prod
 nohup uvicorn main:app --host 0.0.0.0 --port 8080 --workers 1 > ../fastapi-ml.log 2>&1 &
 ```
 
-Siehe auch `linux-cmd/start-fastapi-ml.sh`. Port 8080 in der Firewall öffnen.
-In der `.env` des Servers `AI_DEFAULT_ENV=prod` setzen.
+Port 8080 in der Firewall öffnen, in der `.env` des Servers
+`AI_DEFAULT_ENV=prod` setzen.
+
+Für den Dauerbetrieb statt `nohup` besser als systemd-Dienst einrichten
+(Autostart nach Reboot, Neustart nach Absturz, Speicherlimit):
+
+```bash
+bash linux-cmd/install-systemd.sh
+```
+
+Danach `systemctl restart parkhaus-fastapi-ml` zum Neustarten und
+`journalctl -u parkhaus-fastapi-ml -f` für die Logs.
 
 ## Tests
 
