@@ -14,6 +14,28 @@ Betriebsanleitung für die vier Dienste: Autostart, Deployment, Fehlersuche.
 Welche Datenbank ein Scanner verwendet, entscheidet die `.env` im jeweiligen
 Arbeitsordner — deshalb ist bei den Diensten `WorkingDirectory` gesetzt.
 
+## Zeitzone des Servers
+
+Empfohlen: `Europe/Zurich`.
+
+```bash
+timedatectl set-timezone Europe/Zurich
+systemctl restart parkhaus-scanner-prod parkhaus-scanner-test parkhaus-flask parkhaus-fastapi-ml
+```
+
+Das ist reine Lesbarkeit, keine Datenkorrektur: Logs und `journalctl` zeigen
+dann dieselbe Zeit wie die Messwerte in der Datenbank. Läuft der Server auf
+UTC, steht im Trainingslog z.B. `10:13`, während der zugehörige Messwert
+`12:13` trägt — das kostet bei jeder Fehlersuche unnötig Zeit.
+
+An den Daten ändert sich nichts:
+
+- Der Scanner setzt seine Zeitstempel explizit über `datetime.now(SWISS_TZ)`.
+- FastAPI-ML rechnet durchgehend über `core.timeutil.now_local()` und legt
+  die Scheduler-Jobs fest auf Europe/Zurich.
+- Die Datenbank läuft auf einem eigenen Host (94.231.94.132, bereits CEST)
+  und ist von der Umstellung gar nicht betroffen.
+
 ## Einmalige Einrichtung: Autostart
 
 ```bash

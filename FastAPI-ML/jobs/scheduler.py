@@ -8,14 +8,13 @@ predict hat deshalb einen Fallback auf den letzten Slot mit Daten):
   retrain   03:30             Modelle neu trainieren
 """
 import logging
-from datetime import datetime
 from typing import Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 import config
-from core.timeutil import SWISS_TZ
+from core.timeutil import SWISS_TZ, now_local
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,10 @@ _last_runs: dict[str, dict] = {}
 def _wrap(name: str, fn):
     """Jobs duerfen die App nie zum Absturz bringen."""
     def runner():
-        started = datetime.now()
+        # now_local statt datetime.now: auf einem UTC-Server waere die in
+        # /api/health gezeigte Laufzeit sonst 2 Stunden neben allen anderen
+        # Zeitangaben der App.
+        started = now_local()
         try:
             result = fn()
             _last_runs[name] = {"at": started.isoformat(), "ok": True,
