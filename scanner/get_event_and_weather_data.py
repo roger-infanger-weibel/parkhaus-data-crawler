@@ -15,7 +15,7 @@ DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
 DB_PORT = int(os.environ.get("DB_PORT", "3306"))
 DB_USER = os.environ.get("DB_USER", "root")
 DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
-DB_NAME = os.environ.get("DB_NAME", "ph_fetch_test")
+DB_NAME = os.environ.get("DB_DATABASE", os.environ.get("DB_NAME", "ph_fetch_test"))
 
 CITIES = [
     {"id": "basel", "name": "Basel", "lat": 47.5596, "lon": 7.5886},
@@ -79,6 +79,61 @@ def fetch_and_store_historical_weather():
             cursor.executemany(sql, batch)
             connection.commit()
             print(f"-> {len(batch)} Wetter-Datensätze für {city['name']} importiert.")
+
+        except Exception as e:
+            print(f"Fehler bei {city['name']}: {e}")
+
+    cursor.close()
+    connection.close()
+
+
+def fetch_and_store_forecast_weather():
+    print("\n--- 1b. Hole Wettervorhersage (heute + 7 Tage) ---")
+    connection = pymysql.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            autocommit=True
+        )
+
+    cursor = connection.cursor()
+
+    for city in CITIES:
+        print(f"Lade Vorhersage für {city['name']}...")
+        url = (
+            f"https://api.open-meteo.com/v1/forecast?"
+            f"latitude={city['lat']}&longitude={city['lon']}&"
+            f"hourly=temperature_2m,precipitation&timezone=Europe/Zurich&"
+            f"forecast_days=7"
+        )
+
+        try:
+            r = requests.get(url, timeout=15)
+            r.raise_for_status()
+            data = r.json()
+
+            times = data["hourly"]["time"]
+            temps = data["hourly"]["temperature_2m"]
+            precs = data["hourly"]["precipitation"]
+
+            sql = """
+                INSERT INTO weather_forecasts (city_id, timestamp, temperature, precipitation)
+                VALUES (%s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    temperature = VALUES(temperature),
+                    precipitation = VALUES(precipitation)
+            """
+
+            batch = []
+            for i in range(len(times)):
+                dt_str = times[i].replace("T", " ") + ":00"
+                batch.append((city["id"], dt_str, temps[i], precs[i]))
+
+            cursor.executemany(sql, batch)
+            connection.commit()
+            print(f"-> {len(batch)} Vorhersage-Datensätze für {city['name']} importiert.")
 
         except Exception as e:
             print(f"Fehler bei {city['name']}: {e}")
@@ -192,5 +247,6 @@ def store_historical_events():
 
 if __name__ == "__main__":
     fetch_and_store_historical_weather()
+    fetch_and_store_forecast_weather()
     store_historical_events()
-    print("\nFertig! Alle historischen Daten ab 01.01.2026 sind importiert.")
+    print("\nFertig! Alle Daten sind importiert.")

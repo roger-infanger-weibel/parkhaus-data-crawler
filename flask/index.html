@@ -322,11 +322,11 @@
                 return select.value;
             }
 
-            function onCityChange() {
+            async function onCityChange() {
                 const cityId = getCurrentCity();
                 savePreferences();
-                loadGroups(cityId);
                 updateOfficialLink();
+                await loadGroups(cityId);
                 loadDates();
             }
 
