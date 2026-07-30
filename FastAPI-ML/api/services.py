@@ -41,6 +41,49 @@ def latest_prediction_slot(env: str, city: Optional[str] = None) -> Optional[dat
     return rows[0]["slot"] if rows else None
 
 
+PAST_OFFSETS_H = (2, 1)
+PAST_TOLERANCE_MIN = 20
+
+
+def past_values(env: str, city: str, reference: datetime) -> dict:
+    """Ist-Werte vor 1 und 2 Stunden je Parkhaus: {pls_id: {1: free, 2: free}}.
+
+    Eine Abfrage ueber beide Zeitfenster, danach wird pro Haus und Offset der
+    zeitlich naechstgelegene Messwert gewaehlt (der Scanner trifft die volle
+    Stunde nicht exakt).
+    """
+    windows = []
+    params: list = [city]
+    for offset in PAST_OFFSETS_H:
+        target = reference - timedelta(hours=offset)
+        windows.append("(fetch_ts BETWEEN %s AND %s)")
+        params += [target - timedelta(minutes=PAST_TOLERANCE_MIN),
+                   target + timedelta(minutes=PAST_TOLERANCE_MIN)]
+
+    rows = db.query(
+        f"""
+        SELECT id AS pls_id, fetch_ts, free
+        FROM pls_fetch_current
+        WHERE city = %s AND ({' OR '.join(windows)})
+        """,
+        tuple(params), env=env,
+    )
+
+    result: dict[str, dict] = {}
+    for offset in PAST_OFFSETS_H:
+        target = reference - timedelta(hours=offset)
+        for r in rows:
+            diff = abs((r["fetch_ts"] - target).total_seconds())
+            if diff > PAST_TOLERANCE_MIN * 60:
+                continue
+            house = result.setdefault(r["pls_id"], {})
+            best = house.get(offset)
+            if best is None or diff < best["diff"]:
+                house[offset] = {"free": r["free"], "diff": diff,
+                                 "ts": r["fetch_ts"].isoformat()}
+    return result
+
+
 def current_forecasts(env: str, city: str) -> dict:
     """Neuste Prognosen aller Haeuser einer Stadt, gruppiert pro Haus."""
     slot = latest_prediction_slot(env, city)
@@ -67,9 +110,16 @@ def current_forecasts(env: str, city: str) -> dict:
                 "target_time": r["target_time"].isoformat(),
             }
 
+    past = past_values(env, city, now_local())
+
     result = []
     for pls_id, snap in sorted(snapshots.items(), key=lambda kv: kv[1]["name"]):
         m = mapping.get(pls_id, {})
+        # Rueckblick: Wert von damals plus Veraenderung bis jetzt
+        history = {}
+        for offset, hit in past.get(pls_id, {}).items():
+            history[offset] = {"free": hit["free"], "ts": hit["ts"],
+                               "delta": snap["free"] - hit["free"]}
         entry = {
             "pls_id": pls_id,
             "name": snap["name"],
@@ -77,6 +127,7 @@ def current_forecasts(env: str, city: str) -> dict:
             "free_now": snap["free"],
             "total": snap["total"],
             "fetch_ts": snap["fetch_ts"].isoformat(),
+            "history": history,
             "horizons": houses.get(pls_id, {}).get("horizons", {}),
         }
         result.append(entry)

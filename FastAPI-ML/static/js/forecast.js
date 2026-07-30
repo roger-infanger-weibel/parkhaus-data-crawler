@@ -25,6 +25,18 @@ function horizonCell(house, h) {
   return `<td class="text-end"><span class="badge ${cls}">${entry.free}</span></td>`;
 }
 
+// Rueckblick: nur die Veraenderung bis jetzt. Der Ist-Wert von damals steht
+// im Tooltip, damit die Zeile nicht mit Zahlen zugestellt wird.
+function historyCell(house, offset) {
+  const entry = house.history?.[offset];
+  if (!entry) return '<td class="text-end text-muted">–</td>';
+  const d = entry.delta;
+  const arrow = d > 0 ? '▲' : (d < 0 ? '▼' : '=');
+  const cls = d > 0 ? 'delta-up' : (d < 0 ? 'delta-down' : 'text-muted');
+  const title = `vor ${offset} h: ${entry.free} frei (${fmtTs(entry.ts)})`;
+  return `<td class="text-end ${cls}" title="${title}">${arrow}${d === 0 ? '' : Math.abs(d)}</td>`;
+}
+
 async function loadForecasts() {
   const city = document.getElementById('city-select').value;
   const data = await Api.get(`/api/forecast/current/${city}`);
@@ -34,12 +46,14 @@ async function loadForecasts() {
   const rows = data.houses.map(h => `
     <tr data-pls="${h.pls_id}">
       <td>${h.name}${h.group ? `<br><small class="text-muted">${h.group}</small>` : ''}</td>
+      ${historyCell(h, 2)}
+      ${historyCell(h, 1)}
       <td class="text-end"><strong>${h.free_now}</strong><small class="text-muted">/${h.total}</small></td>
       ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
       <td><small class="text-muted">${fmtTs(h.fetch_ts)}</small></td>
     </tr>`).join('');
   document.getElementById('forecast-table').innerHTML =
-    rows || '<tr><td colspan="7">Keine Daten</td></tr>';
+    rows || '<tr><td colspan="9">Keine Daten</td></tr>';
   document.querySelectorAll('#forecast-table tr[data-pls]').forEach(tr => {
     tr.addEventListener('click', () => loadDetail(tr.dataset.pls));
   });

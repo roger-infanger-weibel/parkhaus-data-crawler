@@ -3,9 +3,15 @@ body { background-color: #f4f6f9; }
 .card { border: none; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
 .kpi-value { font-size: 1.6rem; font-weight: 700; }
 .kpi-label { font-size: .8rem; color: #6c757d; }
+/* Prognose: Ampelfarben nach freien Plaetzen */
 .badge-free-high { background-color: #198754; }
 .badge-free-mid  { background-color: #fd7e14; }
 .badge-free-low  { background-color: #dc3545; }
+
+/* Rueckblick: nur die Veraenderung, farblich klar von den Prognose-Badges
+   getrennt (Text statt Badge) */
+.delta-up   { color: #198754; font-weight: 600; }
+.delta-down { color: #b02a37; font-weight: 600; }
 .table-hover tbody tr { cursor: pointer; }
 .skill-pos { color: #198754; font-weight: 600; }
 .skill-neg { color: #dc3545; font-weight: 600; }
