@@ -12,6 +12,14 @@ set -e
 UNIT_DIR="$(cd "$(dirname "$0")" && pwd)/systemd"
 SERVICES=(parkhaus-scanner-prod parkhaus-scanner-test parkhaus-flask parkhaus-fastapi-ml)
 
+# systemd kennt kein PATH-Lookup: ExecStart braucht den absoluten Pfad.
+PYTHON=$(command -v python3)
+if [ -z "$PYTHON" ]; then
+    echo "python3 nicht gefunden" >&2
+    exit 1
+fi
+echo "Verwende Python: $PYTHON"
+
 # Laufende nohup-Prozesse beenden, damit sich Alt und Neu nicht in die Quere kommen
 echo "Beende bestehende nohup-Prozesse ..."
 pkill -f scheduler-prod.py || true
@@ -26,7 +34,8 @@ for svc in "${SERVICES[@]}"; do
         echo "  UEBERSPRUNGEN: $svc (Ordner $workdir fehlt)"
         continue
     fi
-    cp "$unit" /etc/systemd/system/
+    sed "s|^ExecStart=/usr/bin/python3|ExecStart=$PYTHON|" "$unit" \
+        > "/etc/systemd/system/$svc.service"
     echo "  installiert: $svc"
 done
 
