@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parkhaus Chat-Assistent</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/app.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand navbar-dark bg-dark px-3 mb-4">
+  <a class="navbar-brand" href="/">🅿️ Parkhaus <span>KI</span>-Prognose</a>
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item"><a class="nav-link" href="/">Prognose</a></li>
+    <li class="nav-item"><a class="nav-link" href="/accuracy.html">Genauigkeit</a></li>
+    <li class="nav-item"><a class="nav-link active" href="/chat.html">Chat-Assistent</a></li>
+  </ul>
+  <select id="env-select" class="form-select form-select-sm w-auto">
+    <option value="prod">Prod</option>
+    <option value="test">Test</option>
+  </select>
+</nav>
+
+<div class="container" style="max-width: 780px;">
+  <div id="chat-window" class="mb-2 shadow-sm"></div>
+
+  <div class="mb-2" id="chips">
+    <span class="badge rounded-pill text-bg-light border chat-chip me-1">Wo parke ich morgen um 19 Uhr in Luzern?</span>
+    <span class="badge rounded-pill text-bg-light border chat-chip me-1">Wie viele Plätze sind jetzt in Basel frei?</span>
+    <span class="badge rounded-pill text-bg-light border chat-chip me-1">Wie genau sind deine Prognosen?</span>
+    <span class="badge rounded-pill text-bg-light border chat-chip me-1">Wetter in Bern</span>
+    <span class="badge rounded-pill text-bg-light border chat-chip me-1">Events am Freitag in Zürich</span>
+  </div>
+
+  <form id="chat-form" class="input-group mb-4">
+    <input id="chat-input" class="form-control" placeholder="Frag mich etwas …"
+           autocomplete="off" maxlength="500">
+    <button class="btn btn-primary" type="submit">Senden</button>
+  </form>
+  <footer class="text-muted small pb-3">
+    Regelbasierter Assistent ohne externes KI-Modell – versteht Fragen zu
+    Verfügbarkeit, Prognosen, Empfehlungen, Wetter, Events und Genauigkeit.
+  </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/chat.js"></script>
+</body>
+</html>

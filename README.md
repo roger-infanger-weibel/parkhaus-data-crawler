@@ -16,6 +16,7 @@ parkhaus-data-crawler/
 │   ├── requirements.txt
 │   ├── version.py / __init__.py
 │   └── *.md (Dokumentation)
+├── FastAPI-ML/                 ← KI-Prognose-App (FastAPI, siehe FastAPI-ML/README.md)
 ├── flask/                      ← Web-Server (Dashboard)
 │   ├── web_server.py
 │   ├── db_utils.py

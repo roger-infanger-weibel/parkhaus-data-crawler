@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+nohup.out
+fastapi-ml.log
+FastAPI-ML/models_store/*.joblib
+.pytest_cache/
