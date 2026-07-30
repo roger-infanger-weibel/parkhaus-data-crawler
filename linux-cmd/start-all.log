@@ -1,0 +1,21 @@
+=== Start 2026-07-30 14:32:12 ===
+--- start-flask.sh
+Flask gestartet (PID 1441), Log: web_server.log
+--- start-test.sh
+Test Crawler gestartet (PID 1446), Log: scheduler-test.log
+--- start-prod.sh
+Prod Crawler gestartet (PID 1451), Log: scheduler-prod.log
+--- start-fastapi-ml.sh
+FastAPI-ML gestartet (PID 1454), Log: fastapi-ml.log
+=== Fertig 2026-07-30 14:32:12 ===
+Thu Jul 30 04:36:29 PM CEST 2026
+=== Start 2026-07-30 16:36:29 ===
+--- start-flask.sh
+Flask gestartet (PID 1505), Log: web_server.log
+--- start-test.sh
+Test Crawler gestartet (PID 1510), Log: scheduler-test.log
+--- start-prod.sh
+Prod Crawler gestartet (PID 1515), Log: scheduler-prod.log
+--- start-fastapi-ml.sh
+FastAPI-ML gestartet (PID 1518), Log: fastapi-ml.log
+=== Fertig 2026-07-30 16:36:29 ===

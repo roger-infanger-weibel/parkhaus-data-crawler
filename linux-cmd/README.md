@@ -57,19 +57,6 @@ beenden jeweils den alten Prozess, es entstehen keine Doppelstarts.
 
 Prüfen, was der Autostart gemacht hat: `cat /root/start-all.log`.
 
-## Autostart – Variante mit systemd
-
-```bash
-cd /root && bash linux-cmd/install-systemd.sh
-```
-
-Das Skript beendet laufende `nohup`-Prozesse, installiert die Units nach
-`/etc/systemd/system/`, ermittelt den Python-Pfad automatisch und aktiviert
-alle Dienste. Ordner, die nicht existieren, werden übersprungen.
-
-Damit starten die Dienste nach jedem Reboot automatisch, werden nach einem
-Absturz neu gestartet und schreiben ins Journal statt in Logdateien.
-
 ### Port 8080 freigeben
 
 Der Autostart allein genügt nicht — Port 8080 muss zusätzlich freigegeben
