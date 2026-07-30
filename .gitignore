@@ -1,9 +1,22 @@
+# Secrets
 .env
+
+# Python
 __pycache__/
 *.pyc
-nohup.out
-fastapi-ml.log
-FastAPI-ML/models_store/*.joblib
 .pytest_cache/
+
+# Runtime output
+nohup.out
+data/
 start-all.log
 fastapi-ml.log
+
+# Database dumps
+*.sql.zip
+
+# Trainierte Modelle (mehrere MB, werden pro Server neu erzeugt)
+FastAPI-ML/models_store/*.joblib
+
+# Lokale Werkzeug-Konfiguration
+.claude/
