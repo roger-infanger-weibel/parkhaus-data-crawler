@@ -1,4 +1,5 @@
 """Alle Lese-Zugriffe auf die bestehenden Tabellen (read-only)."""
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -6,6 +7,8 @@ import pandas as pd
 
 import db
 from core.timeutil import now_local
+
+logger = logging.getLogger(__name__)
 
 
 def get_cities(env: Optional[str] = None) -> list[dict]:
@@ -54,30 +57,51 @@ def occupancy_history(env: Optional[str] = None, start: Optional[datetime] = Non
                       end: Optional[datetime] = None,
                       city: Optional[str] = None,
                       pls_id: Optional[str] = None) -> pd.DataFrame:
-    """Belegungs-Rohdaten als DataFrame [city, pls_id, fetch_ts, free, total]."""
-    sql = """
-        SELECT city, id AS pls_id, fetch_ts, free, total
-        FROM pls_fetch_current
-        WHERE 1=1
+    """Belegungs-Rohdaten als DataFrame [city, pls_id, fetch_ts, free, total].
+
+    Wird stadtweise und streamend geladen: ein Trainingsfenster umfasst rund
+    eine Million Zeilen, und die auf einmal als Dict-Liste zu puffern sprengt
+    auf kleinen Servern den Speicher (und laesst den Server die Verbindung
+    wegen net_write_timeout abbrechen).
     """
-    params: list = []
-    if start:
-        sql += " AND fetch_ts >= %s"
-        params.append(start)
-    if end:
-        sql += " AND fetch_ts < %s"
-        params.append(end)
-    if city:
-        sql += " AND city = %s"
-        params.append(city)
-    if pls_id:
-        sql += " AND id = %s"
-        params.append(pls_id)
-    rows = db.query(sql + " ORDER BY fetch_ts", tuple(params), env=env)
-    df = pd.DataFrame(rows, columns=["city", "pls_id", "fetch_ts", "free", "total"])
-    if not df.empty:
-        df["fetch_ts"] = pd.to_datetime(df["fetch_ts"])
-    return df
+    cities = [city] if city else [c["id"] for c in get_cities(env=env)]
+    frames = []
+    for c in cities:
+        sql = """
+            SELECT city, id, fetch_ts, free, total
+            FROM pls_fetch_current
+            WHERE city = %s
+        """
+        params: list = [c]
+        if start:
+            sql += " AND fetch_ts >= %s"
+            params.append(start)
+        if end:
+            sql += " AND fetch_ts < %s"
+            params.append(end)
+        if pls_id:
+            sql += " AND id = %s"
+            params.append(pls_id)
+
+        batches = []
+        n = 0
+        for batch in db.query_stream(sql + " ORDER BY fetch_ts", tuple(params), env=env):
+            batches.append(batch)
+            n += len(batch)
+        if not n:
+            continue
+        frame = pd.DataFrame(
+            [row for batch in batches for row in batch],
+            columns=["city", "pls_id", "fetch_ts", "free", "total"],
+        )
+        del batches
+        frame["fetch_ts"] = pd.to_datetime(frame["fetch_ts"])
+        frames.append(frame)
+        logger.info("  %s: %d Messwerte geladen", c, n)
+
+    if not frames:
+        return pd.DataFrame(columns=["city", "pls_id", "fetch_ts", "free", "total"])
+    return pd.concat(frames, ignore_index=True)
 
 
 def weather_range(env: Optional[str] = None, start: Optional[datetime] = None,

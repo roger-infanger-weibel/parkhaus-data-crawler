@@ -26,7 +26,21 @@ DB_DATABASE_TEST = os.environ.get(
 APP_PORT = int(os.environ.get("AI_APP_PORT", "8080"))
 DEFAULT_ENV = os.environ.get("AI_DEFAULT_ENV", "prod").lower()
 MODELS_DIR = Path(os.environ.get("AI_MODELS_DIR") or (BASE_DIR / "models_store"))
-SCHEDULER_ENABLED = os.environ.get("AI_SCHEDULER_ENABLED", "1") not in ("0", "false", "no")
+
+
+def _flag(name: str, default: str = "1") -> bool:
+    return os.environ.get(name, default).lower() not in ("0", "false", "no")
+
+
+SCHEDULER_ENABLED = _flag("AI_SCHEDULER_ENABLED")
+
+# Trainingsfenster in Tagen. 120 Tage bedeuten ~900k Zeilen und rund 2 GB
+# Spitzenspeicher - auf kleinen Servern muss das kleiner sein, sonst geraet
+# die Maschine ins Swappen. AI_RETRAIN_ENABLED=0 schaltet das naechtliche
+# Training komplett ab (dann Modelle woanders trainieren und die .joblib-
+# Dateien nach models_store/ kopieren).
+TRAIN_DAYS = int(os.environ.get("AI_TRAIN_DAYS", "120"))
+RETRAIN_ENABLED = _flag("AI_RETRAIN_ENABLED")
 
 HORIZONS = (1, 2, 4, 8)  # Prognosehorizonte in Stunden
 

@@ -52,8 +52,11 @@ def start() -> AsyncIOScheduler:
                   CronTrigger(minute="13,28,43,58"), id="evaluate")
     sched.add_job(_wrap("mapping", lambda: build_mapping(env)),
                   CronTrigger(hour=3, minute=15), id="mapping")
-    sched.add_job(_wrap("retrain", lambda: train.run(env)),
-                  CronTrigger(hour=3, minute=30), id="retrain")
+    if config.RETRAIN_ENABLED:
+        sched.add_job(_wrap("retrain", lambda: train.run(env, config.TRAIN_DAYS)),
+                      CronTrigger(hour=3, minute=30), id="retrain")
+    else:
+        logger.info("Naechtliches Training deaktiviert (AI_RETRAIN_ENABLED=0)")
     sched.start()
     _scheduler = sched
     logger.info("Scheduler gestartet (env=%s)", env)

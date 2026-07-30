@@ -13,8 +13,15 @@ import config
 
 logger = logging.getLogger(__name__)
 
+CONNECT_TIMEOUT = 20
+# Ohne read_timeout wartet pymysql unbegrenzt, wenn der Server die Verbindung
+# abbricht (z.B. net_write_timeout=60, wenn der Client ein grosses Ergebnis
+# nicht schnell genug abholt) - der Prozess haengt dann fuer immer.
+READ_TIMEOUT = 300
 
-def get_conn(env: Optional[str] = None) -> pymysql.connections.Connection:
+
+def get_conn(env: Optional[str] = None,
+             cursorclass=None) -> pymysql.connections.Connection:
     return pymysql.connect(
         host=config.DB_HOST,
         port=config.DB_PORT,
@@ -22,9 +29,34 @@ def get_conn(env: Optional[str] = None) -> pymysql.connections.Connection:
         password=config.DB_PASSWORD,
         database=config.db_name(env),
         charset=config.DB_CHARSET,
-        cursorclass=pymysql.cursors.DictCursor,
+        cursorclass=cursorclass or pymysql.cursors.DictCursor,
         autocommit=False,
+        connect_timeout=CONNECT_TIMEOUT,
+        read_timeout=READ_TIMEOUT,
+        write_timeout=READ_TIMEOUT,
     )
+
+
+def query_stream(sql: str, params=None, env: Optional[str] = None,
+                 batch_size: int = 20000):
+    """Grosse SELECTs streamen: liefert Batches von Tupeln.
+
+    Server-side Cursor (SSCursor) statt alles zu puffern - deutlich weniger
+    Speicher als eine Liste aus einer Million Dicts, und die Zeilen werden
+    fortlaufend abgeholt, sodass der Server die Verbindung nicht wegen
+    net_write_timeout abbricht.
+    """
+    conn = get_conn(env, cursorclass=pymysql.cursors.SSCursor)
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql, params if params else None)
+            while True:
+                batch = cursor.fetchmany(batch_size)
+                if not batch:
+                    return
+                yield batch
+    finally:
+        conn.close()
 
 
 def query(sql: str, params=None, env: Optional[str] = None) -> list[dict]:

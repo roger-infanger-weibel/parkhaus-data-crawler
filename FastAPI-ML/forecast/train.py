@@ -8,6 +8,7 @@ in ai_model_runs. Ein neuer ML-Lauf wird nur aktiviert, wenn er nicht mehr
 als 10 % schlechter ist als der aktuell aktive (Schutz vor Datenausfaellen).
 """
 import argparse
+import gc
 import json
 import logging
 from datetime import timedelta
@@ -26,7 +27,7 @@ from forecast.ml_model import ForecastModel
 
 logger = logging.getLogger(__name__)
 
-TRAIN_DAYS = 120
+TRAIN_DAYS = config.TRAIN_DAYS
 HOLDOUT_DAYS = 14
 BASELINE_WEEKS = 8
 ACTIVATION_TOLERANCE = 1.10  # neuer Lauf darf max. 10% schlechter sein
@@ -118,14 +119,17 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
     grid = features.build_grid(env, start, now)
     if grid.empty:
         raise RuntimeError("Keine Belegungsdaten im Trainingsfenster")
+    logger.info("Raster gebaut: %d Zeilen - berechne Lag-Features ...", len(grid))
     grid = features.add_series_features(grid)
 
+    logger.info("Lade Wetter und Events ...")
     weather = da.weather_range(env=env, start=start, end=now + timedelta(hours=9))
     events = da.events_range(env=env, start=start, end=now + timedelta(hours=9))
     # Prior nur aus dem Trainingsteil (kein Leakage ins Holdout)
     prior = features.compute_prior(grid[grid["slot"] < holdout_start])
 
     # Basismodell: letzte 8 Wochen des Trainingsteils
+    logger.info("Trainiere Basismodell ...")
     baseline = BaselineModel().fit(
         grid[(grid["slot"] < holdout_start)
              & (grid["slot"] >= holdout_start - timedelta(weeks=BASELINE_WEEKS))]
@@ -134,6 +138,7 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
     results: dict = {}
     baseline_metrics: dict = {}
     for h in config.HORIZONS:
+        logger.info("Horizont %dh: baue Feature-Frame ...", h)
         frame = features.build_horizon_frame(grid, h, weather, events, prior)
         train_f = frame[frame["slot"] < holdout_start]
         hold_f = frame[frame["slot"] >= holdout_start]
@@ -141,6 +146,7 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
             logger.warning("Horizont %dh: zu wenig Daten, uebersprungen", h)
             continue
 
+        logger.info("Horizont %dh: trainiere auf %d Zeilen ...", h, len(train_f))
         model = ForecastModel(h).fit(train_f)
         model.prior = prior  # fuer identische Features bei der Prognose
         mae_free, mae_occ = _mae_metrics(model.predict(hold_f), hold_f)
@@ -167,6 +173,9 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
         }
         logger.info("Horizont %dh: ML MAE %.2f Plaetze / %.2f pp - Baseline %.2f / %.2f",
                     h, mae_free, mae_occ, b_free, b_occ)
+        # Speicher freigeben, bevor der naechste Horizont-Frame entsteht
+        del frame, train_f, hold_f, model
+        gc.collect()
 
     # Basismodell als eigener Lauf (horizon NULL), immer aktiv
     b_artifact = config.MODELS_DIR / f"baseline_{stamp}.joblib"
