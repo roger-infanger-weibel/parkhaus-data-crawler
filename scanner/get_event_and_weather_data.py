@@ -104,8 +104,8 @@ def store_historical_events():
     events_to_insert = []
     event_mappings = []
 
-    start_date = datetime.datetime(2026, 1, 1)
-    end_date = datetime.datetime.now(SWISS_TZ) + datetime.timedelta(days=14)  # 2 Wochen Zukunft
+    start_date = datetime.datetime(2026, 1, 1, tzinfo=SWISS_TZ)
+    end_date = datetime.datetime.now(SWISS_TZ) + datetime.timedelta(days=14)
 
     current_day = start_date
     event_counter = 1
