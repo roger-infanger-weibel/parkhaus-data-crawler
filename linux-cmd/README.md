@@ -108,20 +108,23 @@ journalctl -u parkhaus-scanner-prod --since "1 hour ago"
 
 ```bash
 cd /root
-bash linux-cmd/copy-github.sh
-cp -u latest-github/scanner/* scanner-prod/
-cp -u latest-github/scanner/* scanner-test/
-cp latest-github/flask/* flask/
-cp -r latest-github/FastAPI-ML/* FastAPI-ML/
-systemctl restart parkhaus-scanner-prod parkhaus-scanner-test parkhaus-flask parkhaus-fastapi-ml
+bash copy-github.sh     # holt den aktuellen Stand nach latest-github/
+./start-all.sh          # kopiert ihn in die Zielordner und startet neu
 ```
 
-Wichtig: `FastAPI-ML/models_store/` beim Kopieren **nicht** überschreiben —
-dort liegen die trainierten Modelle, die nicht im Git sind.
+Das Kopieren erledigen die Startskripte selbst, jeweils mit `cp -rf` — also
+mit Überschreiben. Das ist wichtig: mit `cp -n` (nicht überschreiben) wurden
+vorhandene Dateien übersprungen, sodass ein `git pull` folgenlos blieb und
+der Server tagelang alten Code ausführte.
 
-Die alten Skripte `start-prod.sh`, `start-test.sh`, `start-flask.sh` und
-`start-fastapi-ml.sh` funktionieren weiterhin für manuelle Starts. Nicht
-gleichzeitig mit den systemd-Diensten verwenden, sonst laufen Prozesse doppelt.
+`FastAPI-ML/models_store/` bleibt dabei unangetastet: `cp -rf quelle/* ziel`
+führt die Ordner zusammen und löscht nichts. Im Repository liegt dort nur
+eine leere Platzhalterdatei, die trainierten Modelle auf dem Server bleiben
+erhalten. Dasselbe gilt für die `.env`, die nicht im Repository ist.
+
+Einzelne Dienste lassen sich mit `./start-flask.sh`, `./start-prod.sh`,
+`./start-test.sh` oder `./start-fastapi-ml.sh` neu starten. Bei Verwendung der
+systemd-Units stattdessen `systemctl restart …`, nicht beides gleichzeitig.
 
 ## Training: nicht auf diesem Server
 
