@@ -1,167 +1,223 @@
-# Cross-Reference: Datei-Übersicht und Abhängigkeiten
+# Parkhaus-Daten-Crawler — Übersicht und Datei-Index
 
-## Projektstruktur
+Sammelt alle 15 Minuten die Belegung von 110 Parkhäusern in Luzern, Basel,
+Bern, Zürich und St. Gallen, speichert sie in MariaDB und stellt sie über zwei
+Weboberflächen dar — eine klassische und eine mit KI-Prognose.
+
+## Die vier Bestandteile
+
+| Ordner | Was | Läuft als |
+|---|---|---|
+| [`scanner/`](#scanner--datensammlung) | Holt die Daten von den Stadt-APIs | Dauerprozess, alle 15 Min |
+| [`flask/`](#flask--klassisches-dashboard) | Dashboard mit Ist-Daten | Webserver, Port 80 |
+| [`FastAPI-ML/`](#fastapi-ml--ki-prognose) | Prognose, Genauigkeits-Monitoring, Chat | Webserver, Port 8080 |
+| [`linux-cmd/`](#linux-cmd--serverbetrieb) | Start-Skripte und Betriebsanleitung | — |
 
 ```
 parkhaus-data-crawler/
-├── README.md                   ← dieses Dokument
-├── scanner/                    ← Datensammlung (Crawler)
-│   ├── collect_data.py
-│   ├── scheduler.py
-│   ├── base.py
-│   ├── db_utils.py
-│   ├── luzern.py / basel.py / bern.py / zurich.py / stgallen.py
-│   ├── get_event_and_weather_data.py
-│   ├── cities.json
-│   ├── requirements.txt
-│   ├── version.py / __init__.py
-│   └── *.md (Dokumentation)
-├── FastAPI-ML/                 ← KI-Prognose-App (FastAPI, siehe FastAPI-ML/README.md)
-├── flask/                      ← Web-Server (Dashboard)
-│   ├── web_server.py
-│   ├── db_utils.py
-│   ├── index.html / logs.html
-└── linux-cmd/                  ← Linux Start-Skripte
-    └── copy-github.sh          ← Refresh Local Github Folder
-    └── start-flask.sh          ← Startup Flask Server
-    ├── start-prod.sh           ← Startup Prod Crawler
-    └── start-test.sh           ← Startup Test Crawler
+├── README.md                ← dieses Dokument
+├── .gitignore
+├── scanner/                 ← Datensammlung
+├── flask/                   ← Dashboard (Port 80)
+├── FastAPI-ML/              ← KI-Prognose (Port 8080)
+└── linux-cmd/               ← Betrieb und Autostart
 ```
 
 ---
 
-## scanner/ — Crawler-Dateien
+## scanner/ — Datensammlung
 
-| Datei | Beschreibung | Aufgerufen von | Verwendet |
-|-------|-------------|----------------|-----------|
-| **collect_data.py** | Hauptskript: sammelt Parkdaten aller 5 Städte | `scheduler.py` (alle 15 Min) oder manuell via CLI | `base.py`, `db_utils.py`, `cities.json`, alle City-Collector |
-| **scheduler.py** | Zeitsteuerung: startet Crawler und Wetter/Events nach Zeitplan | Manuell (`python scheduler.py`) | `collect_data.py` (15 Min), `get_event_and_weather_data.py` (06:00 + 18:00) |
-| **base.py** | Abstrakte Basisklasse `BaseParkingCollector` mit Retry-Logik | Alle City-Collector erben davon | `db_utils.py` (get_connection, insert_measurement) |
-| **db_utils.py** | DB-Layer: Verbindung, UPSERT, Mock-Mode (Simulation) | `base.py`, `collect_data.py` | `db_config.json` (optional) |
-| **luzern.py** | Collector für Luzern (PLS Luzern API) | `collect_data.py` | `base.py` |
-| **basel.py** | Collector für Basel (ParkenDD API) | `collect_data.py` | `base.py` |
-| **bern.py** | Collector für Bern (Parking Bern XML) | `collect_data.py` | `base.py` |
-| **zurich.py** | Collector für Zürich (ParkenDD API) | `collect_data.py` | `base.py` |
-| **stgallen.py** | Collector für St. Gallen (Open Data Portal) | `collect_data.py` | `base.py` |
-| **get_event_and_weather_data.py** | Wetter (Open-Meteo) und Events in DB importieren | `scheduler.py` (06:00 + 18:00) | `pymysql`, `.env` (DB-Credentials) |
-| **cities.json** | Stadt-Konfiguration (IDs, APIs, Koordinaten) | `collect_data.py` (load_config) | — |
-| **requirements.txt** | Python-Abhängigkeiten | `pip install -r` | — |
-| **version.py** | Versionsnummer | — | — |
-| **__init__.py** | Package-Marker | Python-Import-System | — |
+| Datei | Beschreibung | Aufgerufen von |
+|---|---|---|
+| **scheduler.py** | Dauerprozess: startet die Sammlung alle 15 Min, Wetter/Events um 06:00 und 18:00 | manuell bzw. `start-prod.sh` |
+| **collect_data.py** | Orchestrator: ruft alle Stadt-Collector auf, protokolliert in die DB. CLI mit `--simulation` | `scheduler.py` |
+| **base.py** | Abstrakte Basisklasse `BaseParkingCollector` mit Retry-Logik und Fallback auf den letzten Snapshot | alle Collector erben davon |
+| **luzern.py** | Collector Luzern (PLS-API) | `collect_data.py` |
+| **basel.py** | Collector Basel (ParkenDD) | `collect_data.py` |
+| **zurich.py** | Collector Zürich (ParkenDD); pflegt zusätzlich `zurich_parking_map.json` | `collect_data.py` |
+| **stgallen.py** | Collector St. Gallen (Open Data) | `collect_data.py` |
+| **bern.py** | Collector Bern (XML); überschreibt auch `fetch_raw_data()` | `collect_data.py` |
+| **db_utils.py** | DB-Zugriff (`mysql.connector`), UPSERT, Mock-Modus für die Simulation | `base.py`, `collect_data.py` |
+| **get_event_and_weather_data.py** | Lädt Wetter von Open-Meteo und erzeugt Event-Einträge (`pymysql`) | `scheduler.py` |
+| **cities.json** | Stadt-Konfiguration: IDs, API-Adressen, Aktivierung | `collect_data.py` |
+| **zurich_parking_map.json** | Zuordnung und Kapazitäten der Zürcher Parkhäuser; wird vom Collector aktualisiert | `zurich.py` |
+| **requirements.txt** | Abhängigkeiten | — |
+| **version.py**, **__init__.py**, **.gitignore** | Versionsnummer, Package-Marker, Ausnahmen | — |
 
----
-
-## flask/ — Web-Server-Dateien
-
-| Datei | Beschreibung | Aufgerufen von | Verwendet |
-|-------|-------------|----------------|-----------|
-| **web_server.py** | Flask-Server: API-Endpoints + statische Dateien. Städte, Gruppen und Events kommen aus der Datenbank, nicht aus JSON-Dateien. Umschaltung prod/test per `?env=` | Manuell (`python web_server.py`) | `db_utils.py`, `index.html`, `logs.html` |
-| **db_utils.py** | DB-Layer (Kopie von scanner/db_utils.py) | `web_server.py` | `db_config.json` (optional) |
-| **index.html** | Dashboard: Parkhaus-Übersicht und Diagramme | `web_server.py` (Route `/`) | API-Endpoints von `web_server.py` |
-| **logs.html** | Log-Ansicht: Crawler-Logs und Statistiken | `web_server.py` (Route `/logs`) | API-Endpoints von `web_server.py` |
-
----
-
-## Abhängigkeitsgraph
-
-```
-scheduler.py
-├── collect_data.py  (alle 15 Min)
-│   ├── cities.json
-│   ├── db_utils.py ──→ MariaDB
-│   ├── base.py
-│   │   └── db_utils.py
-│   ├── luzern.py ──→ PLS Luzern API
-│   ├── basel.py ──→ ParkenDD API
-│   ├── bern.py ──→ Parking Bern XML
-│   ├── zurich.py ──→ ParkenDD API
-│   └── stgallen.py ──→ Open Data SG API
-│
-└── get_event_and_weather_data.py  (06:00 + 18:00)
-    ├── .env (DB-Credentials)
-    ├── Open-Meteo API ──→ weather_forecasts (DB)
-    └── Hardcoded Events ──→ local_events + event_parkhaus (DB)
-
-web_server.py  (separater Prozess, Port 80)
-├── db_utils.py ──→ MariaDB (lesend)
-├── index.html (Dashboard)
-└── logs.html (Log-Viewer)
-
-FastAPI-ML/main.py  (separater Prozess, Port 8080)
-├── db.py ──→ MariaDB (liest pls_fetch_current, weather_forecasts,
-│              local_events, cities, parkhaeuser; schreibt nur ai_*-Tabellen)
-├── forecast/  ──→ Prognosen alle 15 Min, Auswertung, Training
-├── chatbot/   ──→ regelbasierter Assistent
-└── static/    ──→ Prognose, Genauigkeit, Chat, Dokumentation
-```
+**Dokumentation:** [README](scanner/README.md) ·
+[QUICK_START](scanner/QUICK_START.md) ·
+[ARCHITECTURE](scanner/ARCHITECTURE.md) ·
+[CODE_EXAMPLES](scanner/CODE_EXAMPLES.md) ·
+[CHANGES_SUMMARY](scanner/CHANGES_SUMMARY.md) ·
+[SERVER](scanner/SERVER.md) (SFTP-Pfade) ·
+[SIMULATION_MODE_GUIDE](scanner/SIMULATION_MODE_GUIDE.md) und
+[README_SIMULATION](scanner/README_SIMULATION.md) sowie
+[MANIFEST](scanner/MANIFEST.md) — die letzten drei sind historisch
+(abgeschlossene Umstellung).
 
 ---
 
-## Dokumentation (scanner/)
-
-| Datei | Inhalt |
-|-------|--------|
-| **README.md** | Hauptdokumentation: Features, Quick Start, Projektstruktur |
-| **QUICK_START.md** | Kurzanleitung: Installation und erster Start |
-| **README_SIMULATION.md** | Übersicht Simulation-Mode |
-| **SIMULATION_MODE_GUIDE.md** | Detaillierte Simulation-Dokumentation |
-| **CODE_EXAMPLES.md** | Code-Beispiele und Vergleiche |
-| **CHANGES_SUMMARY.md** | Zusammenfassung aller technischen Änderungen |
-| **ARCHITECTURE.md** | Systemdesign und Datenfluss |
-| **MANIFEST.md** | Datei-Inventar und Implementierungsguide |
-| **SERVER.md** | SFTP-Pfade der beiden Scanner-Instanzen auf dem Server |
-
-## Weitere Dokumentation
-
-| Datei | Inhalt |
-|-------|--------|
-| [FastAPI-ML/README.md](FastAPI-ML/README.md) | KI-Prognose-App: Architektur, Modelle, Setup, Deployment |
-| [FastAPI-ML/MODELL-REFRESH.md](FastAPI-ML/MODELL-REFRESH.md) | Wöchentliche Routine: Modelle auf dem PC trainieren und auf den Server bringen |
-| [linux-cmd/README.md](linux-cmd/README.md) | Serverbetrieb: Autostart, Zeitzone, Training, Fehlersuche |
-
----
-
-## linux-cmd/ — Linux Start-Skripte
+## flask/ — klassisches Dashboard
 
 | Datei | Beschreibung |
-|-------|-------------|
-| **start-prod.sh** | Stoppt laufenden Prod-Scheduler, kopiert `scheduler.py` → `scheduler-prod.py` und startet ihn im Hintergrund (nohup) |
-| **start-test.sh** | Dasselbe für die Test-Umgebung |
-| **start-flask.sh** | Startet das Flask-Dashboard (Port 80) neu |
-| **start-fastapi-ml.sh** | Startet die KI-Prognose-App (Port 8080) neu |
-| **start-all.sh** | Ruft alle vier obigen Skripte nacheinander auf – für den Autostart per crontab |
+|---|---|
+| **web_server.py** | Flask-Server auf Port 80. Städte, Gruppen und Events kommen aus der Datenbank; Umschaltung prod/test per `?env=` |
+| **db_utils.py** | DB-Zugriff (Kopie von `scanner/db_utils.py`) |
+| **index.html** | Dashboard: Parkhaus-Übersicht und Diagramme |
+| **logs.html** | Log-Ansicht: Crawler-Protokolle und Statistiken |
+
+---
+
+## FastAPI-ML/ — KI-Prognose
+
+Eigenständige Anwendung auf Port 8080. Liest die bestehenden Tabellen **nur**
+und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
+
+### Gerüst
+
+| Datei | Beschreibung |
+|---|---|
+| **main.py** | FastAPI-App, startet den Scheduler, bindet Router und Oberfläche ein |
+| **config.py** | Konfiguration, `.env`-Suche, Auflösung der Modelldateien |
+| **db.py** | DB-Zugriff via `pymysql`, Streaming für grosse Abfragen, Timeouts |
+| **schema.sql** / **init_db.py** | Anlage der `ai_*`-Tabellen (einmalig) |
+| **requirements.txt** / **.env.example** | Abhängigkeiten, dokumentierte Variablen |
+
+### core/ — Grundlagen
+
+| Datei | Beschreibung |
+|---|---|
+| **identity.py** | Zuordnung der Parkhaus-Kennungen zwischen Messwerten und Stammdaten → `ai_parkhaus_map` |
+| **data_access.py** | Alle Lese-Abfragen (Belegung, Wetter, Events, Stammdaten) |
+| **timeutil.py** | Europe/Zurich, 15-Minuten-Raster |
+
+### forecast/ — Prognose
+
+| Datei | Beschreibung |
+|---|---|
+| **features.py** | Rasterung und Merkmalsbildung, gemeinsam für Training und Prognose |
+| **baseline.py** | Statistisches Basismodell (Wochentag/Stunde) als Vergleichsmassstab |
+| **ml_model.py** | LightGBM-Wrapper mit Fallback auf scikit-learn |
+| **train.py** | Trainingslauf, Holdout-Bewertung, Aktivierungssperre |
+| **predict.py** | Erzeugt Prognosen alle 15 Minuten |
+| **evaluate.py** | Vergleicht gereifte Prognosen mit den Ist-Werten |
+
+### api/ — Schnittstelle
+
+| Datei | Beschreibung |
+|---|---|
+| **routes_meta.py** | `/api/health`, `/api/cities`, `/api/parkings/{stadt}` |
+| **routes_forecast.py** | Aktuelle Prognosen, Detailverlauf, Empfehlung |
+| **routes_accuracy.py** | Genauigkeit gesamt, pro Stadt, pro Parkhaus, Verlauf |
+| **routes_chat.py** | `/api/chat` |
+| **services.py** | Gemeinsame Logik für API und Chatbot |
+
+### chatbot/ — regelbasierter Assistent
+
+| Datei | Beschreibung |
+|---|---|
+| **engine.py** | Fassade `ChatEngine`, später gegen ein Sprachmodell austauschbar |
+| **entities.py** | Erkennt Stadt, Parkhaus und deutsche Zeitangaben |
+| **intents.py** | Ordnet die Frage einer Absicht zu |
+| **handlers.py** | Beantwortet je Absicht aus der Datenbank |
+| **responses.py** | Deutsche Antworttexte |
+
+### static/ — Oberfläche
+
+| Datei | Beschreibung |
+|---|---|
+| **index.html** / **js/forecast.js** | Prognoseseite mit Rückblick- und Prognosespalten |
+| **accuracy.html** / **js/accuracy.js** | Genauigkeits-Dashboard |
+| **chat.html** / **js/chat.js** | Chat-Assistent |
+| **doku.html** | Erklärung für Nutzer und technische Details |
+| **js/api.js** | Gemeinsamer Fetch-Wrapper, prod/test-Umschalter, Link-Menü |
+| **css/app.css** | Stylesheet |
+
+### scripts/ — Werkzeuge
+
+| Datei | Beschreibung |
+|---|---|
+| **export_models.py** | Sammelt die aktiven Modelldateien zum Kopieren auf den Server |
+| **backfill_predictions.py** | Simuliert vergangene Prognosen, um das Genauigkeits-Dashboard zu füllen |
+| **migrate_old_db.py** | Übernahm fehlende Messwerte aus der abgelösten Datenbank `ph_fetch` |
+| **generate_sample_data.py** | Synthetische Daten für eine leere lokale Datenbank |
+
+### tests/
+
+`test_identity.py`, `test_features.py`, `test_baseline.py`,
+`test_entities.py`, `test_intents.py` — 44 Tests, Aufruf mit
+`python -m pytest tests/ -q`.
+
+**Dokumentation:** [README](FastAPI-ML/README.md) ·
+[MODELL-REFRESH](FastAPI-ML/MODELL-REFRESH.md) (wöchentliche Routine)
+
+---
+
+## linux-cmd/ — Serverbetrieb
+
+| Datei | Beschreibung |
+|---|---|
+| **README.md** | **Betriebsanleitung**: Autostart, Zeitzone, Speichergrenzen, Deployment, Fehlersuche |
+| **start-all.sh** | Ruft die vier Startskripte nacheinander auf — für den Autostart |
+| **start-prod.sh** / **start-test.sh** | Scanner der jeweiligen Umgebung neu starten |
+| **start-flask.sh** | Dashboard (Port 80) neu starten |
+| **start-fastapi-ml.sh** | KI-Prognose (Port 8080) neu starten |
 | **copy-github.sh** | Holt den aktuellen Repository-Stand nach `latest-github/` |
-| **install-systemd.sh** | Optionale Alternative zum crontab: richtet die vier Dienste als systemd-Units ein |
-| **systemd/** | Die zugehörigen Unit-Dateien |
-| **README.md** | **Betriebsanleitung des Servers**: Autostart, Deployment, Zeitzone, Speichergrenzen, Fehlersuche |
+| **install-systemd.sh** | Optionale Alternative: richtet die Dienste als systemd-Units ein |
+| **systemd/*.service** | Die vier Unit-Dateien |
 
-Verwendung auf dem Linux-Server (`root@87.106.222.137`), alle Skripte liegen
-dort direkt in `/root`:
+Auf dem Server liegen die Skripte direkt in `/root`. Autostart über den
+crontab-Eintrag `@reboot sleep 60 && /root/start-all.sh`.
 
-```bash
-./start-all.sh          # alle vier Dienste
-./start-test.sh         # einzeln
+---
+
+## Datenfluss
+
+```
+scheduler.py  (Dauerprozess)
+├── collect_data.py  (alle 15 Min)
+│   ├── cities.json
+│   ├── base.py + luzern/basel/bern/zurich/stgallen.py ──→ Stadt-APIs
+│   └── db_utils.py ──→ pls_fetch_current, log
+│
+└── get_event_and_weather_data.py  (06:00 + 18:00)
+    ├── Open-Meteo API ──→ weather_forecasts
+    └── erzeugte Events ──→ local_events, event_parkhaus
+
+web_server.py  (Port 80)
+└── db_utils.py ──→ MariaDB (nur lesend) ──→ index.html / logs.html
+
+FastAPI-ML/main.py  (Port 8080)
+├── forecast/predict.py    :10/:25/:40/:55 ──→ ai_predictions
+├── forecast/evaluate.py   :13/:28/:43/:58 ──→ ai_accuracy_daily
+├── core/identity.py       03:15           ──→ ai_parkhaus_map
+├── forecast/train.py      (auf dem PC)    ──→ ai_model_runs + models_store/
+└── static/ ──→ Prognose, Genauigkeit, Chat, Dokumentation
 ```
 
-Autostart nach einem Neustart über den crontab-Eintrag
-`@reboot sleep 60 && /root/start-all.sh >> /root/start-all.log 2>&1`.
-Einzelheiten in [linux-cmd/README.md](linux-cmd/README.md).
+## Datenbanken
 
----
+Zwei Datenbanken mit identischem Schema: **`ph_fetch_prod`** für den Betrieb
+und **`ph_fetch_test`** zum Erproben neuer Scanner-Versionen. Die alte
+Datenbank `ph_fetch` wurde am 31.07.2026 abgelöst; fehlende Messwerte wurden
+vorher übernommen.
 
-## FastAPI-ML/ — KI-Prognose-App
-
-Eigenständige FastAPI-Anwendung auf Port 8080: Prognosen für 1/2/4/8 Stunden,
-laufendes Genauigkeits-Monitoring und ein Chat-Assistent. Sie liest die
-bestehenden Tabellen nur und schreibt ausschliesslich in eigene Tabellen mit
-dem Präfix `ai_`. Aufbau, Modelle, Betrieb und Deployment sind in
-[FastAPI-ML/README.md](FastAPI-ML/README.md) beschrieben, die
-Benutzer-Dokumentation liegt zusätzlich als Seite unter `/doku.html`.
-
----
+Vom Scanner befüllt: `pls_fetch_current` (~1,5 Mio. Zeilen), `weather_forecasts`,
+`local_events`, `event_parkhaus`, `cities`, `parkhaeuser`, `log`.
+Von der KI-App: `ai_predictions`, `ai_accuracy_daily`, `ai_model_runs`,
+`ai_parkhaus_map`, `ai_chat_log`. Beschreibung aller Tabellen unter
+`/doku.html`.
 
 ## Hinweise
 
-- **flask/db_utils.py** ist eine Kopie von **scanner/db_utils.py** — Änderungen müssen in beiden Dateien gemacht werden
-- **Datenbanktreiber:** `scanner/db_utils.py` und `flask/db_utils.py` verwenden `mysql.connector`; `get_event_and_weather_data.py` und die gesamte FastAPI-ML-App verwenden `pymysql`
-- **Zwei Datenbanken:** `ph_fetch_prod` und `ph_fetch_test` mit identischem Schema, damit neue Scanner-Versionen gefahrlos erprobt werden können. Die alte Datenbank `ph_fetch` wurde am 31.07.2026 abgelöst (fehlende Messwerte wurden vorher übernommen)
+- **flask/db_utils.py** ist eine Kopie von **scanner/db_utils.py** — Änderungen
+  müssen in beiden Dateien erfolgen
+- **Datenbanktreiber:** `scanner/db_utils.py` und `flask/db_utils.py` verwenden
+  `mysql.connector`; `get_event_and_weather_data.py` und die gesamte
+  FastAPI-ML-App verwenden `pymysql`
+- **Nicht im Repository:** `.env` (Zugangsdaten), `data/` (JSON-Snapshots),
+  `FastAPI-ML/models_store/*.joblib` (trainierte Modelle, mehrere MB),
+  Datenbank-Dumps
+- **Modelle** werden auf einem PC trainiert und auf den Server kopiert — der
+  Server hat mit 641 MB RAM zu wenig Speicher dafür, siehe
+  [MODELL-REFRESH.md](FastAPI-ML/MODELL-REFRESH.md)
