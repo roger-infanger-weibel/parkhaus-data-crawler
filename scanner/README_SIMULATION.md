@@ -1,13 +1,20 @@
 # Parkhaus Data Crawler - Simulation Mode
 
+> **Historisches Dokument — die Umstellung ist abgeschlossen.**
+> Simulation Mode steckt seit 2026-07 fest in `db_utils.py`, `base.py` und
+> `collect_data.py`. Die unten beschriebenen `*_refactored.py`-Dateien
+> existieren nicht mehr; die Migrationsschritte sind nicht mehr auszuführen.
+> Zum Benutzen genügt: `python collect_data.py --simulation`.
+> Das Dokument bleibt als Beschreibung der Funktionsweise erhalten.
+
 Complete refactoring of the parking data crawler to support **simulation mode** (dry-run without database writes).
 
 ## 📋 What's Included
 
-### Refactored Files (Ready to Use)
-1. **`db_utils_refactored.py`** - Database layer with mock connection support
-2. **`base_refactored.py`** - Base collector with simulation mode parameter
-3. **`collect_data_refactored.py`** - Main script with `--simulation` flag
+### Refactored Files (damals; heute Bestandteil der regulären Dateien)
+1. **`db_utils_refactored.py`** → heute `db_utils.py` - Database layer with mock connection support
+2. **`base_refactored.py`** → heute `base.py` - Base collector with simulation mode parameter
+3. **`collect_data_refactored.py`** → heute `collect_data.py` - Main script with `--simulation` flag
 
 ### Documentation
 1. **`QUICK_START.md`** - Get started in 5 minutes

@@ -4,17 +4,20 @@ A robust, production-ready data collection tool for Swiss parking availability (
 
 ## 🎯 Supported Cities
 
-| City | Records | Source |
-|------|---------|--------|
-| **Luzern** | 15+ | PLS Luzern API |
-| **Basel** | 16+ | ParkenDD API |
-| **St. Gallen** | 14+ | Open Data Portal |
-| **Zürich** | 36+ | ParkenDD API |
-| **Bern** | 28+ | Parking Bern XML |
+Facility counts as actually delivered by the APIs (measured 2026-07-31 in
+`pls_fetch_current`) — some APIs advertise more facilities than they report:
+
+| City | Facilities | Source |
+|------|-----------|--------|
+| **Luzern** | 16 | PLS Luzern API |
+| **Basel** | 16 | ParkenDD API |
+| **St. Gallen** | 30 | Open Data Portal |
+| **Zürich** | 38 | ParkenDD API |
+| **Bern** | 10 | Parking Bern XML |
 
 ## ✨ Features
 
-- **Real-time data collection** from 5 Swiss cities (92+ parking facilities)
+- **Real-time data collection** from 5 Swiss cities (110 parking facilities)
 - **Robust error handling** with retry logic and exponential backoff
 - **Simulation mode** for safe testing without database writes (`--simulation` flag)
 - **UPSERT pattern** - prevents duplicate errors on repeated executions
@@ -99,9 +102,9 @@ python collect_data.py --simulation --trace
 
 Current deployment collects:
 - **5 cities** across Switzerland
-- **92+ parking facilities** total
-- **Real-time updates** every hour (configurable)
-- **100% uptime** during operational hours
+- **110 parking facilities** total
+- **Every 15 minutes**, driven by `scheduler.py`
+- History since 2026-01-16, ~1.5 million measurements in `pls_fetch_current`
 
 ## 🔧 Configuration
 

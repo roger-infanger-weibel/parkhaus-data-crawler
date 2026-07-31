@@ -104,6 +104,15 @@ Output will show:
 
 ## 6️⃣ Scheduling
 
+> **So läuft es tatsächlich:** nicht per Cron, sondern über `scheduler.py`
+> als Dauerprozess — Datensammlung alle **15 Minuten**, Wetter und Events
+> um 06:00 und 18:00. Gestartet wird er auf dem Server über
+> `/root/start-prod.sh` bzw. `/root/start-test.sh`, der Autostart nach einem
+> Neustart über einen `@reboot`-Eintrag im crontab. Siehe
+> [../linux-cmd/README.md](../linux-cmd/README.md).
+>
+> Die folgenden Cron-Beispiele sind Alternativen für andere Umgebungen.
+
 ### Cron - Test Run (daily)
 ```bash
 0 3 * * * cd /home/parking && python collect_data.py --simulation >> /var/log/parking-test.log 2>&1

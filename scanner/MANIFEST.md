@@ -1,5 +1,12 @@
 # Manifest - Simulation Mode Refactoring
 
+> **Historisches Dokument — die Umstellung ist abgeschlossen.**
+> Die hier als `*_refactored.py` aufgeführten Dateien existieren nicht mehr;
+> ihr Inhalt steckt seit 2026-07 in `db_utils.py`, `base.py` und
+> `collect_data.py`. Die Kopier- und Integrationsschritte sind erledigt und
+> nicht zu wiederholen. Das Dokument beschreibt weiterhin zutreffend, *wie*
+> der Simulationsmodus funktioniert.
+
 ## 📦 Deliverables
 
 ### Production-Ready Code Files (3 files)
