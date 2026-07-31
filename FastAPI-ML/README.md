@@ -87,7 +87,8 @@ Dateiname steht — die Datenbank kennt den aktiven Lauf bereits, sobald das
 Training gegen sie gelaufen ist. Zügig kopieren: bis die Dateien da sind,
 findet der Server kein Modell und erzeugt einen Zyklus lang keine Prognosen.
 
-Details und Fehlersuche: [../linux-cmd/README.md](../linux-cmd/README.md).
+**Schritt-für-Schritt-Anleitung dafür: [MODELL-REFRESH.md](MODELL-REFRESH.md).**
+Serverbetrieb und Fehlersuche: [../linux-cmd/README.md](../linux-cmd/README.md).
 
 ## Deployment (Server)
 

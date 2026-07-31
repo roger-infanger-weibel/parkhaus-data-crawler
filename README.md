@@ -12,7 +12,7 @@ parkhaus-data-crawler/
 │   ├── db_utils.py
 │   ├── luzern.py / basel.py / bern.py / zurich.py / stgallen.py
 │   ├── get_event_and_weather_data.py
-│   ├── cities.json / groups.json / events.json
+│   ├── cities.json
 │   ├── requirements.txt
 │   ├── version.py / __init__.py
 │   └── *.md (Dokumentation)
@@ -45,8 +45,6 @@ parkhaus-data-crawler/
 | **stgallen.py** | Collector für St. Gallen (Open Data Portal) | `collect_data.py` | `base.py` |
 | **get_event_and_weather_data.py** | Wetter (Open-Meteo) und Events in DB importieren | `scheduler.py` (06:00 + 18:00) | `pymysql`, `.env` (DB-Credentials) |
 | **cities.json** | Stadt-Konfiguration (IDs, APIs, Koordinaten) | `collect_data.py` (load_config) | — |
-| **groups.json** | Parkhaus-Gruppierungen pro Stadt | **Verwaist** – wird von keinem Skript mehr gelesen (Gruppen kommen aus der DB-Tabelle `parkhaeuser`) | — |
-| **events.json** | Event-Definitionen | **Verwaist** – Events liegen in der DB-Tabelle `local_events` | — |
 | **requirements.txt** | Python-Abhängigkeiten | `pip install -r` | — |
 | **version.py** | Versionsnummer | — | — |
 | **__init__.py** | Package-Marker | Python-Import-System | — |
@@ -118,6 +116,7 @@ FastAPI-ML/main.py  (separater Prozess, Port 8080)
 | Datei | Inhalt |
 |-------|--------|
 | [FastAPI-ML/README.md](FastAPI-ML/README.md) | KI-Prognose-App: Architektur, Modelle, Setup, Deployment |
+| [FastAPI-ML/MODELL-REFRESH.md](FastAPI-ML/MODELL-REFRESH.md) | Wöchentliche Routine: Modelle auf dem PC trainieren und auf den Server bringen |
 | [linux-cmd/README.md](linux-cmd/README.md) | Serverbetrieb: Autostart, Zeitzone, Training, Fehlersuche |
 
 ---

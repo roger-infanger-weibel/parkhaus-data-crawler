@@ -157,6 +157,9 @@ python -m scripts.export_models --env prod --env test
 Kopierbefehl. Die Dateien dann per WinSCP oder `scp` nach
 `/root/FastAPI-ML/models_store/` übertragen.
 
+Ausführliche Anleitung mit Kontrollschritten und Stolpersteinen:
+[../FastAPI-ML/MODELL-REFRESH.md](../FastAPI-ML/MODELL-REFRESH.md)
+
 Zügig kopieren: das Training markiert den neuen Lauf sofort als aktiv, und bis
 die Dateien eintreffen, findet der Server kein Modell und erzeugt für einen
 Zyklus keine Prognosen. Danach prüfen:
