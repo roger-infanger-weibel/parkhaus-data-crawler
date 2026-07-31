@@ -1,8 +1,9 @@
 # Modelle auffrischen — Anleitung für den PC
 
 Wöchentliche Routine, Dauer rund 10 Minuten. Das Training läuft auf dem PC,
-weil der Server dafür zu wenig Arbeitsspeicher hat (drei Versuche am
-30./31.07.2026 legten ihn jedes Mal komplett lahm).
+weil der Server mit **641 MB RAM und ohne Swap** dafür schlicht zu klein ist —
+das Training braucht 735 MB, also mehr, als die Maschine besitzt. Drei
+Versuche am 30./31.07.2026 legten sie jedes Mal komplett lahm.
 
 ## Wann
 

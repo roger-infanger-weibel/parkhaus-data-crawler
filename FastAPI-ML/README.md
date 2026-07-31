@@ -59,12 +59,17 @@ DB-Rechte: zur Laufzeit nur `SELECT, INSERT, UPDATE, DELETE`;
 ## Training: nicht auf dem Zielserver
 
 Das Training hält das gesamte Zeitfenster im Arbeitsspeicher — gemessen
-**735 MB** bei 60 Tagen, **1368 MB** bei 120 Tagen. Auf dem Produktivserver
-(87.106.222.137) reicht das nicht: dort blieb die Maschine am 30./31.07.2026
-dreimal komplett stehen, auch mit `systemd-run -p MemoryMax=1G
--p MemorySwapMax=0` und 60 Tagen. Das Limit schützt den Trainingsprozess,
-aber für uvicorn, die beiden Scanner und Flask bleibt zu wenig übrig — der
-Rest wandert in den Swap und nimmt SSH mit.
+**735 MB** bei 60 Tagen, **1368 MB** bei 120 Tagen. Der Produktivserver
+(87.106.222.137) hat **641 MB und keinen Swap**; das Training braucht also
+mehr, als die Maschine besitzt. Kein Limit ändert daran etwas.
+
+Ohne Swap wirft der Kernel bei Speichermangel den Datei-Cache weg,
+einschliesslich der ausführbaren Teile laufender Programme — auch `sshd`
+wird dann unbenutzbar. Genau so blieb die Maschine am 30./31.07.2026
+dreimal komplett stehen.
+
+Zum Vergleich: die App selbst braucht betriebsbereit rund 216 MB
+(pandas/numpy/lightgbm plus die fünf Modelle).
 
 **Deshalb dort abschalten:**
 

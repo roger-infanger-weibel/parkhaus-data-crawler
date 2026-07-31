@@ -125,13 +125,29 @@ gleichzeitig mit den systemd-Diensten verwenden, sonst laufen Prozesse doppelt.
 
 ## Training: nicht auf diesem Server
 
-**Der Server ist zu klein zum Trainieren.** Drei Versuche am 30./31.07.2026
-endeten jedes Mal damit, dass die Maschine komplett stehen blieb — auch mit
-`systemd-run --scope -p MemoryMax=1G -p MemorySwapMax=0` und einem Fenster von
-nur 60 Tagen. Das Limit schützt zwar den Trainingsprozess selbst, aber es
-bleibt zu wenig Arbeitsspeicher für alles andere: uvicorn mit geladenen
-Modellen, zwei Scanner, Flask. Der Rest des Systems wandert dann in den Swap,
-und die Maschine ist nicht mehr bedienbar — SSH inklusive.
+**Der Server ist zu klein zum Trainieren — die Rechnung geht nicht auf:**
+
+| | |
+|---|---|
+| RAM gesamt (`free -h`) | **641 MB** |
+| davon im Betrieb frei | ~180 MB |
+| Swap | **0** |
+| Training, 60-Tage-Fenster | **735 MB** |
+| Grundbedarf der App (pandas/numpy/lightgbm + 5 Modelle) | 216 MB |
+
+Das Training braucht mehr, als die Maschine besitzt. Kein Limit und keine
+Einstellung ändern daran etwas.
+
+Warum die Maschine dabei komplett stehen blieb — und nicht einfach der
+Trainingsprozess starb: es gibt **keinen Swap**. Bei Speichermangel wirft der
+Kernel stattdessen den Datei-Cache weg, und darin liegen auch die
+ausführbaren Teile der laufenden Programme. Die müssen dann bei jedem Aufruf
+neu von der Platte gelesen werden, auch die von `sshd` — deshalb kam keine
+Anmeldung mehr zustande. `MemorySwapMax=0` war folglich wirkungslos, es gab
+nie einen Swap zum Abschalten.
+
+Wer das Training auf dem Server haben will, muss den Arbeitsspeicher
+aufstocken; ab etwa 2 GB wird es realistisch.
 
 Deshalb gilt:
 
@@ -177,51 +193,43 @@ Kapazitäten, Baustellen, nachgefüllte Datenlücken. Ob es dringt, zeigt die
 Seite **Genauigkeit**: steigt die Fehlerkurve über mehrere Tage, ist ein Lauf
 fällig.
 
-### Falls doch einmal auf dem Server
+### Erst nach einem RAM-Upgrade auf dem Server
 
-Vorher die anderen Dienste anhalten, damit der Speicher frei ist:
+Ab etwa 2 GB wird es realistisch. Dann vorher die übrigen Dienste anhalten,
+damit der Speicher frei ist:
 
 ```bash
 pkill -f "uvicorn main:app"; pkill -f scheduler-test.py
 cd /root/FastAPI-ML
-systemd-run --scope -p MemoryMax=1G -p MemorySwapMax=0 --collect \
+systemd-run --scope -p MemoryMax=1G --collect \
   python3 -m forecast.train --env prod --days 60
 /root/start-all.sh
 ```
 
-Wie viel Arbeitsspeicher überhaupt zur Verfügung steht, zeigt `free -h`.
-Unter etwa 4 GB ist Trainieren auf dem Server keine gute Idee.
+Voraussetzung ist ausserdem der aktuelle Codestand: seit dem Streaming-Fix
+werden die Messwerte stadtweise geladen (~123 MB statt mehrerer GB beim
+reinen Laden). **Vorher `git pull`.**
 
-Voraussetzung ist der aktuelle Codestand: seit dem Streaming-Fix werden die
-Messwerte stadtweise geladen (~123 MB statt mehrerer GB). **Vorher unbedingt
-`git pull`** — mit dem alten Stand läuft der Server auch mit Limit in einen
-Abbruch.
+## Speicherbedarf im Überblick
 
-## Speicher: das Training kann den Server lahmlegen
-
-Das Modelltraining hält das gesamte Zeitfenster im Arbeitsspeicher:
-
-| Fenster | Spitzenspeicher |
+| Vorgang | Spitzenbedarf |
 |---|---|
-| 60 Tage | 735 MB |
-| 120 Tage | 1368 MB |
+| App betriebsbereit (pandas/numpy/lightgbm + 5 Modelle) | 216 MB |
+| Training, 60-Tage-Fenster | 735 MB |
+| Training, 120-Tage-Fenster | 1368 MB |
 
-Reicht der RAM nicht, geht die Maschine ins Swappen und reagiert auf nichts
-mehr — auch der Scanner schreibt dann nicht mehr. Die systemd-Unit begrenzt
-FastAPI-ML deshalb auf `MemoryMax=1200M`: im Ernstfall stirbt nur dieser
-Dienst, der Rest läuft weiter.
+Zum Vergleich: der Server hat **641 MB** insgesamt. Die App passt hinein, das
+Training nicht.
 
-Steuerung über `/root/.env`:
+Steuerung über die `.env`:
 
 ```
-AI_TRAIN_DAYS=60         # kleineres Fenster (Standard 120)
-AI_RETRAIN_ENABLED=0     # gar kein Training auf diesem Server
+AI_RETRAIN_ENABLED=0     # kein Training auf diesem Server  -> Pflicht
+AI_TRAIN_DAYS=60         # nur relevant, falls doch trainiert wird
 ```
 
-Bei `AI_RETRAIN_ENABLED=0` wird auf einer anderen Maschine trainiert und nur
-die Modelldateien kopiert (`scp FastAPI-ML/models_store/*.joblib
-root@SERVER:/root/FastAPI-ML/models_store/`). Das genügt, weil in der
-Datenbank nur der Dateiname des Modells steht.
+Die Modelle kommen stattdessen vom PC — siehe
+[../FastAPI-ML/MODELL-REFRESH.md](../FastAPI-ML/MODELL-REFRESH.md).
 
 ## Fehlersuche
 
