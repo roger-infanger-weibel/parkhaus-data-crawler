@@ -16,16 +16,32 @@ INTENTS = [
 NEEDS_CITY = {"current", "forecast", "best_parking", "weather", "events"}
 
 
-def classify(folded: str, entities: dict) -> str:
+JETZT_TOLERANZ_MIN = 20
+
+
+def _liegt_in_zukunft(entities: dict, now) -> bool:
+    """Ist eine Zeitangabe da, die spuerbar in der Zukunft liegt?"""
+    zeit = entities.get("time")
+    if not zeit or zeit.get("at") is None or not zeit.get("explicit"):
+        return False
+    if now is None:
+        return True
+    return (zeit["at"] - now).total_seconds() > JETZT_TOLERANZ_MIN * 60
+
+
+def classify(folded: str, entities: dict, now=None) -> str:
     for intent, pattern in INTENTS:
         if re.search(pattern, folded):
-            # Zeitangabe macht aus einer Bestandsfrage eine Prognosefrage
-            if intent == "current" and entities.get("time") \
-                    and entities["time"]["at"] is not None and entities["time"]["explicit"]:
+            # Eine Zeitangabe macht aus der Bestandsfrage eine Prognosefrage -
+            # aber nur, wenn sie wirklich in der Zukunft liegt. "jetzt" und
+            # "gerade" sind zwar ausdrueckliche Zeitangaben, gemeint ist aber
+            # der Ist-Wert; eine Prognose fuer den aktuellen Moment waere
+            # schlechter als die Messung selbst.
+            if intent == "current" and _liegt_in_zukunft(entities, now):
                 return "forecast"
             return intent
     # Kein Schluesselwort: Zeit + Stadt deutet auf Prognose/Empfehlung
-    if entities.get("time") and entities.get("city"):
+    if _liegt_in_zukunft(entities, now) and entities.get("city"):
         return "best_parking"
     if entities.get("parkhaus"):
         return "current"

@@ -10,7 +10,7 @@ MAPPING = [{"city": "luzern", "pls_id": "SP09", "pls_name": "Kesselturm"}]
 
 def _classify(text):
     entities = extract(text, NOW, MAPPING)
-    return classify(fold(text), entities), entities
+    return classify(fold(text), entities, NOW), entities
 
 
 def test_greeting():
@@ -41,6 +41,14 @@ def test_current_becomes_forecast_with_time():
 def test_current_stays_current_without_time():
     intent, _ = _classify("Wie viele Plätze sind in Basel frei?")
     assert intent == "current"
+
+
+def test_jetzt_bleibt_bestandsfrage():
+    """'jetzt' ist eine Zeitangabe, meint aber den Ist-Wert - keine Prognose."""
+    for text in ("Wie viele Plätze sind jetzt in Basel frei?",
+                 "Wie viele Plätze sind gerade in Basel frei?",
+                 "Wie viele Plätze sind aktuell in Basel frei?"):
+        assert _classify(text)[0] == "current", text
 
 
 def test_fallback():

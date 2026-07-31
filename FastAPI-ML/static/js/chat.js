@@ -1,5 +1,20 @@
+// crypto.randomUUID gibt es nur in sicheren Kontexten (HTTPS oder localhost).
+// Der Server wird ueber http erreicht - ohne Rueckfall bricht das ganze
+// Skript hier ab und der Chat reagiert auf gar nichts mehr.
+function neueSessionId() {
+  if (window.crypto && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  if (window.crypto && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  }
+  return 'sess-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
 const sessionId = sessionStorage.getItem('ai_chat_session') ||
-  (() => { const id = crypto.randomUUID(); sessionStorage.setItem('ai_chat_session', id); return id; })();
+  (() => { const id = neueSessionId(); sessionStorage.setItem('ai_chat_session', id); return id; })();
 
 const win = document.getElementById('chat-window');
 
