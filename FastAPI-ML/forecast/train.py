@@ -100,12 +100,39 @@ def _activate(env, run_id, model_type, horizon_h, new_mae_occ) -> bool:
     return True
 
 
-def _cleanup_artifacts() -> None:
-    """Nur die neuesten KEEP_ARTIFACTS Dateien pro Praefix behalten."""
-    for prefix in [f"ml_h{h}_" for h in config.HORIZONS] + ["baseline_"]:
+def _active_artifact_names() -> Optional[set]:
+    """Dateinamen aller aktiven Laeufe - aus BEIDEN Umgebungen.
+
+    models_store/ ist ein gemeinsamer Ablageort; welche Datei zu prod und
+    welche zu test gehoert, steht nur in der jeweiligen Datenbank. Beim
+    Aufraeumen darf deshalb keine Datei verschwinden, auf die die andere
+    Umgebung noch zeigt. Ist eine der Datenbanken nicht lesbar, wird gar
+    nicht aufgeraeumt (None).
+    """
+    namen = set()
+    for env in ("prod", "test"):
+        try:
+            rows = db.query(
+                "SELECT artifact_path FROM ai_model_runs WHERE is_active = 1", env=env)
+        except Exception:
+            logger.warning("Aktive Laeufe von '%s' nicht lesbar - Aufraeumen "
+                           "wird uebersprungen", env)
+            return None
+        namen.update(Path(r["artifact_path"]).name for r in rows if r["artifact_path"])
+    return namen
+
+
+def _cleanup_artifacts(env: str) -> None:
+    """Alte Artefakte dieser Umgebung entfernen, aktive immer behalten."""
+    geschuetzt = _active_artifact_names()
+    if geschuetzt is None:
+        return
+    prefixe = [f"ml_h{h}_{env}_" for h in config.HORIZONS] + [f"baseline_{env}_"]
+    for prefix in prefixe:
         files = sorted(config.MODELS_DIR.glob(prefix + "*.joblib"), reverse=True)
         for old in files[KEEP_ARTIFACTS:]:
-            old.unlink(missing_ok=True)
+            if old.name not in geschuetzt:
+                old.unlink(missing_ok=True)
 
 
 def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
@@ -158,7 +185,7 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
             baseline.predict_frame(hold_f).to_numpy(dtype=float), hold_f)
         baseline_metrics[h] = {"mae_free": b_free, "mae_occ": b_occ}
 
-        artifact = config.MODELS_DIR / f"ml_h{h}_{stamp}.joblib"
+        artifact = config.MODELS_DIR / f"ml_h{h}_{env}_{stamp}.joblib"
         model.save(artifact)
         run_id = _insert_run(
             env, "ml", h, now, len(train_f), train_f["slot"].min().to_pydatetime(),
@@ -181,7 +208,7 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
         gc.collect()
 
     # Basismodell als eigener Lauf (horizon NULL), immer aktiv
-    b_artifact = config.MODELS_DIR / f"baseline_{stamp}.joblib"
+    b_artifact = config.MODELS_DIR / f"baseline_{env}_{stamp}.joblib"
     baseline.save(b_artifact)
     avg_free = float(np.mean([m["mae_free"] for m in baseline_metrics.values()]))
     avg_occ = float(np.mean([m["mae_occ"] for m in baseline_metrics.values()]))
@@ -192,7 +219,7 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
     _activate(env, b_run, "baseline", None, float("nan"))
     results["baseline_run_id"] = b_run
 
-    _cleanup_artifacts()
+    _cleanup_artifacts(env)
     return results
 
 

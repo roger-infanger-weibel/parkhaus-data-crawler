@@ -58,15 +58,33 @@ Das legt genau die fünf Dateien des aktiven Laufs (~18 MB) nach
 
 ```
 prod (ph_fetch_prod):
-  Basis  baseline_20260731_0930.joblib   1.7 MB  (trainiert 31.07. 09:30)
-  +1h    ml_h1_20260731_0930.joblib      4.0 MB
-  +2h    ml_h2_20260731_0930.joblib      4.0 MB
-  +4h    ml_h4_20260731_0930.joblib      4.0 MB
-  +8h    ml_h8_20260731_0930.joblib      4.0 MB
+  Basis  baseline_prod_20260731_0930.joblib   1.7 MB  (trainiert 31.07. 09:30)
+  +1h    ml_h1_prod_20260731_0930.joblib      4.0 MB
+  +2h    ml_h2_prod_20260731_0930.joblib      4.0 MB
+  +4h    ml_h4_prod_20260731_0930.joblib      4.0 MB
+  +8h    ml_h8_prod_20260731_0930.joblib      4.0 MB
 ```
 
 Der Ordner wird bei jedem Lauf geleert — es liegen also nie alte Dateien
 darin, die man versehentlich mitkopiert.
+
+### prod und test im selben Ordner
+
+`models_store/` ist ein gemeinsamer Ablageort für beide Umgebungen. Welche
+Datei zu welcher gehört, steht **nicht** im Dateinamen als Verzeichnis,
+sondern in der jeweiligen Datenbank (`ai_model_runs.artifact_path`). Damit
+nichts kollidiert:
+
+- Der Dateiname enthält die Umgebung: `ml_h1_prod_…` bzw. `ml_h1_test_…`
+- Beim Aufräumen alter Modelle bleibt jede Datei verschont, auf die noch ein
+  aktiver Lauf zeigt — auch der der *anderen* Umgebung
+
+Du kannst prod und test also gefahrlos nacheinander trainieren und alle
+Dateien in denselben Zielordner kopieren. Ein Überschreiben gibt es nicht.
+
+Ältere Dateien ohne Umgebung im Namen (vor dem 31.07.2026 erzeugt) bleiben
+gültig — sie werden weiterhin über den in der Datenbank gespeicherten Namen
+gefunden.
 
 ## Schritt 3 — Auf den Server kopieren
 
