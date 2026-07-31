@@ -20,3 +20,4 @@ FastAPI-ML/models_store/*.joblib
 
 # Lokale Werkzeug-Konfiguration
 .claude/
+FastAPI-ML/export_models/

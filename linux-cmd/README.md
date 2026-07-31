@@ -123,64 +123,71 @@ Die alten Skripte `start-prod.sh`, `start-test.sh`, `start-flask.sh` und
 `start-fastapi-ml.sh` funktionieren weiterhin für manuelle Starts. Nicht
 gleichzeitig mit den systemd-Diensten verwenden, sonst laufen Prozesse doppelt.
 
-## Wie oft muss trainiert werden?
+## Training: nicht auf diesem Server
 
-**Einmal pro Woche genügt.** Um auf die aktuelle Lage zu reagieren, braucht es
-kein Training — die frischen Messwerte gehen bei jeder Prognose als Eingabe
-ein. Nachtrainiert wird nur wegen langsamer Veränderungen: Jahreszeiten, neue
-Parkhäuser, geänderte Kapazitäten, Baustellen, nachgefüllte Datenlücken.
+**Der Server ist zu klein zum Trainieren.** Drei Versuche am 30./31.07.2026
+endeten jedes Mal damit, dass die Maschine komplett stehen blieb — auch mit
+`systemd-run --scope -p MemoryMax=1G -p MemorySwapMax=0` und einem Fenster von
+nur 60 Tagen. Das Limit schützt zwar den Trainingsprozess selbst, aber es
+bleibt zu wenig Arbeitsspeicher für alles andere: uvicorn mit geladenen
+Modellen, zwei Scanner, Flask. Der Rest des Systems wandert dann in den Swap,
+und die Maschine ist nicht mehr bedienbar — SSH inklusive.
 
-Empfohlene Einrichtung — wöchentlich per cron, mit Speicherlimit, damit nie
-wieder der ganze Server hängen bleibt:
-
-```bash
-crontab -e
-```
-
-```
-0 3 * * 0 cd /root/FastAPI-ML && systemd-run --scope -p MemoryMax=1G -p MemorySwapMax=0 --collect python3 -m forecast.train --env prod --days 60 >> /root/train.log 2>&1
-```
-
-Dazu **zwingend** das eingebaute nächtliche Training abschalten:
+Deshalb gilt:
 
 ```bash
 echo "AI_RETRAIN_ENABLED=0" >> /root/myenv/.env
 ```
 
-Grund: der eingebaute Lauf um 03:30 findet im uvicorn-Prozess statt. Der läuft
-unter `nohup` ohne jedes Speicherlimit — und greift ohne gefundene `.env` auf
-die Standardwerte zurück, also 120 Tage und rund 1370 MB. Genau daran ist der
-Server heute zweimal erstickt. Über cron dagegen läuft das Training als
-eigener, begrenzter Prozess.
+Und **keinen** cron-Eintrag fürs Training auf dem Server anlegen.
 
-Ob ein Training nötig ist, verrät die Seite **Genauigkeit**: steigt die
-Fehlerkurve über mehrere Tage an, lohnt sich ein Lauf ausserhalb des Plans.
+### Stattdessen: auf dem PC trainieren, Dateien kopieren
 
-## Training immer mit Speicherlimit starten
-
-Ein Training ohne Limit kann den ganzen Server ins Swappen bringen. Dann
-reagiert nichts mehr — auch SSH nicht, und der Prozess lässt sich nicht mehr
-abbrechen. Deshalb **nie direkt** `python3 -m forecast.train` aufrufen, sondern:
+Einmal pro Woche genügt. Auf dem PC:
 
 ```bash
+cd FastAPI-ML
+python -m forecast.train --env prod
+python -m forecast.train --env test          # nur falls Test-Umgebung genutzt
+python -m scripts.export_models --env prod --env test
+```
+
+`export_models` legt genau die Dateien, die der Server braucht, in
+`FastAPI-ML/export_models/` (rund 18 MB je Umgebung) und nennt den passenden
+Kopierbefehl. Die Dateien dann per WinSCP oder `scp` nach
+`/root/FastAPI-ML/models_store/` übertragen.
+
+Zügig kopieren: das Training markiert den neuen Lauf sofort als aktiv, und bis
+die Dateien eintreffen, findet der Server kein Modell und erzeugt für einen
+Zyklus keine Prognosen. Danach prüfen:
+
+```bash
+curl -sS http://localhost:8080/api/health     # last_prediction muss frisch sein
+```
+
+### Warum wöchentlich reicht
+
+Um auf die aktuelle Lage zu reagieren, braucht es kein Training — die frischen
+Messwerte gehen bei jeder Prognose als Eingabe ein. Nachtrainiert wird nur
+wegen langsamer Veränderungen: Jahreszeiten, neue Parkhäuser, geänderte
+Kapazitäten, Baustellen, nachgefüllte Datenlücken. Ob es dringt, zeigt die
+Seite **Genauigkeit**: steigt die Fehlerkurve über mehrere Tage, ist ein Lauf
+fällig.
+
+### Falls doch einmal auf dem Server
+
+Vorher die anderen Dienste anhalten, damit der Speicher frei ist:
+
+```bash
+pkill -f "uvicorn main:app"; pkill -f scheduler-test.py
 cd /root/FastAPI-ML
 systemd-run --scope -p MemoryMax=1G -p MemorySwapMax=0 --collect \
   python3 -m forecast.train --env prod --days 60
+/root/start-all.sh
 ```
 
-`systemd-run --scope` braucht keine Service-Datei und funktioniert auf jedem
-systemd-System. Dasselbe danach mit `--env test`.
-
-Beide Angaben sind nötig:
-
-- **`MemorySwapMax=0`** ist der entscheidende Teil. Mit `MemoryMax` allein
-  lagert der Kernel den Prozess in den Swap aus, statt ihn zu beenden — die
-  Festplatte läuft heiss, und der ganze Server wird unbedienbar, obwohl das
-  Limit formal eingehalten wird. Erst ohne Swap wird der Prozess wirklich
-  abgebrochen.
-- **`--days 60`** explizit angeben. `AI_TRAIN_DAYS` aus der `.env` greift nur,
-  wenn diese auch gefunden wird (siehe Abschnitt «Wo liegt die .env?») —
-  sonst laufen stillschweigend 120 Tage, und die sprengen 1 GB.
+Wie viel Arbeitsspeicher überhaupt zur Verfügung steht, zeigt `free -h`.
+Unter etwa 4 GB ist Trainieren auf dem Server keine gute Idee.
 
 Voraussetzung ist der aktuelle Codestand: seit dem Streaming-Fix werden die
 Messwerte stadtweise geladen (~123 MB statt mehrerer GB). **Vorher unbedingt
