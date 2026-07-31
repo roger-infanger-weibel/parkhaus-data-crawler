@@ -123,6 +123,39 @@ Die alten Skripte `start-prod.sh`, `start-test.sh`, `start-flask.sh` und
 `start-fastapi-ml.sh` funktionieren weiterhin für manuelle Starts. Nicht
 gleichzeitig mit den systemd-Diensten verwenden, sonst laufen Prozesse doppelt.
 
+## Wie oft muss trainiert werden?
+
+**Einmal pro Woche genügt.** Um auf die aktuelle Lage zu reagieren, braucht es
+kein Training — die frischen Messwerte gehen bei jeder Prognose als Eingabe
+ein. Nachtrainiert wird nur wegen langsamer Veränderungen: Jahreszeiten, neue
+Parkhäuser, geänderte Kapazitäten, Baustellen, nachgefüllte Datenlücken.
+
+Empfohlene Einrichtung — wöchentlich per cron, mit Speicherlimit, damit nie
+wieder der ganze Server hängen bleibt:
+
+```bash
+crontab -e
+```
+
+```
+0 3 * * 0 cd /root/FastAPI-ML && systemd-run --scope -p MemoryMax=1G -p MemorySwapMax=0 --collect python3 -m forecast.train --env prod --days 60 >> /root/train.log 2>&1
+```
+
+Dazu **zwingend** das eingebaute nächtliche Training abschalten:
+
+```bash
+echo "AI_RETRAIN_ENABLED=0" >> /root/myenv/.env
+```
+
+Grund: der eingebaute Lauf um 03:30 findet im uvicorn-Prozess statt. Der läuft
+unter `nohup` ohne jedes Speicherlimit — und greift ohne gefundene `.env` auf
+die Standardwerte zurück, also 120 Tage und rund 1370 MB. Genau daran ist der
+Server heute zweimal erstickt. Über cron dagegen läuft das Training als
+eigener, begrenzter Prozess.
+
+Ob ein Training nötig ist, verrät die Seite **Genauigkeit**: steigt die
+Fehlerkurve über mehrere Tage an, lohnt sich ein Lauf ausserhalb des Plans.
+
 ## Training immer mit Speicherlimit starten
 
 Ein Training ohne Limit kann den ganzen Server ins Swappen bringen. Dann
