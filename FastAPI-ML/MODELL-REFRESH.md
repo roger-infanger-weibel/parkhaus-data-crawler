@@ -62,6 +62,13 @@ laufende, also bleibt das bessere aktiv. Genau dafür ist die Regel da: nach
 einem Datenausfall verdrängt kein schwaches Modell ein gutes. Die übrigen
 Horizonte sind davon nicht berührt.
 
+Beide Modelle werden dafür auf **demselben Testzeitraum** bewertet — das
+bisherige wird eigens noch einmal durchgerechnet. Im Log steht der Vergleich:
+
+```
+Horizont 2h: bisheriges Modell auf demselben Holdout: 5.89 pp (neu: 5.89 pp)
+```
+
 Steht dort stattdessen «trotz schlechterem MAE aktiviert: Datei des bisherigen
 Laufs fehlt», stammte das bisher aktive Modell von einer anderen Maschine.
 Dann wird das neue genommen — ein etwas schlechteres Modell, das lädt, ist

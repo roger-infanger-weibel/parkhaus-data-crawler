@@ -186,6 +186,12 @@ diesen Horizont mehr als 10 % schlechter als das laufende, also bleibt das
 bessere aktiv. Nach einem Datenausfall verdrängt so kein schwaches Modell ein
 gutes. Die übrigen Horizonte werden davon nicht berührt.
 
+Verglichen wird auf **demselben Testzeitraum**: das bisherige Modell wird dafür
+eigens auf dem aktuellen Holdout bewertet. Der in der Datenbank gespeicherte
+Wert taugt nicht zum Vergleich, weil er aus dem Testzeitraum von damals
+stammt — sonst könnte ein altes Modell mit einer günstigen Periode alle
+Nachfolger dauerhaft blockieren.
+
 Zeigt die Meldung stattdessen «trotz schlechterem MAE aktiviert: Datei des
 bisherigen Laufs fehlt», stammte das bisher aktive Modell von einer anderen
 Maschine. Dann wird das neue genommen — ein etwas schlechteres Modell, das

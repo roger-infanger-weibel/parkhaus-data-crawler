@@ -72,36 +72,54 @@ def _insert_run(env, model_type, horizon_h, now, n_rows, train_from, train_to,
         conn.close()
 
 
-def _activate(env, run_id, model_type, horizon_h, new_mae_occ) -> bool:
+def _vergleichswert(env, horizon_h, hold_f) -> Optional[float]:
+    """MAE des aktiven Modells auf DEMSELBEN Holdout wie der neue Lauf.
+
+    Der in ai_model_runs gespeicherte cv_mae_occ taugt nicht zum Vergleich:
+    er wurde auf dem Holdout von damals gemessen. Ist die juengere Periode
+    schwerer vorherzusagen, faellt jedes neue Modell durch - und ein altes
+    Modell mit einem guenstigen Testzeitraum blockiert alle Nachfolger
+    dauerhaft. Deshalb wird das aktive Modell hier auf den aktuellen Holdout
+    losgelassen und erst dann verglichen.
+
+    None bedeutet: kein aktives Modell oder dessen Datei fehlt - dann gibt es
+    nichts zu verteidigen und der neue Lauf wird aktiviert.
+    """
+    rows = db.query(
+        "SELECT artifact_path FROM ai_model_runs "
+        "WHERE model_type = 'ml' AND horizon_h = %s AND is_active = 1",
+        (horizon_h,), env=env,
+    )
+    if not rows:
+        return None
+    datei = config.artifact_file(rows[0]["artifact_path"] or "")
+    if not datei.is_file():
+        logger.info("h=%s: Datei des aktiven Modells fehlt (%s) - neuer Lauf "
+                    "wird aktiviert", horizon_h, datei)
+        return None
+    try:
+        _, mae_occ = _mae_metrics(ForecastModel.load(datei).predict(hold_f), hold_f)
+    except Exception:
+        logger.warning("h=%s: aktives Modell nicht auswertbar - neuer Lauf "
+                       "wird aktiviert", horizon_h, exc_info=True)
+        return None
+    return None if np.isnan(mae_occ) else mae_occ
+
+
+def _activate(env, run_id, model_type, horizon_h, new_mae_occ,
+              alt_mae_occ: Optional[float] = None) -> bool:
     """Lauf aktivieren, ausser er ist deutlich schlechter als der aktive."""
     horizon_cond = "horizon_h = %s" if horizon_h is not None else "horizon_h IS NULL"
     params = [model_type] + ([horizon_h] if horizon_h is not None else [])
-    active = db.query(
-        f"SELECT run_id, cv_mae_occ, artifact_path FROM ai_model_runs "
-        f"WHERE model_type = %s AND {horizon_cond} AND is_active = 1",
-        tuple(params), env=env,
-    )
-    if (active and active[0]["cv_mae_occ"] is not None
-            and not np.isnan(new_mae_occ)
-            and new_mae_occ > float(active[0]["cv_mae_occ"]) * ACTIVATION_TOLERANCE):
-        # Den bisherigen Lauf nur verteidigen, wenn seine Datei hier auch
-        # existiert. Nach einem Serverwechsel liegt sie sonst noch auf der
-        # alten Maschine - ein etwas schlechteres Modell, das laedt, ist
-        # allemal besser als ein besseres, das gar keine Prognosen erzeugt.
-        datei = config.artifact_file(active[0]["artifact_path"] or "")
-        if datei.is_file():
-            logger.warning(
-                "Lauf %s (%s h=%s) NICHT aktiviert: MAE %.3f > %.3f * %.2f",
-                run_id, model_type, horizon_h, new_mae_occ,
-                float(active[0]["cv_mae_occ"]), ACTIVATION_TOLERANCE,
-            )
-            return False
+    if (alt_mae_occ is not None and not np.isnan(new_mae_occ)
+            and new_mae_occ > alt_mae_occ * ACTIVATION_TOLERANCE):
         logger.warning(
-            "Lauf %s (%s h=%s) trotz schlechterem MAE (%.3f > %.3f) aktiviert: "
-            "Datei des bisherigen Laufs fehlt (%s)",
-            run_id, model_type, horizon_h, new_mae_occ,
-            float(active[0]["cv_mae_occ"]), datei,
+            "Lauf %s (%s h=%s) NICHT aktiviert: MAE %.3f > %.3f * %.2f "
+            "(beide auf demselben Holdout gemessen)",
+            run_id, model_type, horizon_h, new_mae_occ, alt_mae_occ,
+            ACTIVATION_TOLERANCE,
         )
+        return False
     db.execute(
         f"UPDATE ai_model_runs SET is_active = 0 "
         f"WHERE model_type = %s AND {horizon_cond} AND is_active = 1",
@@ -197,6 +215,13 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
             baseline.predict_frame(hold_f).to_numpy(dtype=float), hold_f)
         baseline_metrics[h] = {"mae_free": b_free, "mae_occ": b_occ}
 
+        # Das bisherige Modell auf demselben Holdout bewerten - nur so ist der
+        # Vergleich fair (siehe _vergleichswert)
+        alt_mae_occ = _vergleichswert(env, h, hold_f)
+        if alt_mae_occ is not None:
+            logger.info("Horizont %dh: bisheriges Modell auf demselben Holdout: "
+                        "%.2f pp (neu: %.2f pp)", h, alt_mae_occ, mae_occ)
+
         artifact = config.MODELS_DIR / f"ml_h{h}_{env}_{stamp}.joblib"
         model.save(artifact)
         run_id = _insert_run(
@@ -206,10 +231,12 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
              "holdout_days": HOLDOUT_DAYS},
             artifact,
         )
-        activated = _activate(env, run_id, "ml", h, mae_occ)
+        activated = _activate(env, run_id, "ml", h, mae_occ, alt_mae_occ)
         results[h] = {
             "run_id": run_id, "activated": activated,
             "ml_mae_free": round(mae_free, 2), "ml_mae_occ_pp": round(mae_occ, 2),
+            "vorheriges_modell_occ_pp": (round(alt_mae_occ, 2)
+                                         if alt_mae_occ is not None else None),
             "baseline_mae_free": round(b_free, 2), "baseline_mae_occ_pp": round(b_occ, 2),
             "rows_train": len(train_f), "rows_holdout": len(hold_f),
         }
