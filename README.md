@@ -6,11 +6,11 @@ Weboberflächen dar — eine klassische und eine mit KI-Prognose.
 
 ## Wo was läuft
 
-| Server | Dienste | Adresse | HealthCheck |
+| Server | Dienste | HealthCheck | API-Doc |
 |---|---|---|---|
-| **87.106.21.252** | KI-Prognose (FastAPI-ML), Port 80 | http://87.106.21.252/ | http://87.106.21.252:80/api/health |
-| **87.106.222.137** | Scanner prod + test, Flask-Dashboard Port 80 | http://87.106.222.137/ | - |
-| `parkhaus.roil.ch` | MariaDB (`ph_fetch_prod`, `ph_fetch_test`) | — | — |
+| **87.106.21.252** | KI-Prognose (FastAPI-ML), Port 80 | [Health](http://87.106.21.252:80/api/health) | [Docs](http://87.106.21.252:80/docs) |
+| **87.106.222.137** | Scanner prod + test, Flask-Dashboard Port 80 |  - | - |
+| `parkhaus.roil.ch` | MariaDB (`ph_fetch_prod`, `ph_fetch_test`) |  — | - |
 
 Die KI-Prognose ist am 04.08.2026 auf einen eigenen, grösseren Server
 umgezogen und trainiert ihre Modelle seither selbst.
