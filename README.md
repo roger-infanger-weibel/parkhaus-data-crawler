@@ -4,13 +4,24 @@ Sammelt alle 15 Minuten die Belegung von 110 Parkhäusern in Luzern, Basel,
 Bern, Zürich und St. Gallen, speichert sie in MariaDB und stellt sie über zwei
 Weboberflächen dar — eine klassische und eine mit KI-Prognose.
 
+## Wo was läuft
+
+| Server | Dienste | Adresse |
+|---|---|---|
+| **87.106.21.252** | KI-Prognose (FastAPI-ML), Port 80 | http://87.106.21.252/ |
+| **87.106.222.137** | Scanner prod + test, Flask-Dashboard Port 80 | http://87.106.222.137/ |
+| `parkhaus.roil.ch` | MariaDB (`ph_fetch_prod`, `ph_fetch_test`) | — |
+
+Die KI-Prognose ist am 04.08.2026 auf einen eigenen, grösseren Server
+umgezogen und trainiert ihre Modelle seither selbst.
+
 ## Die vier Bestandteile
 
 | Ordner | Was | Läuft als |
 |---|---|---|
 | [`scanner/`](#scanner--datensammlung) | Holt die Daten von den Stadt-APIs | Dauerprozess, alle 15 Min |
 | [`flask/`](#flask--klassisches-dashboard) | Dashboard mit Ist-Daten | Webserver, Port 80 |
-| [`FastAPI-ML/`](#fastapi-ml--ki-prognose) | Prognose, Genauigkeits-Monitoring, Chat | Webserver, Port 8080 |
+| [`FastAPI-ML/`](#fastapi-ml--ki-prognose) | Prognose, Genauigkeits-Monitoring, Chat | Webserver, Port 80 |
 | [`linux-cmd/`](#linux-cmd--serverbetrieb) | Start-Skripte und Betriebsanleitung | — |
 
 ```
@@ -19,7 +30,7 @@ parkhaus-data-crawler/
 ├── .gitignore
 ├── scanner/                 ← Datensammlung
 ├── flask/                   ← Dashboard (Port 80)
-├── FastAPI-ML/              ← KI-Prognose (Port 8080)
+├── FastAPI-ML/              ← KI-Prognose (Port 80)
 └── linux-cmd/               ← Betrieb und Autostart
 ```
 
@@ -70,7 +81,7 @@ parkhaus-data-crawler/
 
 ## FastAPI-ML/ — KI-Prognose
 
-Eigenständige Anwendung auf Port 8080. Liest die bestehenden Tabellen **nur**
+Eigenständige Anwendung auf Port 80. Liest die bestehenden Tabellen **nur**
 und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
 
 ### Gerüst
@@ -145,7 +156,7 @@ und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
 ### tests/
 
 `test_identity.py`, `test_features.py`, `test_baseline.py`,
-`test_entities.py`, `test_intents.py` — 44 Tests, Aufruf mit
+`test_entities.py`, `test_intents.py` — 45 Tests, Aufruf mit
 `python -m pytest tests/ -q`.
 
 **Dokumentation:** [README](FastAPI-ML/README.md) ·
@@ -161,7 +172,7 @@ und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
 | **start-all.sh** | Ruft die vier Startskripte nacheinander auf — für den Autostart |
 | **start-prod.sh** / **start-test.sh** | Scanner der jeweiligen Umgebung neu starten |
 | **start-flask.sh** | Dashboard (Port 80) neu starten |
-| **start-fastapi-ml.sh** | KI-Prognose (Port 8080) neu starten |
+| **start-fastapi-ml.sh** | KI-Prognose (Port 80) neu starten |
 | **copy-github.sh** | Holt den aktuellen Repository-Stand nach `latest-github/` |
 | **install-systemd.sh** | Optionale Alternative: richtet die Dienste als systemd-Units ein |
 | **systemd/*.service** | Die vier Unit-Dateien |
@@ -187,7 +198,7 @@ scheduler.py  (Dauerprozess)
 web_server.py  (Port 80)
 └── db_utils.py ──→ MariaDB (nur lesend) ──→ index.html / logs.html
 
-FastAPI-ML/main.py  (Port 8080)
+FastAPI-ML/main.py  (Port 80)
 ├── forecast/predict.py    :10/:25/:40/:55 ──→ ai_predictions
 ├── forecast/evaluate.py   :13/:28/:43/:58 ──→ ai_accuracy_daily
 ├── core/identity.py       03:15           ──→ ai_parkhaus_map

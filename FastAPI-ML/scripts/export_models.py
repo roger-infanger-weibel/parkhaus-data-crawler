@@ -50,9 +50,9 @@ def export(envs: list[str]) -> None:
     anzahl = len(list(EXPORT_DIR.glob("*.joblib")))
     print(f"\n{anzahl} Dateien, {gesamt/1e6:.1f} MB in:\n  {EXPORT_DIR}")
     print("\nAuf den Server kopieren (WinSCP oder scp):")
-    print(f"  scp {EXPORT_DIR}\\*.joblib root@87.106.222.137:/root/FastAPI-ML/models_store/")
+    print(f"  scp {EXPORT_DIR}\\*.joblib root@87.106.21.252:/root/FastAPI-ML/models_store/")
     print("\nDanach dort pruefen:")
-    print("  curl -sS http://localhost:8080/api/health   # last_prediction muss frisch werden")
+    print("  curl -sS http://localhost:80/api/health   # last_prediction muss frisch werden")
 
 
 if __name__ == "__main__":

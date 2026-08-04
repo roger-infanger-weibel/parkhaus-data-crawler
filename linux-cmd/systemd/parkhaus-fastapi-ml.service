@@ -1,5 +1,5 @@
 [Unit]
-Description=Parkhaus FastAPI-ML KI-Prognose (Port 8080)
+Description=Parkhaus FastAPI-ML KI-Prognose (Port 80)
 After=network-online.target
 Wants=network-online.target
 
@@ -10,15 +10,15 @@ WorkingDirectory=/root/FastAPI-ML
 # Liegt die .env nicht in /root oder /root/FastAPI-ML, hier den Pfad setzen:
 #Environment=AI_ENV_FILE=/root/myenv/.env
 # --workers 1 ist Pflicht, sonst laeuft der eingebaute Scheduler mehrfach.
-ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8080 --workers 1
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 80 --workers 1
 Restart=always
 RestartSec=15
 
-# Hartes Speicherlimit: das Training braucht ~735 MB fuer 60 Tage und
-# ~1370 MB fuer 120 Tage Fenster. Laeuft etwas aus dem Ruder, killt der
-# Kernel nur diesen Dienst - vorher hat ein solcher Fall die ganze Maschine
-# ins Swappen gebracht, samt Scanner und Flask.
-MemoryMax=1200M
+# Speicherlimit als Notbremse. Das Training braucht ~735 MB fuer 60 Tage und
+# ~1370 MB fuer 120 Tage; laeuft etwas aus dem Ruder, stirbt nur dieser Dienst
+# statt der ganzen Maschine. Auf einem Server mit wenig RAM entsprechend
+# kleiner setzen und das Training dort per AI_RETRAIN_ENABLED=0 abschalten.
+MemoryMax=2G
 MemoryHigh=1000M
 
 [Install]

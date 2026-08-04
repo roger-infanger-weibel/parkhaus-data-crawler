@@ -29,7 +29,7 @@ def _load_artifact(stored: str, loader):
     model = _artifact_cache.get(stored)
     if model is None:
         path = config.artifact_file(stored)
-        if not path.exists():
+        if not path.is_file():
             logger.error("Modelldatei fehlt: %s - Modell wird uebersprungen", path)
             return None
         model = loader(path)

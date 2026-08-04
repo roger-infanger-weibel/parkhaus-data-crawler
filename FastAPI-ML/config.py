@@ -44,7 +44,7 @@ DB_DATABASE_TEST = os.environ.get(
     "DB_DATABASE_TEST", os.environ.get("DB_DATABASE", "ph_fetch_test")
 )
 
-APP_PORT = int(os.environ.get("AI_APP_PORT", "8080"))
+APP_PORT = int(os.environ.get("AI_APP_PORT", "80"))
 DEFAULT_ENV = os.environ.get("AI_DEFAULT_ENV", "prod").lower()
 MODELS_DIR = Path(os.environ.get("AI_MODELS_DIR") or (BASE_DIR / "models_store"))
 

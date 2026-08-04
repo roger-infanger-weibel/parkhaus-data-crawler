@@ -1,7 +1,7 @@
 """FastAPI-App: Prognose, Genauigkeits-Monitoring und Chat-Assistent.
 
 Start (aus dem Ordner FastAPI-ML):
-    uvicorn main:app --host 0.0.0.0 --port 8080 --workers 1
+    uvicorn main:app --host 0.0.0.0 --port 80 --workers 1
 Wichtig: genau 1 Worker, damit der eingebaute Scheduler nur einmal existiert.
 """
 import logging

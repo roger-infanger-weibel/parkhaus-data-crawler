@@ -46,7 +46,7 @@ python init_db.py --env test          # ai_*-Tabellen anlegen
 python -m core.identity --env test    # Parkhaus-Mapping aufbauen
 python -m forecast.train --env test   # Erst-Training (~5 Min)
 python -m scripts.backfill_predictions --env test --days 7   # optional: Dashboard sofort füllen
-uvicorn main:app --host 0.0.0.0 --port 8080 --workers 1
+uvicorn main:app --host 0.0.0.0 --port 80 --workers 1
 ```
 
 Wichtig: **genau 1 Worker**, sonst läuft der Scheduler mehrfach.
@@ -56,44 +56,29 @@ DB-Rechte: zur Laufzeit nur `SELECT, INSERT, UPDATE, DELETE`;
 `CREATE, ALTER, INDEX` braucht einzig das einmalige `init_db.py`
 (fuer ph_fetch_test und ph_fetch_prod bereits am 2026-07-30 ausgefuehrt).
 
-## Training: nicht auf dem Zielserver
+## Training
 
-Das Training hält das gesamte Zeitfenster im Arbeitsspeicher — gemessen
-**735 MB** bei 60 Tagen, **1368 MB** bei 120 Tagen. Der Produktivserver
-(87.106.222.137) hat **641 MB und keinen Swap**; das Training braucht also
-mehr, als die Maschine besitzt. Kein Limit ändert daran etwas.
-
-Ohne Swap wirft der Kernel bei Speichermangel den Datei-Cache weg,
-einschliesslich der ausführbaren Teile laufender Programme — auch `sshd`
-wird dann unbenutzbar. Genau so blieb die Maschine am 30./31.07.2026
-dreimal komplett stehen.
-
-Zum Vergleich: die App selbst braucht betriebsbereit rund 216 MB
-(pandas/numpy/lightgbm plus die fünf Modelle).
-
-**Deshalb dort abschalten:**
-
-```
-AI_RETRAIN_ENABLED=0
-```
-
-**Stattdessen auf einer Arbeitsstation trainieren** (wöchentlich genügt) und
-nur die Modelldateien übertragen:
+Läuft auf dem Server (87.106.21.252), wöchentlich genügt:
 
 ```bash
-python -m forecast.train --env prod
-python -m scripts.export_models --env prod       # sammelt die aktiven Dateien
+cd /root/FastAPI-ML
+python3 -m forecast.train --env prod
 ```
 
-`export_models` legt genau die fünf Dateien des aktiven Laufs (~18 MB) nach
-`export_models/` und nennt den Kopierbefehl. Ziel ist
-`/root/FastAPI-ML/models_store/`. Das genügt, weil in `ai_model_runs` nur der
-Dateiname steht — die Datenbank kennt den aktiven Lauf bereits, sobald das
-Training gegen sie gelaufen ist. Zügig kopieren: bis die Dateien da sind,
-findet der Server kein Modell und erzeugt einen Zyklus lang keine Prognosen.
+Die neuen Modelle greifen automatisch beim nächsten Prognoselauf. Details,
+Zeitplan und die Deutung der Ausgabe: [MODELL-REFRESH.md](MODELL-REFRESH.md).
 
-**Schritt-für-Schritt-Anleitung dafür: [MODELL-REFRESH.md](MODELL-REFRESH.md).**
-Serverbetrieb und Fehlersuche: [../linux-cmd/README.md](../linux-cmd/README.md).
+**Speicherbedarf:** 735 MB bei einem 60-Tage-Fenster, 1368 MB bei 120 Tagen;
+die App selbst braucht betriebsbereit rund 216 MB. Auf einer Maschine mit
+weniger als etwa 2 GB reicht das nicht — dort `AI_RETRAIN_ENABLED=0` setzen,
+auf einem anderen Rechner trainieren und die Modelldateien übertragen
+(`python -m scripts.export_models --env prod`). Das genügt, weil in
+`ai_model_runs` nur der Dateiname steht.
+
+Was passiert, wenn zu wenig Speicher da ist, zeigte der alte Server mit
+641 MB und ohne Swap: der Kernel wirft dann den Datei-Cache weg,
+einschliesslich der ausführbaren Teile laufender Programme, worauf auch
+`sshd` unbenutzbar wird — die Maschine steht komplett.
 
 ## Deployment (Server)
 
@@ -105,8 +90,9 @@ python init_db.py --env prod        # nur beim allerersten Mal
 ./start-fastapi-ml.sh               # bzw. /root/start-all.sh
 ```
 
-Vorausgesetzt: Port 8080 in der Firewall **und** im IONOS Cloud Panel
-freigegeben, in der `.env` `AI_DEFAULT_ENV=prod` und `AI_RETRAIN_ENABLED=0`.
+Vorausgesetzt: Port 80 in der Firewall **und** im IONOS Cloud Panel
+freigegeben, in der `.env` `AI_DEFAULT_ENV=prod`. Der Port lässt sich über
+`AI_APP_PORT` ändern.
 
 Autostart nach einem Neustart läuft über den crontab-Eintrag
 `@reboot sleep 60 && /root/start-all.sh`. Alternativ gibt es systemd-Units

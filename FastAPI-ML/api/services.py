@@ -24,7 +24,7 @@ def load_active_baseline(env: str) -> Optional[BaselineModel]:
     model = _baseline_cache.get(stored)
     if model is None:
         path = config.artifact_file(stored)
-        if not path.exists():
+        if not path.is_file():
             return None
         model = BaselineModel.load(path)
         _baseline_cache[stored] = model

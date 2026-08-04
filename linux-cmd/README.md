@@ -1,18 +1,34 @@
-# Serverbetrieb (87.106.222.137)
+# Serverbetrieb
 
-Betriebsanleitung für die vier Dienste: Autostart, Deployment, Fehlersuche.
+Betriebsanleitung: Autostart, Deployment, Fehlersuche.
 
-## Übersicht
+## Zwei Server
 
-| Dienst | Ordner | Was | Port |
+| Server | Läuft dort | Adresse |
+|---|---|---|
+| **87.106.21.252** | KI-Prognose (FastAPI-ML) | http://87.106.21.252/ |
+| **87.106.222.137** | Scanner (prod + test) und Flask-Dashboard | http://87.106.222.137/ |
+
+Die KI-Prognose ist seit dem 04.08.2026 auf einen eigenen, grösseren Server
+umgezogen — doppelt so viel RAM und CPU. Dort läuft sie auf **Port 80**
+(vorher 8080 auf dem alten Server) und kann die Modelle selbst trainieren.
+
+Die Datenbank liegt auf einem dritten Host (`parkhaus.roil.ch`,
+94.231.94.132) und wird von beiden Servern genutzt.
+
+## Dienste
+
+| Dienst | Ordner | Was | Server |
 |---|---|---|---|
-| `parkhaus-scanner-prod` | `/root/scanner-prod` | Sammelt Belegungsdaten alle 15 Min → `ph_fetch_prod` | — |
-| `parkhaus-scanner-test` | `/root/scanner-test` | dasselbe → `ph_fetch_test` | — |
-| `parkhaus-flask` | `/root/flask` | Bisheriges Dashboard | 80 |
-| `parkhaus-fastapi-ml` | `/root/FastAPI-ML` | KI-Prognose, Genauigkeit, Chat | 8080 |
+| `parkhaus-scanner-prod` | `/root/scanner-prod` | Belegungsdaten alle 15 Min → `ph_fetch_prod` | alt |
+| `parkhaus-scanner-test` | `/root/scanner-test` | dasselbe → `ph_fetch_test` | alt |
+| `parkhaus-flask` | `/root/flask` | Bisheriges Dashboard, Port 80 | alt |
+| `parkhaus-fastapi-ml` | `/root/FastAPI-ML` | KI-Prognose, Genauigkeit, Chat, Port 80 | neu |
 
 Welche Datenbank ein Scanner verwendet, entscheidet die `.env` im jeweiligen
-Arbeitsordner — deshalb ist bei den Diensten `WorkingDirectory` gesetzt.
+Arbeitsordner — deshalb ist bei den Diensten `WorkingDirectory` gesetzt. Bei
+FastAPI-ML steuert `AI_DEFAULT_ENV`, für welche Umgebung die Hintergrundjobs
+laufen; der Port lässt sich über `AI_APP_PORT` ändern.
 
 ## Zeitzone des Servers
 
@@ -57,17 +73,17 @@ beenden jeweils den alten Prozess, es entstehen keine Doppelstarts.
 
 Prüfen, was der Autostart gemacht hat: `cat /root/start-all.log`.
 
-### Port 8080 freigeben
+### Port 80 freigeben
 
-Der Autostart allein genügt nicht — Port 8080 muss zusätzlich freigegeben
+Der Autostart allein genügt nicht — der Port muss zusätzlich freigegeben
 werden, an **zwei** Stellen:
 
 ```bash
-firewall-cmd --permanent --add-port=8080/tcp && firewall-cmd --reload
+firewall-cmd --permanent --add-port=80/tcp && firewall-cmd --reload
 ```
 
 Und im **IONOS Cloud Panel** unter Netzwerk → Firewall-Richtlinien eine Regel
-für TCP 8080 anlegen. Fehlt eine der beiden, läuft der Verbindungsversuch in
+für TCP 80 anlegen. Fehlt eine der beiden, läuft der Verbindungsversuch in
 einen Timeout (siehe Fehlersuche unten).
 
 ## Wo liegt die .env?
@@ -85,7 +101,7 @@ systemctl edit --full parkhaus-fastapi-ml
 systemctl restart parkhaus-fastapi-ml
 ```
 
-Kontrolle: `curl -sS http://localhost:8080/api/health` zeigt unter `env_files`,
+Kontrolle: `curl -sS http://localhost/api/health` zeigt unter `env_files`,
 welche Datei geladen wurde, und unter `db_host`, wohin verbunden wird. Steht
 dort `KEINE .env gefunden`, läuft die App auf Standardwerten (localhost) —
 dann stimmen auch die Datenbanknamen nicht.
@@ -126,94 +142,56 @@ Einzelne Dienste lassen sich mit `./start-flask.sh`, `./start-prod.sh`,
 `./start-test.sh` oder `./start-fastapi-ml.sh` neu starten. Bei Verwendung der
 systemd-Units stattdessen `systemctl restart …`, nicht beides gleichzeitig.
 
-## Training: nicht auf diesem Server
+## Training
 
-**Der Server ist zu klein zum Trainieren — die Rechnung geht nicht auf:**
-
-| | |
-|---|---|
-| RAM gesamt (`free -h`) | **641 MB** |
-| davon im Betrieb frei | ~180 MB |
-| Swap | **0** |
-| Training, 60-Tage-Fenster | **735 MB** |
-| Grundbedarf der App (pandas/numpy/lightgbm + 5 Modelle) | 216 MB |
-
-Das Training braucht mehr, als die Maschine besitzt. Kein Limit und keine
-Einstellung ändern daran etwas.
-
-Warum die Maschine dabei komplett stehen blieb — und nicht einfach der
-Trainingsprozess starb: es gibt **keinen Swap**. Bei Speichermangel wirft der
-Kernel stattdessen den Datei-Cache weg, und darin liegen auch die
-ausführbaren Teile der laufenden Programme. Die müssen dann bei jedem Aufruf
-neu von der Platte gelesen werden, auch die von `sshd` — deshalb kam keine
-Anmeldung mehr zustande. `MemorySwapMax=0` war folglich wirkungslos, es gab
-nie einen Swap zum Abschalten.
-
-Wer das Training auf dem Server haben will, muss den Arbeitsspeicher
-aufstocken; ab etwa 2 GB wird es realistisch.
-
-Deshalb gilt:
+Läuft seit dem Serverumzug **direkt auf 87.106.21.252** — die Maschine hat
+genug Arbeitsspeicher dafür.
 
 ```bash
-echo "AI_RETRAIN_ENABLED=0" >> /root/myenv/.env
-```
-
-Und **keinen** cron-Eintrag fürs Training auf dem Server anlegen.
-
-### Stattdessen: auf dem PC trainieren, Dateien kopieren
-
-Einmal pro Woche genügt. Auf dem PC:
-
-```bash
-cd FastAPI-ML
-python -m forecast.train --env prod
-python -m forecast.train --env test          # nur falls Test-Umgebung genutzt
-python -m scripts.export_models --env prod --env test
-```
-
-`export_models` legt genau die Dateien, die der Server braucht, in
-`FastAPI-ML/export_models/` (rund 18 MB je Umgebung) und nennt den passenden
-Kopierbefehl. Die Dateien dann per WinSCP oder `scp` nach
-`/root/FastAPI-ML/models_store/` übertragen.
-
-Ausführliche Anleitung mit Kontrollschritten und Stolpersteinen:
-[../FastAPI-ML/MODELL-REFRESH.md](../FastAPI-ML/MODELL-REFRESH.md)
-
-Zügig kopieren: das Training markiert den neuen Lauf sofort als aktiv, und bis
-die Dateien eintreffen, findet der Server kein Modell und erzeugt für einen
-Zyklus keine Prognosen. Danach prüfen:
-
-```bash
-curl -sS http://localhost:8080/api/health     # last_prediction muss frisch sein
-```
-
-### Warum wöchentlich reicht
-
-Um auf die aktuelle Lage zu reagieren, braucht es kein Training — die frischen
-Messwerte gehen bei jeder Prognose als Eingabe ein. Nachtrainiert wird nur
-wegen langsamer Veränderungen: Jahreszeiten, neue Parkhäuser, geänderte
-Kapazitäten, Baustellen, nachgefüllte Datenlücken. Ob es dringt, zeigt die
-Seite **Genauigkeit**: steigt die Fehlerkurve über mehrere Tage, ist ein Lauf
-fällig.
-
-### Erst nach einem RAM-Upgrade auf dem Server
-
-Ab etwa 2 GB wird es realistisch. Dann vorher die übrigen Dienste anhalten,
-damit der Speicher frei ist:
-
-```bash
-pkill -f "uvicorn main:app"; pkill -f scheduler-test.py
 cd /root/FastAPI-ML
-systemd-run --scope -p MemoryMax=1G --collect \
-  python3 -m forecast.train --env prod --days 60
-/root/start-all.sh
+python3 -m forecast.train --env prod
+python3 -m forecast.train --env test     # nur falls Test-Umgebung genutzt
 ```
 
-Voraussetzung ist ausserdem der aktuelle Codestand: seit dem Streaming-Fix
-werden die Messwerte stadtweise geladen (~123 MB statt mehrerer GB beim
-reinen Laden). **Vorher `git pull`.**
+Ein Lauf dauert wenige Minuten und meldet je Horizont, wie gut das neue
+Modell im Vergleich zum Basismodell ist. Danach greifen die neuen Modelle
+automatisch beim nächsten Prognoselauf; nichts muss kopiert werden.
 
-## Speicherbedarf im Überblick
+### Wie oft
+
+**Einmal pro Woche genügt.** Um auf die aktuelle Lage zu reagieren, braucht es
+kein Training — die frischen Messwerte gehen bei jeder Prognose als Eingabe
+ein. Nachtrainiert wird nur wegen langsamer Veränderungen: Jahreszeiten, neue
+Parkhäuser, geänderte Kapazitäten, Baustellen, nachgefüllte Datenlücken. Ob es
+dringt, zeigt die Seite **Genauigkeit**: steigt die Fehlerkurve über mehrere
+Tage, ist ein Lauf fällig.
+
+Automatisch per crontab:
+
+```
+0 3 * * 0 cd /root/FastAPI-ML && python3 -m forecast.train --env prod >> /root/train.log 2>&1
+```
+
+Alternativ übernimmt das der eingebaute Scheduler nachts um 03:30, sofern
+`AI_RETRAIN_ENABLED` nicht auf `0` steht.
+
+### Meldung «NICHT aktiviert»
+
+```
+WARNING Lauf 50 (ml h=2) NICHT aktiviert: MAE 4.984 > 4.422 * 1.10
+```
+
+Das ist **kein Fehler**, sondern die Absicherung: das neue Modell war für
+diesen Horizont mehr als 10 % schlechter als das laufende, also bleibt das
+bessere aktiv. Nach einem Datenausfall verdrängt so kein schwaches Modell ein
+gutes. Die übrigen Horizonte werden davon nicht berührt.
+
+Zeigt die Meldung stattdessen «trotz schlechterem MAE aktiviert: Datei des
+bisherigen Laufs fehlt», stammte das bisher aktive Modell von einer anderen
+Maschine. Dann wird das neue genommen — ein etwas schlechteres Modell, das
+lädt, ist besser als ein besseres, das keine Prognosen erzeugt.
+
+### Speicherbedarf
 
 | Vorgang | Spitzenbedarf |
 |---|---|
@@ -221,27 +199,28 @@ reinen Laden). **Vorher `git pull`.**
 | Training, 60-Tage-Fenster | 735 MB |
 | Training, 120-Tage-Fenster | 1368 MB |
 
-Zum Vergleich: der Server hat **641 MB** insgesamt. Die App passt hinein, das
-Training nicht.
-
-Steuerung über die `.env`:
+Auf einem kleinen Server reicht das nicht. Der alte Server hatte 641 MB und
+keinen Swap; dort blieb die Maschine beim Training dreimal komplett stehen —
+ohne Swap wirft der Kernel den Datei-Cache weg, einschliesslich der
+ausführbaren Teile laufender Programme, worauf auch `sshd` unbenutzbar wird.
+Auf solchen Maschinen gilt:
 
 ```
-AI_RETRAIN_ENABLED=0     # kein Training auf diesem Server  -> Pflicht
-AI_TRAIN_DAYS=60         # nur relevant, falls doch trainiert wird
+AI_RETRAIN_ENABLED=0     # kein Training auf diesem Server
+AI_TRAIN_DAYS=60         # kleineres Fenster, falls doch
 ```
 
-Die Modelle kommen stattdessen vom PC — siehe
+und die Modelle kommen von einer anderen Maschine — siehe
 [../FastAPI-ML/MODELL-REFRESH.md](../FastAPI-ML/MODELL-REFRESH.md).
 
 ## Fehlersuche
 
-### Port 8080 antwortet nicht
+### Die Anwendung antwortet nicht
 
 Erst unterscheiden, ob überhaupt Pakete ankommen:
 
 ```bash
-curl -sS -m 5 http://localhost:8080/api/health    # auf dem Server selbst
+curl -sS -m 5 http://localhost/api/health    # auf dem Server selbst
 ```
 
 - **Funktioniert lokal, aber nicht von aussen** → Firewall. Beide Stellen

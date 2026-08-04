@@ -1,6 +1,8 @@
 #!/bin/bash
-# Startet die KI-Prognose-App (Port 8080) neu.
+# Startet die KI-Prognose-App neu.
 # --workers 1 ist Pflicht, sonst laeuft der eingebaute Scheduler mehrfach.
+
+PORT="${AI_APP_PORT:-80}"
 
 echo "[ML] alten Prozess beenden ..."
 if pkill -f uvicorn; then
@@ -26,16 +28,16 @@ else
     echo "[ML]          Siehe FastAPI-ML/MODELL-REFRESH.md"
 fi
 
-nohup python3 -m uvicorn main:app --host 0.0.0.0 --port 8080 --workers 1 > fastapi-ml.log 2>&1 &
+nohup python3 -m uvicorn main:app --host 0.0.0.0 --port ${PORT} --workers 1 > fastapi-ml.log 2>&1 &
 pid=$!
 sleep 3
 if kill -0 "$pid" 2>/dev/null; then
     echo "[ML] gestartet (PID $pid), Log: FastAPI-ML/fastapi-ml.log"
-    if command -v curl >/dev/null && curl -sS -m 5 http://localhost:8080/api/health >/dev/null 2>&1; then
-        echo "[ML] antwortet auf http://localhost:8080"
+    if command -v curl >/dev/null && curl -sS -m 5 http://localhost:${PORT}/api/health >/dev/null 2>&1; then
+        echo "[ML] antwortet auf http://localhost:${PORT}"
     else
         echo "[ML] startet noch - in ein paar Sekunden pruefen:"
-        echo "[ML]   curl -sS http://localhost:8080/api/health"
+        echo "[ML]   curl -sS http://localhost:${PORT}/api/health"
     fi
 else
     echo "[ML] FEHLGESCHLAGEN - letzte Zeilen aus fastapi-ml.log:"

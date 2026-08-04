@@ -77,19 +77,31 @@ def _activate(env, run_id, model_type, horizon_h, new_mae_occ) -> bool:
     horizon_cond = "horizon_h = %s" if horizon_h is not None else "horizon_h IS NULL"
     params = [model_type] + ([horizon_h] if horizon_h is not None else [])
     active = db.query(
-        f"SELECT run_id, cv_mae_occ FROM ai_model_runs "
+        f"SELECT run_id, cv_mae_occ, artifact_path FROM ai_model_runs "
         f"WHERE model_type = %s AND {horizon_cond} AND is_active = 1",
         tuple(params), env=env,
     )
     if (active and active[0]["cv_mae_occ"] is not None
             and not np.isnan(new_mae_occ)
             and new_mae_occ > float(active[0]["cv_mae_occ"]) * ACTIVATION_TOLERANCE):
+        # Den bisherigen Lauf nur verteidigen, wenn seine Datei hier auch
+        # existiert. Nach einem Serverwechsel liegt sie sonst noch auf der
+        # alten Maschine - ein etwas schlechteres Modell, das laedt, ist
+        # allemal besser als ein besseres, das gar keine Prognosen erzeugt.
+        datei = config.artifact_file(active[0]["artifact_path"] or "")
+        if datei.is_file():
+            logger.warning(
+                "Lauf %s (%s h=%s) NICHT aktiviert: MAE %.3f > %.3f * %.2f",
+                run_id, model_type, horizon_h, new_mae_occ,
+                float(active[0]["cv_mae_occ"]), ACTIVATION_TOLERANCE,
+            )
+            return False
         logger.warning(
-            "Lauf %s (%s h=%s) NICHT aktiviert: MAE %.3f > %.3f * %.2f",
+            "Lauf %s (%s h=%s) trotz schlechterem MAE (%.3f > %.3f) aktiviert: "
+            "Datei des bisherigen Laufs fehlt (%s)",
             run_id, model_type, horizon_h, new_mae_occ,
-            float(active[0]["cv_mae_occ"]), ACTIVATION_TOLERANCE,
+            float(active[0]["cv_mae_occ"]), datei,
         )
-        return False
     db.execute(
         f"UPDATE ai_model_runs SET is_active = 0 "
         f"WHERE model_type = %s AND {horizon_cond} AND is_active = 1",

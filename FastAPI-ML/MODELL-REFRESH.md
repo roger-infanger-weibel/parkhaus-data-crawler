@@ -1,9 +1,8 @@
-# Modelle auffrischen — Anleitung für den PC
+# Modelle auffrischen
 
-Wöchentliche Routine, Dauer rund 10 Minuten. Das Training läuft auf dem PC,
-weil der Server mit **641 MB RAM und ohne Swap** dafür schlicht zu klein ist —
-das Training braucht 735 MB, also mehr, als die Maschine besitzt. Drei
-Versuche am 30./31.07.2026 legten sie jedes Mal komplett lahm.
+Wöchentliche Routine. Seit dem Serverumzug am 04.08.2026 läuft das Training
+**direkt auf dem Server** (87.106.21.252) — die Maschine hat genug
+Arbeitsspeicher. Nichts muss mehr kopiert werden.
 
 ## Wann
 
@@ -15,138 +14,117 @@ Parkhäuser, geänderte Kapazitäten, Baustellen, nachgefüllte Datenlücken.
 Ausserplanmässig, wenn auf der Seite **Genauigkeit** die Fehlerkurve über
 mehrere Tage steigt.
 
-## Voraussetzungen (einmalig)
+---
 
-- Python 3.9+ mit `pip install -r requirements.txt`
-- Eine `.env` mit den Datenbank-Zugangsdaten (liegt im Repo-Root)
-- WinSCP oder `scp` für die Übertragung
-- Auf dem Server muss `AI_RETRAIN_ENABLED=0` gesetzt sein, sonst trainiert er
-  nachts selbst und bringt sich zum Absturz
+## Der Ablauf
+
+```bash
+cd /root/FastAPI-ML
+python3 -m forecast.train --env prod
+python3 -m forecast.train --env test     # nur falls Test-Umgebung genutzt
+```
+
+Ein Lauf dauert wenige Minuten. Danach greifen die neuen Modelle automatisch
+beim nächsten Viertelstunden-Lauf.
+
+Automatisch per crontab, sonntags um 03:00:
+
+```
+0 3 * * 0 cd /root/FastAPI-ML && python3 -m forecast.train --env prod >> /root/train.log 2>&1
+```
+
+Alternativ erledigt das der eingebaute Scheduler nachts um 03:30, sofern
+`AI_RETRAIN_ENABLED` nicht auf `0` steht.
+
+## Die Ausgabe lesen
+
+```
+Horizont 1h: ML MAE 5.69 Plaetze / 2.31 pp - Baseline 33.35 / 12.64
+```
+
+Links das neue KI-Modell, rechts das einfache Basismodell zum Vergleich.
+Steigt der ML-Wert bei 1 h und 2 h gegenüber dem letzten Lauf deutlich an,
+stimmt etwas mit den Daten nicht — dann der Ursache nachgehen, etwa einer
+Lücke:
+
+```sql
+SELECT MAX(fetch_ts) FROM ph_fetch_prod.pls_fetch_current;
+```
+
+### «NICHT aktiviert» ist kein Fehler
+
+```
+WARNING Lauf 50 (ml h=2) NICHT aktiviert: MAE 4.984 > 4.422 * 1.10
+```
+
+Das neue Modell war für diesen Horizont mehr als 10 % schlechter als das
+laufende, also bleibt das bessere aktiv. Genau dafür ist die Regel da: nach
+einem Datenausfall verdrängt kein schwaches Modell ein gutes. Die übrigen
+Horizonte sind davon nicht berührt.
+
+Steht dort stattdessen «trotz schlechterem MAE aktiviert: Datei des bisherigen
+Laufs fehlt», stammte das bisher aktive Modell von einer anderen Maschine.
+Dann wird das neue genommen — ein etwas schlechteres Modell, das lädt, ist
+besser als ein besseres, das keine Prognosen erzeugt.
+
+## Kontrollieren
+
+```bash
+curl -sS http://localhost/api/health
+```
+
+- **`active_runs`** zeigt fünf Einträge; die Zeitstempel sollten vom heutigen
+  Lauf sein (ausser bei einem «NICHT aktiviert»-Horizont)
+- **`last_prediction`** wird beim nächsten Viertelstunden-Lauf frisch
+
+Oder im Browser auf `http://87.106.21.252/`: erscheint dort die rote Warnung
+«Prognose veraltet», hat etwas nicht geklappt. Das Log sagt dann, was:
+
+```bash
+grep -E "Modelldatei fehlt|NICHT aktiviert" /root/FastAPI-ML/fastapi-ml.log
+```
 
 ---
 
-## Schritt 1 — Trainieren
+## Alternative: auf einem anderen Rechner trainieren
+
+Nötig nur, wenn der Server zu wenig Arbeitsspeicher hat (Training braucht
+735 MB bei 60 Tagen, 1368 MB bei 120 Tagen). Dann auf dem Server
+`AI_RETRAIN_ENABLED=0` setzen und:
 
 ```bash
 cd FastAPI-ML
 python -m forecast.train --env prod
-```
-
-Dauert etwa 5 Minuten und braucht bis zu 1,4 GB Arbeitsspeicher. Die Ausgabe
-zeigt pro Horizont, wie gut das neue Modell ist:
-
-```
-Horizont 1h: ML MAE 5.64 Plaetze / 2.22 pp - Baseline 34.26 / 12.83
-```
-
-Links das neue KI-Modell, rechts das einfache Basismodell zum Vergleich.
-
-**Prüfen:** Ist der ML-Wert bei 1 h und 2 h *schlechter* als beim letzten Mal,
-stimmt etwas mit den Daten nicht — dann nicht ausliefern, sondern erst der
-Ursache nachgehen (etwa eine Lücke in `pls_fetch_current`).
-
-Falls du auch die Test-Umgebung nutzt, denselben Befehl mit `--env test`.
-
-## Schritt 2 — Dateien einsammeln
-
-```bash
 python -m scripts.export_models --env prod
+scp export_models/*.joblib root@87.106.21.252:/root/FastAPI-ML/models_store/
 ```
 
-Das legt genau die fünf Dateien des aktiven Laufs (~18 MB) nach
-`FastAPI-ML/export_models/` und zeigt sie an:
+`export_models` sammelt genau die fünf Dateien des aktiven Laufs (~18 MB) in
+`export_models/` — der Ordner wird bei jedem Lauf geleert, es liegen also nie
+alte Dateien darin, die man versehentlich mitkopiert.
 
-```
-prod (ph_fetch_prod):
-  Basis  baseline_prod_20260731_0930.joblib   1.7 MB  (trainiert 31.07. 09:30)
-  +1h    ml_h1_prod_20260731_0930.joblib      4.0 MB
-  +2h    ml_h2_prod_20260731_0930.joblib      4.0 MB
-  +4h    ml_h4_prod_20260731_0930.joblib      4.0 MB
-  +8h    ml_h8_prod_20260731_0930.joblib      4.0 MB
-```
-
-Der Ordner wird bei jedem Lauf geleert — es liegen also nie alte Dateien
-darin, die man versehentlich mitkopiert.
+**Zügig kopieren:** das Training markiert den neuen Lauf sofort als aktiv, und
+bis die Dateien eintreffen, findet der Server kein Modell und erzeugt einen
+Zyklus lang keine Prognosen.
 
 ### prod und test im selben Ordner
 
 `models_store/` ist ein gemeinsamer Ablageort für beide Umgebungen. Welche
-Datei zu welcher gehört, steht **nicht** im Dateinamen als Verzeichnis,
-sondern in der jeweiligen Datenbank (`ai_model_runs.artifact_path`). Damit
-nichts kollidiert:
+Datei zu welcher gehört, steht in der jeweiligen Datenbank
+(`ai_model_runs.artifact_path`). Damit nichts kollidiert:
 
 - Der Dateiname enthält die Umgebung: `ml_h1_prod_…` bzw. `ml_h1_test_…`
-- Beim Aufräumen alter Modelle bleibt jede Datei verschont, auf die noch ein
-  aktiver Lauf zeigt — auch der der *anderen* Umgebung
+- Beim Aufräumen bleibt jede Datei verschont, auf die noch ein aktiver Lauf
+  zeigt — auch der der *anderen* Umgebung
 
-Du kannst prod und test also gefahrlos nacheinander trainieren und alle
-Dateien in denselben Zielordner kopieren. Ein Überschreiben gibt es nicht.
-
-Ältere Dateien ohne Umgebung im Namen (vor dem 31.07.2026 erzeugt) bleiben
-gültig — sie werden weiterhin über den in der Datenbank gespeicherten Namen
-gefunden.
-
-## Schritt 3 — Auf den Server kopieren
-
-Ziel: `/root/FastAPI-ML/models_store/`
-
-Mit WinSCP den Inhalt von `export_models/` dorthin ziehen, oder:
-
-```bash
-scp export_models/*.joblib root@87.106.222.137:/root/FastAPI-ML/models_store/
-```
-
-**Zügig machen.** Das Training hat den neuen Lauf in der Datenbank sofort als
-aktiv markiert. Bis die Dateien auf dem Server sind, findet er kein Modell und
-erzeugt keine Prognosen — höchstens ein 15-Minuten-Zyklus fällt aus.
-
-Die alten Dateien müssen nicht gelöscht werden; es zählt nur, was in
-`ai_model_runs` als aktiv steht.
-
-## Schritt 4 — Kontrollieren
-
-Auf dem Server:
-
-```bash
-curl -sS http://localhost:8080/api/health
-```
-
-Zwei Dinge müssen stimmen:
-
-- **`last_prediction`** wird beim nächsten Viertelstunden-Lauf
-  (:10/:25/:40/:55) frisch. Bleibt der Wert alt, fehlen die Modelldateien.
-- **`active_runs`** zeigt fünf Einträge mit dem Zeitstempel von heute.
-
-Oder im Browser auf `http://87.106.222.137:8080/`: erscheint dort die rote
-Warnung «Prognose veraltet», hat etwas nicht geklappt.
-
-Falls das Log Klarheit bringen soll:
-
-```bash
-grep "Modelldatei fehlt" /root/FastAPI-ML/fastapi-ml.log
-```
-
-Diese Meldung bedeutet: Datenbank und Dateien passen nicht zusammen — Schritt 3
-wiederholen.
-
----
-
-## Kurzfassung
-
-```bash
-cd FastAPI-ML
-python -m forecast.train --env prod
-python -m scripts.export_models --env prod
-scp export_models/*.joblib root@87.106.222.137:/root/FastAPI-ML/models_store/
-# danach auf dem Server: curl -sS http://localhost:8080/api/health
-```
+Ältere Dateien ohne Umgebung im Namen (vor dem 31.07.2026) bleiben gültig.
 
 ## Häufige Stolpersteine
 
 | Beobachtung | Ursache |
 |---|---|
-| Prognosen bleiben alt, obwohl trainiert | Dateien nicht kopiert (Schritt 3) |
-| `KEINE .env gefunden` in `/api/health` | Server findet die `.env` nicht → `AI_ENV_FILE` setzen oder `ln -sf /root/myenv/.env /root/.env` |
-| Server hängt sich nachts auf | `AI_RETRAIN_ENABLED=0` fehlt in der `.env` |
+| Prognosen bleiben alt, obwohl trainiert | Modelldateien nicht am Ort der App — Log auf «Modelldatei fehlt» prüfen |
+| `KEINE .env gefunden` in `/api/health` | `AI_ENV_FILE` setzen oder `.env` nach `/root/FastAPI-ML/` legen |
+| Ein Horizont bleibt alt | «NICHT aktiviert» — Absicht, siehe oben |
 | Training bricht mit Speicherfehler ab | Fenster verkleinern: `--days 60` |
-| MAE plötzlich viel schlechter | Datenlücke prüfen: `SELECT MAX(fetch_ts) FROM ph_fetch_prod.pls_fetch_current;` |
+| Server hängt beim Training | Zu wenig RAM — `AI_RETRAIN_ENABLED=0` und woanders trainieren |
