@@ -317,6 +317,36 @@
     </tbody>
   </table>
 
+  <h5 class="mt-4">Test-Umgebung aufrufen</h5>
+  <p>
+    Alle Zahlen stammen aus der Produktivdatenbank. Daneben gibt es eine
+    Test-Umgebung, in der neue Scanner-Versionen erprobt werden. Sie ist
+    bewusst versteckt, damit niemand versehentlich Testdaten für echte hält.
+  </p>
+  <table class="table table-sm w-auto">
+    <tbody>
+      <tr><td><code>?admin</code> an die Adresse anhängen</td>
+        <td>blendet die Umschaltung Prod/Test ein und merkt sich das</td></tr>
+      <tr><td><code>?admin=0</code></td>
+        <td>versteckt sie wieder und schaltet auf Prod zurück</td></tr>
+    </tbody>
+  </table>
+  <p class="text-muted small">
+    Läuft die Anzeige auf Test, steht das rot in der Fusszeile. Die
+    Freischaltung liegt im Browser des jeweiligen Geräts — sie ist eine
+    Bequemlichkeit, kein Zugriffsschutz.
+  </p>
+
+  <h5 class="mt-4">Gespeicherte Einstellungen</h5>
+  <p>
+    Stadt, Modellwahl, Suchbegriff, Zeitraum und Horizont werden lokal im
+    Browser gespeichert (<code>localStorage</code>), damit sie beim nächsten
+    Besuch erhalten bleiben. Es werden keine Daten an den Server oder an
+    Dritte übermittelt; Cookies kommen dafür bewusst nicht zum Einsatz, weil
+    sie bei jeder Anfrage mitgeschickt würden. Löschen lässt sich das über die
+    Browser-Einstellungen («Websitedaten löschen»).
+  </p>
+
   <h5 class="mt-4">Technischer Aufbau</h5>
   <p>
     Python mit FastAPI und uvicorn auf Port 8080, Datenhaltung in MariaDB,

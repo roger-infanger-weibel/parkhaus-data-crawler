@@ -99,6 +99,20 @@ Autostart nach einem Neustart läuft über den crontab-Eintrag
 (`bash linux-cmd/install-systemd.sh`), die zusätzlich Speicherlimits und
 Neustart nach Absturz mitbringen.
 
+### Umgebungswahl in der Oberfläche
+
+**Prod ist der Normalfall** und der Umschalter ist ausgeblendet — sonst landen
+Besucher versehentlich auf Testdaten.
+
+| Aufruf | Wirkung |
+|---|---|
+| `http://87.106.21.252/?admin` | Umschalter erscheint, Freischaltung bleibt gemerkt |
+| `http://87.106.21.252/?admin=0` | Umschalter wieder verstecken und auf prod zurück |
+
+Läuft die Oberfläche auf Test, steht das zusätzlich rot in der Fusszeile.
+Gemerkt wird die Freischaltung im `localStorage` des Browsers, gilt also pro
+Gerät und Browser — es ist eine Bequemlichkeit, kein Zugriffsschutz.
+
 ### Wo die .env gesucht wird
 
 `AI_ENV_FILE` (falls gesetzt) → `FastAPI-ML/.env` → `.env` im Repo-Root →
