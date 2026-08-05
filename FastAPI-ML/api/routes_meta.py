@@ -15,6 +15,7 @@ def health(env: str = Depends(get_env)):
     status: dict = {
         "status": "ok", "env": env, "db": config.db_name(env),
         "db_host": config.DB_HOST,
+        "version": config.app_version(),
         "env_files": config.ENV_FILES_LOADED or "KEINE .env gefunden - Standardwerte aktiv",
     }
     try:
@@ -43,6 +44,16 @@ def health(env: str = Depends(get_env)):
 @router.get("/environments")
 def environments():
     return {"prod": config.DB_DATABASE_PROD, "test": config.DB_DATABASE_TEST}
+
+
+@router.get("/version")
+def version():
+    """Version und Fusszeilen-Angaben für die Oberfläche."""
+    return {
+        "version": config.app_version(),
+        "titel": "Swiss Parking Monitor",
+        "kontakt": "roger@roil.ch",
+    }
 
 
 @router.get("/cities")

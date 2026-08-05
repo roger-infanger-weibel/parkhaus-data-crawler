@@ -21,10 +21,12 @@
             data-bs-toggle="dropdown" aria-expanded="false">Links</button>
     <ul class="dropdown-menu dropdown-menu-end" id="link-menu"></ul>
   </div>
-  <select id="env-select" class="form-select form-select-sm w-auto">
-    <option value="prod">Prod</option>
-    <option value="test">Test</option>
-  </select>
+  <div class="env-box d-none">
+    <select id="env-select" class="form-select form-select-sm w-auto">
+      <option value="prod">Prod</option>
+      <option value="test">Test</option>
+    </select>
+  </div>
 </nav>
 
 <div class="container-fluid px-4">
@@ -41,6 +43,16 @@
         <input type="radio" class="btn-check" name="model" id="model-baseline" value="baseline">
         <label class="btn btn-outline-primary btn-sm" for="model-baseline">Basis (Durchschnitt)</label>
       </div>
+    </div>
+    <div class="col-auto">
+      <label class="form-label mb-1" for="such-feld">Suche</label>
+      <div class="input-group">
+        <input type="search" id="such-feld" class="form-control" style="min-width:14rem"
+               placeholder="Parkhaus oder Gruppe …" autocomplete="off">
+        <button class="btn btn-outline-secondary" type="button" id="such-loeschen"
+                title="Suche zurücksetzen">✕</button>
+      </div>
+      <small class="text-muted" id="such-treffer"></small>
     </div>
     <div class="col-auto ms-auto text-muted small" id="slot-info"></div>
   </div>
@@ -83,7 +95,7 @@
       </div>
     </div>
   </div>
-  <footer class="text-muted small pb-3">FastAPI-ML · Version 2026-07-30</footer>
+  <footer id="app-footer" class="text-muted small py-4"></footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

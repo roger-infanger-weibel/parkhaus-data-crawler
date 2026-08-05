@@ -10,11 +10,22 @@ async function loadCities() {
   const cities = await Api.get('/api/cities');
   const sel = document.getElementById('city-select');
   sel.innerHTML = cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  sel.value = localStorage.getItem('ai_city') || cities[0]?.id;
-  sel.addEventListener('change', () => {
-    localStorage.setItem('ai_city', sel.value);
+  Merker.binden('city-select', cities[0]?.id, () => {
     selectedPls = null;
     loadForecasts();
+  });
+}
+
+/** Suchbegriff auf Name und Gruppe anwenden; leer = alles zeigen. */
+function suchFilter(haeuser) {
+  const begriff = (document.getElementById('such-feld')?.value || '')
+    .trim().toLowerCase();
+  if (!begriff) return haeuser;
+  // Mehrere Wörter: alle müssen irgendwo vorkommen ("bahnhof p3")
+  const teile = begriff.split(/\s+/);
+  return haeuser.filter(h => {
+    const heuhaufen = `${h.name} ${h.group || ''} ${h.pls_id}`.toLowerCase();
+    return teile.every(t => heuhaufen.includes(t));
   });
 }
 
@@ -47,6 +58,31 @@ function historyCell(house, offset) {
     `<span class="${cls}">${arrow}${d === 0 ? '' : Math.abs(d)}</span></td>`;
 }
 
+/** Tabelle aus den zuletzt geladenen Daten aufbauen, gefiltert nach Suche. */
+function zeichneTabelle() {
+  if (!current) return;
+  const gefiltert = suchFilter(current.houses);
+  const rows = gefiltert.map(h => `
+    <tr data-pls="${h.pls_id}">
+      <td>${h.name}${h.group ? `<br><small class="text-muted">${h.group}</small>` : ''}</td>
+      ${historyCell(h, 2)}
+      ${historyCell(h, 1)}
+      <td class="text-end"><strong>${h.free_now}</strong><small class="text-muted">/${h.total}</small></td>
+      ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
+      <td><small class="text-muted">${fmtTs(h.fetch_ts)}</small></td>
+    </tr>`).join('');
+  document.getElementById('forecast-table').innerHTML = rows ||
+    '<tr><td colspan="9" class="text-muted">Kein Parkhaus passt zur Suche</td></tr>';
+  document.querySelectorAll('#forecast-table tr[data-pls]').forEach(tr => {
+    tr.addEventListener('click', () => loadDetail(tr.dataset.pls));
+  });
+  const treffer = document.getElementById('such-treffer');
+  if (treffer) {
+    treffer.textContent = gefiltert.length < current.houses.length
+      ? `${gefiltert.length} von ${current.houses.length}` : '';
+  }
+}
+
 async function loadForecasts() {
   const city = document.getElementById('city-select').value;
   const data = await Api.get(`/api/forecast/current/${city}`);
@@ -71,20 +107,7 @@ async function loadForecasts() {
       info.textContent = `Prognosestand: ${fmtTs(data.slot)} Uhr`;
     }
   }
-  const rows = data.houses.map(h => `
-    <tr data-pls="${h.pls_id}">
-      <td>${h.name}${h.group ? `<br><small class="text-muted">${h.group}</small>` : ''}</td>
-      ${historyCell(h, 2)}
-      ${historyCell(h, 1)}
-      <td class="text-end"><strong>${h.free_now}</strong><small class="text-muted">/${h.total}</small></td>
-      ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
-      <td><small class="text-muted">${fmtTs(h.fetch_ts)}</small></td>
-    </tr>`).join('');
-  document.getElementById('forecast-table').innerHTML =
-    rows || '<tr><td colspan="9">Keine Daten</td></tr>';
-  document.querySelectorAll('#forecast-table tr[data-pls]').forEach(tr => {
-    tr.addEventListener('click', () => loadDetail(tr.dataset.pls));
-  });
+  zeichneTabelle();
   if (selectedPls) loadDetail(selectedPls);
 }
 
@@ -140,9 +163,32 @@ async function loadDetail(plsId) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Modellwahl wiederherstellen (KI oder Basis)
+  const gemerktesModell = Merker.lesen('model', 'ml');
+  const radio = document.getElementById('model-' + gemerktesModell);
+  if (radio) radio.checked = true;
+
+  // Suchbegriff wiederherstellen - ohne Neuladen, nur die Tabelle filtern
+  const suche = document.getElementById('such-feld');
+  if (suche) {
+    suche.value = Merker.lesen('suche', '');
+    suche.addEventListener('input', () => {
+      Merker.schreiben('suche', suche.value);
+      zeichneTabelle();
+    });
+    document.getElementById('such-loeschen')?.addEventListener('click', () => {
+      suche.value = '';
+      Merker.schreiben('suche', '');
+      zeichneTabelle();
+    });
+  }
+
   await loadCities();
   await loadForecasts();
   document.querySelectorAll('input[name="model"]').forEach(r =>
-    r.addEventListener('change', loadForecasts));
+    r.addEventListener('change', () => {
+      Merker.schreiben('model', model());
+      loadForecasts();
+    }));
   setInterval(loadForecasts, 5 * 60 * 1000);
 });

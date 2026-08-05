@@ -10,6 +10,7 @@ ENV_FILES_LOADED zeigt, was tatsaechlich gefunden wurde - /api/health gibt das
 aus, damit eine nicht gefundene .env nicht still zu Standardwerten fuehrt.
 """
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -64,6 +65,25 @@ TRAIN_DAYS = int(os.environ.get("AI_TRAIN_DAYS", "120"))
 RETRAIN_ENABLED = _flag("AI_RETRAIN_ENABLED")
 
 HORIZONS = (1, 2, 4, 8)  # Prognosehorizonte in Stunden
+
+
+def app_version() -> str:
+    """Version = Zeitstempel der jüngsten Quelldatei.
+
+    Kommt damit tatsaechlich aus dem laufenden Code und aktualisiert sich bei
+    jedem Deployment von selbst - ohne eine Konstante, die zu pflegen jemand
+    vergisst.
+    """
+    neuste = 0.0
+    for muster in ("*.py", "*/*.py", "static/*.html", "static/*/*.js", "static/*/*.css"):
+        for datei in BASE_DIR.glob(muster):
+            try:
+                neuste = max(neuste, datei.stat().st_mtime)
+            except OSError:
+                continue
+    if not neuste:
+        return "unbekannt"
+    return datetime.fromtimestamp(neuste).strftime("%Y-%m-%d %H:%M")
 
 
 def artifact_file(stored: str) -> Path:

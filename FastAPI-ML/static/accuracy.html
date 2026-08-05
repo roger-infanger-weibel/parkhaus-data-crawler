@@ -21,10 +21,12 @@
             data-bs-toggle="dropdown" aria-expanded="false">Links</button>
     <ul class="dropdown-menu dropdown-menu-end" id="link-menu"></ul>
   </div>
-  <select id="env-select" class="form-select form-select-sm w-auto">
-    <option value="prod">Prod</option>
-    <option value="test">Test</option>
-  </select>
+  <div class="env-box d-none">
+    <select id="env-select" class="form-select form-select-sm w-auto">
+      <option value="prod">Prod</option>
+      <option value="test">Test</option>
+    </select>
+  </div>
 </nav>
 
 <div class="container-fluid px-4">
@@ -124,7 +126,7 @@
       </div>
     </div>
   </div>
-  <footer class="text-muted small pb-3">FastAPI-ML · Version 2026-07-30</footer>
+  <footer id="app-footer" class="text-muted small py-4"></footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

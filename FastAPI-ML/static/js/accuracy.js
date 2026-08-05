@@ -127,13 +127,13 @@ async function initCitySelectors() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initCitySelectors();
+  // Zuletzt gewaehlte Einstellungen wiederherstellen und kuenftig merken
+  Merker.binden('days-select', '14', () => { loadSummary(); loadPerParkhaus(); });
+  Merker.binden('chart-model', 'ml', loadSummary);
+  Merker.binden('ts-scope', 'global', loadTimeseries);
+  Merker.binden('ts-horizon', '1', loadTimeseries);
+  Merker.binden('city-select', null, loadPerParkhaus);
+  Merker.binden('ph-horizon', '1', loadPerParkhaus);
+
   await Promise.all([loadSummary(), loadTimeseries(), loadPerParkhaus(), loadRuns()]);
-  document.getElementById('days-select').addEventListener('change', () => {
-    loadSummary(); loadPerParkhaus();
-  });
-  document.getElementById('chart-model').addEventListener('change', loadSummary);
-  document.getElementById('ts-scope').addEventListener('change', loadTimeseries);
-  document.getElementById('ts-horizon').addEventListener('change', loadTimeseries);
-  document.getElementById('city-select').addEventListener('change', loadPerParkhaus);
-  document.getElementById('ph-horizon').addEventListener('change', loadPerParkhaus);
 });
