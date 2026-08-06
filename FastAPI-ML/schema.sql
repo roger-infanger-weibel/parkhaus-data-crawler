@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS ai_predictions (
     predicted_free INT          NOT NULL,
     predicted_occ  DECIMAL(6,4) NOT NULL,   -- Belegungsquote 0..1
     total_at_pred  INT          NULL,
+    predicted_free_q20 INT       NULL,       -- pessimistisches 20%-Quantil
+    predicted_full_prob DECIMAL(5,4) NULL,  -- P(free < 5)
     actual_free    INT          NULL,
     actual_ts      DATETIME     NULL,
     abs_err_free   INT          NULL,
@@ -70,6 +72,24 @@ CREATE TABLE IF NOT EXISTS ai_accuracy_daily (
     rmse_free    DECIMAL(10,3) NULL,
     bias_free    DECIMAL(10,3) NULL,       -- mean(pred - actual)
     PRIMARY KEY (day, city, pls_id, model_type, horizon_h)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Kantonale Feiertage (berechnet oder manuell gepflegt)
+CREATE TABLE IF NOT EXISTS ai_feiertage (
+    datum    DATE         NOT NULL,
+    kanton   VARCHAR(4)   NOT NULL,
+    name     VARCHAR(100) NOT NULL,
+    PRIMARY KEY (datum, kanton)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Kantonale Schulferien
+CREATE TABLE IF NOT EXISTS ai_schulferien (
+    kanton       VARCHAR(4)  NOT NULL,
+    jahr         SMALLINT    NOT NULL,
+    von          DATE        NOT NULL,
+    bis          DATE        NOT NULL,
+    bezeichnung  VARCHAR(64) NULL,
+    PRIMARY KEY (kanton, jahr, von)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Chat-Verlauf

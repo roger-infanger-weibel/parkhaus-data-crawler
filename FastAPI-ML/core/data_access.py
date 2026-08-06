@@ -170,3 +170,30 @@ def events_range(env: Optional[str] = None, start: Optional[datetime] = None,
         df["end_time"] = pd.to_datetime(df["end_time"])
         df["bonus"] = df["bonus"].astype(float)
     return df
+
+
+def bias_lookup(env: Optional[str] = None, model_type: str = "ml",
+                days: int = 14, min_n: int = 50) -> dict:
+    """Mittlerer Bias pro (city, pls_id, horizon_h) der letzten `days` Tage.
+
+    Nur Eintraege mit genuegend Auswertungen (min_n), damit der Bias stabil ist.
+    Rueckgabe: {(city, pls_id, horizon_h): bias_free_wert}
+    """
+    rows = db.query(
+        """
+        SELECT city, pls_id, horizon_h,
+               SUM(n) AS total_n,
+               SUM(bias_free * n) / SUM(n) AS w_bias
+        FROM ai_accuracy_daily
+        WHERE model_type = %s
+          AND day >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+          AND city != '' AND pls_id != ''
+        GROUP BY city, pls_id, horizon_h
+        HAVING total_n >= %s
+        """,
+        (model_type, days, min_n), env=env,
+    )
+    return {
+        (r["city"], r["pls_id"], r["horizon_h"]): float(r["w_bias"])
+        for r in rows if r["w_bias"] is not None
+    }

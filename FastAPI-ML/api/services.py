@@ -95,7 +95,7 @@ def current_forecasts(env: str, city: str) -> dict:
         rows = db.query(
             """
             SELECT pls_id, horizon_h, model_type, predicted_free, predicted_occ,
-                   target_time
+                   predicted_free_q20, predicted_full_prob, target_time
             FROM ai_predictions
             WHERE city = %s AND created_at = %s
             """,
@@ -104,11 +104,16 @@ def current_forecasts(env: str, city: str) -> dict:
         for r in rows:
             h = houses.setdefault(r["pls_id"], {"horizons": {}})
             hz = h["horizons"].setdefault(r["horizon_h"], {})
-            hz[r["model_type"]] = {
+            entry = {
                 "free": r["predicted_free"],
                 "occ": float(r["predicted_occ"]),
                 "target_time": r["target_time"].isoformat(),
             }
+            if r.get("predicted_free_q20") is not None:
+                entry["free_q20"] = r["predicted_free_q20"]
+            if r.get("predicted_full_prob") is not None:
+                entry["full_prob"] = float(r["predicted_full_prob"])
+            hz[r["model_type"]] = entry
 
     past = past_values(env, city, now_local())
 

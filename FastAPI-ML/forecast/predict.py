@@ -17,7 +17,7 @@ from core import data_access as da
 from core.timeutil import floor_to_grid, now_local
 from forecast import features
 from forecast.baseline import BaselineModel
-from forecast.ml_model import ForecastModel
+from forecast.ml_model import ForecastModel, QuantileModel, FullClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +38,13 @@ def _load_artifact(stored: str, loader):
 
 
 def _active_runs(env) -> dict:
-    """{'ml': {horizon: run_row}, 'baseline': run_row|None}"""
+    """{'ml': {h: run}, 'ml_q20': {h: run}, 'ml_full': {h: run}, 'baseline': run|None}"""
     rows = db.query("SELECT * FROM ai_model_runs WHERE is_active = 1", env=env)
     ml = {r["horizon_h"]: r for r in rows if r["model_type"] == "ml"}
+    ml_q20 = {r["horizon_h"]: r for r in rows if r["model_type"] == "ml_q20"}
+    ml_full = {r["horizon_h"]: r for r in rows if r["model_type"] == "ml_full"}
     baseline = next((r for r in rows if r["model_type"] == "baseline"), None)
-    return {"ml": ml, "baseline": baseline}
+    return {"ml": ml, "ml_q20": ml_q20, "ml_full": ml_full, "baseline": baseline}
 
 
 def run(env: Optional[str] = None) -> dict:
@@ -80,17 +82,29 @@ def run(env: Optional[str] = None) -> dict:
     weather = da.weather_range(env=env, start=t0, end=t0 + timedelta(hours=9))
     events = da.events_range(env=env, start=t0 - timedelta(hours=6), end=t0 + timedelta(hours=12))
 
+    bias = da.bias_lookup(env=env)
+
     runs = _active_runs(env)
     baseline = None
     if runs["baseline"]:
         baseline = _load_artifact(runs["baseline"]["artifact_path"], BaselineModel.load)
     ml_models = {}
+    q20_models = {}
+    full_models = {}
     prior = pd.DataFrame()
     for h, run_row in runs["ml"].items():
         model = _load_artifact(run_row["artifact_path"], ForecastModel.load)
         if model is not None:
             ml_models[h] = (run_row["run_id"], model)
             prior = getattr(model, "prior", prior)
+    for h, run_row in runs["ml_q20"].items():
+        model = _load_artifact(run_row["artifact_path"], QuantileModel.load)
+        if model is not None:
+            q20_models[h] = model
+    for h, run_row in runs["ml_full"].items():
+        model = _load_artifact(run_row["artifact_path"], FullClassifier.load)
+        if model is not None:
+            full_models[h] = model
     if not ml_models:
         logger.warning("Kein aktives ML-Modell - nur Baseline-Prognosen")
     if baseline is None:
@@ -115,6 +129,9 @@ def run(env: Optional[str] = None) -> dict:
             b_run = runs["baseline"]["run_id"]
             preds["baseline"] = (b_run, baseline.predict_frame(frame))
 
+        q20_series = q20_models[h].predict(frame) if h in q20_models else None
+        full_series = full_models[h].predict_proba(frame) if h in full_models else None
+
         for model_type, (run_id, occ_series) in preds.items():
             for idx, row in frame.iterrows():
                 occ = occ_series.loc[idx]
@@ -122,22 +139,38 @@ def run(env: Optional[str] = None) -> dict:
                     continue
                 total = int(row["total"])
                 free = int(round((1 - float(occ)) * total))
+                b = bias.get((row["city"], row["pls_id"], h), 0)
+                if b and model_type == "ml":
+                    free = free - round(b)
                 free = max(0, min(free, total))
+
+                free_q20 = None
+                full_prob = None
+                if model_type == "ml":
+                    if q20_series is not None:
+                        occ_q = float(q20_series.loc[idx])
+                        free_q20 = max(0, min(total, int(round((1 - occ_q) * total))))
+                    if full_series is not None:
+                        full_prob = round(float(full_series.loc[idx]), 4)
+
                 insert_rows.append((
                     t0, target, h, model_type, run_id, row["city"], row["pls_id"],
-                    free, round(float(occ), 4), total,
+                    free, round(float(occ), 4), total, free_q20, full_prob,
                 ))
 
     n = db.executemany(
         """
         INSERT INTO ai_predictions
             (created_at, target_time, horizon_h, model_type, run_id,
-             city, pls_id, predicted_free, predicted_occ, total_at_pred)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             city, pls_id, predicted_free, predicted_occ, total_at_pred,
+             predicted_free_q20, predicted_full_prob)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
             predicted_free = VALUES(predicted_free),
             predicted_occ = VALUES(predicted_occ),
             total_at_pred = VALUES(total_at_pred),
+            predicted_free_q20 = VALUES(predicted_free_q20),
+            predicted_full_prob = VALUES(predicted_full_prob),
             run_id = VALUES(run_id)
         """,
         insert_rows,

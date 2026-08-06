@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from core import data_access as da
+from core import kalender
 
 SLOTS_PER_HOUR = 4
 LAGS = {  # Spaltenname -> Verschiebung in 15-Min-Slots (bezogen auf t0)
@@ -20,10 +21,14 @@ LAGS = {  # Spaltenname -> Verschiebung in 15-Min-Slots (bezogen auf t0)
     "occ_7d_ago": 672,
 }
 
-# Spalten, die das ML-Modell als Eingabe sieht
+# Spalten, die das ML-Modell als Eingabe sieht.
+# Aendert sich diese Liste, funktionieren aeltere Modelldateien trotzdem
+# weiter: sie merken sich beim Training ihre eigene Spaltenliste (siehe
+# ml_model.ForecastModel).
 FEATURE_COLUMNS = [
     "hour", "quarter", "weekday", "is_weekend", "month",
     "sin_hour", "cos_hour", "sin_weekday", "cos_weekday",
+    "is_holiday", "is_bridge_day", "is_school_holiday",
     "occ_now", "occ_1h_ago", "occ_2h_ago", "occ_24h_ago", "occ_7d_ago",
     "delta_occ_1h", "occ_mean_3h", "occ_mean_24h", "occ_std_24h",
     "prior_occ",
@@ -155,6 +160,11 @@ def build_horizon_frame(grid: pd.DataFrame, horizon_h: int,
     df["cos_hour"] = np.cos(2 * np.pi * df["hour"] / 24)
     df["sin_weekday"] = np.sin(2 * np.pi * df["weekday"] / 7)
     df["cos_weekday"] = np.cos(2 * np.pi * df["weekday"] / 7)
+
+    # Feiertage / Brueckentage / Schulferien des Zielzeitpunkts
+    kal = kalender.kalender_spalten(df["city"], df["target_slot"])
+    for col in kalender.SPALTEN:
+        df[col] = kal[col].values
 
     # Wetter zur Zielstunde
     if not weather.empty:
