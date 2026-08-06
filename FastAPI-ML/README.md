@@ -15,11 +15,14 @@ laufendes Genauigkeits-Monitoring und ein deutschsprachiger Chat-Assistent.
 
 ## Architektur
 
-- **Zwei Modelle:** statistisches Basismodell (Wochentag/Stunden-Durchschnitt
-  + Event-/Regen-Zuschlag) als transparente Referenz und vier globale
-  LightGBM-Modelle (eines pro Horizont, Ziel = Belegungsquote 0–1).
+- **Mehrere Modelle pro Horizont:** statistisches Basismodell
+  (Wochentag/Stunden-Durchschnitt + Event-/Regen-Zuschlag) als Referenz,
+  vier globale LightGBM-Regressionen (Ziel = Belegungsquote 0–1),
+  vier Quantil-Modelle (α=0.2, pessimistisches 20%-Quantil: „mit 80 %
+  Wahrscheinlichkeit mindestens X Plätze frei") und vier Voll-Klassifikatoren
+  (P(free < 5): Wahrscheinlichkeit, dass das Parkhaus voll ist).
   Fällt LightGBM bei der Installation aus, wird automatisch
-  scikit-learn `HistGradientBoostingRegressor` verwendet.
+  scikit-learn verwendet.
 - **Jobs (APScheduler, in-process, Zeitzone Europe/Zurich):** Prognose
   :10/:25/:40/:55, Evaluation :13/:28/:43/:58, Mapping-Refresh 03:15,
   Training 03:30. Ein neues Modell wird nur aktiviert, wenn es max. 10 %
@@ -27,8 +30,16 @@ laufendes Genauigkeits-Monitoring und ein deutschsprachiger Chat-Assistent.
   `AI_RETRAIN_ENABLED=0` abschalten – auf kleinen Servern nötig, siehe unten.
 - **Metrik:** MAE in freien Plätzen (primär) und in Belegungs-Prozentpunkten;
   bewusst kein MAPE (explodiert bei `free ≈ 0`).
+- **Bias-Korrektur:** Die Prognose wird pro Parkhaus und Horizont um den
+  mittleren Bias der letzten 14 Tage korrigiert (aus `ai_accuracy_daily`,
+  min. 50 Auswertungen). Gleicht systematische Abweichungen des globalen
+  Modells bei einzelnen Häusern aus.
+- **Kalender-Features:** Feiertage (kantonal), Brückentage und Schulferien
+  fliessen als Merkmale ins Modell ein. Die Daten liegen in den Tabellen
+  `ai_feiertage` und `ai_schulferien` (Sync per `kalender.sync_kalender_to_db`).
 - **Neue Tabellen** (`schema.sql`, Präfix `ai_`): `ai_parkhaus_map`,
-  `ai_model_runs`, `ai_predictions`, `ai_accuracy_daily`, `ai_chat_log`.
+  `ai_model_runs`, `ai_predictions`, `ai_accuracy_daily`, `ai_chat_log`,
+  `ai_feiertage`, `ai_schulferien`.
   Bestehende Tabellen werden **nur gelesen**.
 - **Identity-Mapping:** `pls_fetch_current`-IDs ≠ `parkhaeuser`-IDs
   (Basel exakt, Luzern/St. Gallen Namens-Containment, Bern Wort-Vergleich);
@@ -146,9 +157,10 @@ Antwortformulierung würden ersetzt.
   leere lokale Datenbanken (eingebauter Schutz).
 - Häuser ohne Stammdaten-Match (15 von 110, v.a. Bern und St. Gallen) werden
   trotzdem prognostiziert, nur ohne Event-Features.
-- Die Events in `local_events` sind **erzeugt, nicht real**: wiederkehrende
-  Termine für Stadttheater/KKL Luzern und Theater 11 Zürich, Fr–So. Für
-  Basel, Bern und St. Gallen existieren keine Events.
+- Events: neben den erzeugten Dummy-Events (Stadttheater/KKL Luzern, Theater 11
+  Zürich) gibt es jetzt den Scraper `scanner/fetch_events.py` für echte
+  Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle, Stadtcasino
+  Basel, Musical.ch, OLMA). Die Venue→Parkhaus-Zuordnung ist manuell gepflegt.
 - Ist der Prognosestand älter als 30 Minuten, warnt die Prognoseseite. Die
   Spalten +1 h bis +8 h zählen ab dem Prognosestand, nicht ab der Uhrzeit
   des Betrachters.

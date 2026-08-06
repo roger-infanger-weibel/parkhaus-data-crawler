@@ -50,6 +50,7 @@ parkhaus-data-crawler/
 | **bern.py** | Collector Bern (XML); überschreibt auch `fetch_raw_data()` | `collect_data.py` |
 | **db_utils.py** | DB-Zugriff (`mysql.connector`), UPSERT, Mock-Modus für die Simulation | `base.py`, `collect_data.py` |
 | **get_event_and_weather_data.py** | Lädt Wetter von Open-Meteo und erzeugt Event-Einträge (`pymysql`) | `scheduler.py` |
+| **fetch_events.py** | Scraper für echte Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle, Stadtcasino Basel, Luzerner Theater, OLMA) | manuell / geplant |
 | **cities.json** | Stadt-Konfiguration: IDs, API-Adressen, Aktivierung | `collect_data.py` |
 | **zurich_parking_map.json** | Zuordnung und Kapazitäten der Zürcher Parkhäuser; wird vom Collector aktualisiert | `zurich.py` |
 | **requirements.txt** | Abhängigkeiten | — |
@@ -91,7 +92,7 @@ und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
 | **main.py** | FastAPI-App, startet den Scheduler, bindet Router und Oberfläche ein |
 | **config.py** | Konfiguration, `.env`-Suche, Auflösung der Modelldateien |
 | **db.py** | DB-Zugriff via `pymysql`, Streaming für grosse Abfragen, Timeouts |
-| **schema.sql** / **init_db.py** | Anlage der `ai_*`-Tabellen (einmalig) |
+| **schema.sql** / **init_db.py** | Anlage der `ai_*`-Tabellen (einmalig); **migrate_v2.sql** für Quantil-/Kalender-Erweiterung |
 | **requirements.txt** / **.env.example** | Abhängigkeiten, dokumentierte Variablen |
 
 ### core/ — Grundlagen
@@ -99,7 +100,8 @@ und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
 | Datei | Beschreibung |
 |---|---|
 | **identity.py** | Zuordnung der Parkhaus-Kennungen zwischen Messwerten und Stammdaten → `ai_parkhaus_map` |
-| **data_access.py** | Alle Lese-Abfragen (Belegung, Wetter, Events, Stammdaten) |
+| **data_access.py** | Alle Lese-Abfragen (Belegung, Wetter, Events, Stammdaten, Bias) |
+| **kalender.py** | Schweizer Feiertage, Brückentage und Schulferien als Features; liest aus DB (`ai_feiertage`, `ai_schulferien`) mit Fallback auf Berechnung |
 | **timeutil.py** | Europe/Zurich, 15-Minuten-Raster |
 
 ### forecast/ — Prognose
@@ -108,7 +110,7 @@ und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
 |---|---|
 | **features.py** | Rasterung und Merkmalsbildung, gemeinsam für Training und Prognose |
 | **baseline.py** | Statistisches Basismodell (Wochentag/Stunde) als Vergleichsmassstab |
-| **ml_model.py** | LightGBM-Wrapper mit Fallback auf scikit-learn |
+| **ml_model.py** | LightGBM-Wrapper (Regression, Quantil α=0.2, Voll-Klassifikator) mit Fallback auf scikit-learn |
 | **train.py** | Trainingslauf, Holdout-Bewertung, Aktivierungssperre |
 | **predict.py** | Erzeugt Prognosen alle 15 Minuten |
 | **evaluate.py** | Vergleicht gereifte Prognosen mit den Ist-Werten |
@@ -216,8 +218,8 @@ vorher übernommen.
 Vom Scanner befüllt: `pls_fetch_current` (~1,5 Mio. Zeilen), `weather_forecasts`,
 `local_events`, `event_parkhaus`, `cities`, `parkhaeuser`, `log`.
 Von der KI-App: `ai_predictions`, `ai_accuracy_daily`, `ai_model_runs`,
-`ai_parkhaus_map`, `ai_chat_log`. Beschreibung aller Tabellen unter
-`/doku.html`.
+`ai_parkhaus_map`, `ai_chat_log`, `ai_feiertage`, `ai_schulferien`.
+Beschreibung aller Tabellen unter `/doku.html`.
 
 ## Hinweise
 
