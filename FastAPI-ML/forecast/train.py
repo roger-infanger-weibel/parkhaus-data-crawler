@@ -59,8 +59,8 @@ def _insert_run(env, model_type, horizon_h, now, n_rows, train_from, train_to,
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (model_type, horizon_h, now, n_rows, train_from, train_to,
-                 None if np.isnan(mae_free) else round(mae_free, 3),
-                 None if np.isnan(mae_occ) else round(mae_occ, 3),
+                 None if mae_free is None or np.isnan(mae_free) else round(mae_free, 3),
+                 None if mae_occ is None or np.isnan(mae_occ) else round(mae_occ, 3),
                  # nur der Dateiname - so funktionieren Modelle auch, wenn sie
                  # auf einer anderen Maschine trainiert und kopiert wurden
                  json.dumps(params), Path(artifact_path).name),
