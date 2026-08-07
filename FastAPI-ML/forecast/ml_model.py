@@ -34,6 +34,8 @@ class ForecastModel:
                 learning_rate=0.05,
                 num_leaves=63,
                 min_child_samples=50,
+                subsample=0.8,
+                colsample_bytree=0.8,
                 verbose=-1,
             )
         else:
@@ -91,6 +93,8 @@ class QuantileModel(ForecastModel):
                 learning_rate=0.05,
                 num_leaves=63,
                 min_child_samples=50,
+                subsample=0.8,
+                colsample_bytree=0.8,
                 verbose=-1,
             )
         else:

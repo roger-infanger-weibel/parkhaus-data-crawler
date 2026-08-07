@@ -174,16 +174,19 @@ def events_range(env: Optional[str] = None, start: Optional[datetime] = None,
 
 def bias_lookup(env: Optional[str] = None, model_type: str = "ml",
                 days: int = 14, min_n: int = 50) -> dict:
-    """Mittlerer Bias pro (city, pls_id, horizon_h) der letzten `days` Tage.
+    """Exponentiell gewichteter Bias pro (city, pls_id, horizon_h).
 
-    Nur Eintraege mit genuegend Auswertungen (min_n), damit der Bias stabil ist.
+    Juengere Tage werden staerker gewichtet (Halbwertszeit ~5 Tage), damit
+    der Bias schneller auf Aenderungen reagiert. Nur Eintraege mit genuegend
+    Auswertungen (min_n).
     Rueckgabe: {(city, pls_id, horizon_h): bias_free_wert}
     """
     rows = db.query(
         """
         SELECT city, pls_id, horizon_h,
                SUM(n) AS total_n,
-               SUM(bias_free * n) / SUM(n) AS w_bias
+               SUM(bias_free * n * EXP(-0.14 * DATEDIFF(CURDATE(), day)))
+                 / SUM(n * EXP(-0.14 * DATEDIFF(CURDATE(), day))) AS w_bias
         FROM ai_accuracy_daily
         WHERE model_type = %s
           AND day >= DATE_SUB(CURDATE(), INTERVAL %s DAY)

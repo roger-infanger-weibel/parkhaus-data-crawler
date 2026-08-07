@@ -21,6 +21,7 @@
     .techdoc .feature-tag.event { background: #f8d7da; }
     .techdoc .feature-tag.calendar { background: #e2d9f3; }
     .techdoc .feature-tag.meta { background: #d3d3d3; }
+    .techdoc .feature-tag.interaction { background: #fde2e4; }
   </style>
 </head>
 <body>
@@ -79,7 +80,7 @@
     </div></div>
     <div class="col-md-3"><div class="card metric-card p-3 h-100">
       <div class="text-muted small">Features</div>
-      <div class="fs-4 fw-bold">31</div>
+      <div class="fs-4 fw-bold">40</div>
       <div class="text-muted small">pro Observation</div>
     </div></div>
     <div class="col-md-3"><div class="card metric-card p-3 h-100">
@@ -162,7 +163,7 @@ free_korrigiert = free − round(bias)</code></pre>
   <!-- ============================================================ -->
   <h3 class="mt-5">3. Feature Engineering</h3>
   <!-- ============================================================ -->
-  <p>31 Features pro Observation, gruppiert nach Kategorie:</p>
+  <p>40 Features pro Observation, gruppiert nach Kategorie:</p>
 
   <h6>Temporal (zyklisch kodiert)</h6>
   <p>
@@ -175,6 +176,8 @@ free_korrigiert = free − round(bias)</code></pre>
     <span class="feature-tag temporal">cos_hour</span>
     <span class="feature-tag temporal">sin_weekday</span>
     <span class="feature-tag temporal">cos_weekday</span>
+    <span class="feature-tag temporal">sin_month</span>
+    <span class="feature-tag temporal">cos_month</span>
   </p>
 
   <h6>Kalender</h6>
@@ -194,9 +197,11 @@ free_korrigiert = free − round(bias)</code></pre>
     <span class="feature-tag lag">occ_now</span>
     <span class="feature-tag lag">occ_1h_ago</span>
     <span class="feature-tag lag">occ_2h_ago</span>
+    <span class="feature-tag lag">occ_3d_ago</span>
     <span class="feature-tag lag">occ_24h_ago</span>
     <span class="feature-tag lag">occ_7d_ago</span>
     <span class="feature-tag lag">delta_occ_1h</span>
+    <span class="feature-tag lag">trend_2h</span>
     <span class="feature-tag lag">occ_mean_3h</span>
     <span class="feature-tag lag">occ_mean_24h</span>
     <span class="feature-tag lag">occ_std_24h</span>
@@ -213,6 +218,8 @@ free_korrigiert = free − round(bias)</code></pre>
     <span class="feature-tag weather">temperature</span>
     <span class="feature-tag weather">precipitation</span>
     <span class="feature-tag weather">is_raining</span>
+    <span class="feature-tag weather">temp_bin</span>
+    <span class="feature-tag weather">temp_sq</span>
   </p>
   <p class="small text-muted">
     Quelle: <a href="https://open-meteo.com" target="_blank">Open-Meteo API</a>,
@@ -225,12 +232,24 @@ free_korrigiert = free − round(bias)</code></pre>
     <span class="feature-tag event">event_active</span>
     <span class="feature-tag event">event_soon</span>
     <span class="feature-tag event">event_bonus</span>
+    <span class="feature-tag event">event_category</span>
   </p>
   <p class="small text-muted">
     Echte Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle,
     Stadtcasino Basel, Luzerner Theater, OLMA). <code>event_bonus</code> = kategorieabhängiger
     Zuschlag (Konzert 0.40, Sport 0.45, Messe 0.50 etc.).
-    <code>event_soon</code> = Event beginnt innerhalb der nächsten 2&nbsp;Stunden.
+    <code>event_soon</code> = Event beginnt innerhalb der nächsten 3&nbsp;Stunden.
+    <code>event_category</code> = kategorische Variable (Konzert, Sport, Messe, …).
+  </p>
+
+  <h6>Interaktions-Features</h6>
+  <p>
+    <span class="feature-tag interaction">weekend_event</span>
+    <span class="feature-tag interaction">rain_hour</span>
+  </p>
+  <p class="small text-muted">
+    <code>weekend_event</code> = is_weekend × event_active — Events am Wochenende haben stärkeren Effekt.
+    <code>rain_hour</code> = is_raining × hour — Regen wirkt je nach Tageszeit unterschiedlich.
   </p>
 
   <h6>Metadaten</h6>

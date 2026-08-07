@@ -17,6 +17,7 @@ SLOTS_PER_HOUR = 4
 LAGS = {  # Spaltenname -> Verschiebung in 15-Min-Slots (bezogen auf t0)
     "occ_1h_ago": 4,
     "occ_2h_ago": 8,
+    "occ_3d_ago": 288,
     "occ_24h_ago": 96,
     "occ_7d_ago": 672,
 }
@@ -28,16 +29,21 @@ LAGS = {  # Spaltenname -> Verschiebung in 15-Min-Slots (bezogen auf t0)
 FEATURE_COLUMNS = [
     "hour", "quarter", "weekday", "is_weekend", "month",
     "sin_hour", "cos_hour", "sin_weekday", "cos_weekday",
+    "sin_month", "cos_month",
     "is_holiday", "is_bridge_day", "is_school_holiday",
-    "occ_now", "occ_1h_ago", "occ_2h_ago", "occ_24h_ago", "occ_7d_ago",
-    "delta_occ_1h", "occ_mean_3h", "occ_mean_24h", "occ_std_24h",
+    "occ_now", "occ_1h_ago", "occ_2h_ago", "occ_3d_ago",
+    "occ_24h_ago", "occ_7d_ago",
+    "delta_occ_1h", "trend_2h",
+    "occ_mean_3h", "occ_mean_24h", "occ_std_24h",
     "prior_occ",
     "temperature", "precipitation", "is_raining",
-    "event_active", "event_soon", "event_bonus",
+    "temp_bin", "temp_sq",
+    "event_active", "event_soon", "event_bonus", "event_category",
+    "weekend_event", "rain_hour",
     "log_total",
     "city", "pls_key",
 ]
-CATEGORICAL_COLUMNS = ["city", "pls_key"]
+CATEGORICAL_COLUMNS = ["city", "pls_key", "event_category"]
 
 
 def build_grid(env: Optional[str], start: datetime, end: datetime,
@@ -94,18 +100,20 @@ def _event_slot_table(events: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]
     ev = events.dropna(subset=["pls_id"])
     for _, e in ev.iterrows():
         bonus = float(e["bonus"] or 0)
+        cat = str(e.get("category", "") or "default")
         for slot in pd.date_range(e["start_time"].floor("15min"),
                                   e["end_time"].ceil("15min"), freq="15min"):
-            active_rows.append((e["city"], e["pls_id"], slot, bonus))
+            active_rows.append((e["city"], e["pls_id"], slot, bonus, cat))
         for slot in pd.date_range((e["start_time"] - timedelta(hours=3)).ceil("15min"),
                                   e["start_time"].floor("15min"), freq="15min",
                                   inclusive="left"):
             soon_rows.append((e["city"], e["pls_id"], slot, bonus))
 
-    cols = ["city", "pls_id", "target_slot", "event_bonus"]
+    cols = ["city", "pls_id", "target_slot", "event_bonus", "event_category"]
     active = (
         pd.DataFrame(active_rows, columns=cols)
-        .groupby(cols[:3], as_index=False).max()
+        .sort_values("event_bonus", ascending=False)
+        .drop_duplicates(subset=cols[:3], keep="first")
         if active_rows else pd.DataFrame(columns=cols)
     )
     soon = (
@@ -124,6 +132,11 @@ def add_series_features(grid: pd.DataFrame) -> pd.DataFrame:
     for col, shift in LAGS.items():
         grid[col] = g.shift(shift)
     grid["delta_occ_1h"] = grid["occ_now"] - grid["occ_1h_ago"]
+    first_4 = g.transform(lambda s: s.rolling(8, min_periods=4).apply(
+        lambda w: w[:4].mean(), raw=True))
+    last_4 = g.transform(lambda s: s.rolling(8, min_periods=4).apply(
+        lambda w: w[-4:].mean(), raw=True))
+    grid["trend_2h"] = last_4 - first_4
     grid["occ_mean_3h"] = g.transform(lambda s: s.rolling(12, min_periods=4).mean())
     grid["occ_mean_24h"] = g.transform(lambda s: s.rolling(96, min_periods=24).mean())
     grid["occ_std_24h"] = g.transform(lambda s: s.rolling(96, min_periods=24).std())
@@ -160,6 +173,8 @@ def build_horizon_frame(grid: pd.DataFrame, horizon_h: int,
     df["cos_hour"] = np.cos(2 * np.pi * df["hour"] / 24)
     df["sin_weekday"] = np.sin(2 * np.pi * df["weekday"] / 7)
     df["cos_weekday"] = np.cos(2 * np.pi * df["weekday"] / 7)
+    df["sin_month"] = np.sin(2 * np.pi * df["month"] / 12)
+    df["cos_month"] = np.cos(2 * np.pi * df["month"] / 12)
 
     # Feiertage / Brueckentage / Schulferien des Zielzeitpunkts
     kal = kalender.kalender_spalten(df["city"], df["target_slot"])
@@ -176,10 +191,14 @@ def build_horizon_frame(grid: pd.DataFrame, horizon_h: int,
         df["temperature"] = np.nan
         df["precipitation"] = np.nan
     df["is_raining"] = (df["precipitation"].fillna(0) > 0.5).astype(int)
+    temp = df["temperature"].fillna(0)
+    df["temp_bin"] = pd.cut(temp, bins=[-50, 5, 15, 25, 50],
+                            labels=[0, 1, 2, 3]).astype(float)
+    df["temp_sq"] = temp ** 2
 
     # Events zum Zielzeitpunkt
     active, soon = _event_slot_table(events) if not events.empty else (
-        pd.DataFrame(columns=["city", "pls_id", "target_slot", "event_bonus"]),
+        pd.DataFrame(columns=["city", "pls_id", "target_slot", "event_bonus", "event_category"]),
         pd.DataFrame(columns=["city", "pls_id", "target_slot", "soon_bonus"]),
     )
     df = df.merge(active, on=["city", "pls_id", "target_slot"], how="left")
@@ -189,7 +208,12 @@ def build_horizon_frame(grid: pd.DataFrame, horizon_h: int,
     active_bonus = pd.to_numeric(df["event_bonus"], errors="coerce")
     soon_bonus = pd.to_numeric(df["soon_bonus"], errors="coerce")
     df["event_bonus"] = active_bonus.fillna(soon_bonus).fillna(0.0)
+    df["event_category"] = df["event_category"].fillna("none")
     df = df.drop(columns=["soon_bonus"])
+
+    # Interaktions-Features
+    df["weekend_event"] = df["is_weekend"] * df["event_active"]
+    df["rain_hour"] = df["is_raining"] * df["hour"]
 
     # Saisonaler Prior (weekday/hour des Zielzeitpunkts)
     if not prior.empty:
