@@ -129,14 +129,14 @@ def runs(env: str = Depends(get_env)):
     rows = db.query(
         """
         SELECT run_id, model_type, horizon_h, trained_at, train_rows,
-               cv_mae_free, cv_mae_occ, is_active
+               cv_mae_free, cv_mae_occ, cv_r2, is_active
         FROM ai_model_runs ORDER BY trained_at DESC, horizon_h LIMIT 60
         """,
         env=env,
     )
     for r in rows:
         r["trained_at"] = r["trained_at"].isoformat()
-        for k in ("cv_mae_free", "cv_mae_occ"):
-            if r[k] is not None:
+        for k in ("cv_mae_free", "cv_mae_occ", "cv_r2"):
+            if r.get(k) is not None:
                 r[k] = float(r[k])
     return rows

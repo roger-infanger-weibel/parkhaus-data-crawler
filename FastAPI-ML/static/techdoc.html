@@ -153,10 +153,12 @@
     Pro <code>(city, pls_id, horizon_h)</code> wird der gewichtete mittlere Bias der
     letzten 14&nbsp;Tage berechnet:
   </p>
-  <pre class="bg-light p-2 rounded"><code>bias = Σ(bias_free × n) / Σ(n)    aus ai_accuracy_daily, min. 50 Evaluationen
+  <pre class="bg-light p-2 rounded"><code>w(d) = exp(−0.14 × d)              Halbwertszeit ≈ 5 Tage
+bias = Σ(bias_free × n × w(d)) / Σ(n × w(d))    letzte 14 Tage, min. 50 Evaluationen
 free_korrigiert = free − round(bias)</code></pre>
   <p>
-    Gleicht systematische Abweichungen des globalen Modells bei einzelnen Häusern aus.
+    Exponentiell gewichtet: jüngere Tage haben mehr Einfluss, damit der Bias
+    schnell auf Veränderungen reagiert (z.B. Baustellen, geänderte Kapazitäten).
     Wird nur auf ML-Prognosen angewandt, nicht auf Baseline.
   </p>
 
@@ -302,6 +304,7 @@ free_korrigiert = free − round(bias)</code></pre>
         <th class="text-end">Bias<sub>free</sub></th>
         <th class="text-end">Baseline MAE (pp)</th>
         <th class="text-end">Skill Score</th>
+        <th class="text-end">R²</th>
       </tr>
     </thead>
     <tbody id="td-perf-body">
@@ -321,6 +324,10 @@ free_korrigiert = free − round(bias)</code></pre>
     <li><strong>Skill Score</strong> — <code>1 − MAE(ML) / MAE(Baseline)</code>.
       0.72 = 72&nbsp;% weniger Fehler als der saisonale Durchschnitt.
       Negativ = Modell schlechter als Baseline.</li>
+    <li><strong>R²</strong> (Bestimmtheitsmass) — <code>1 − SS<sub>res</sub> / SS<sub>tot</sub></code>.
+      Anteil der erklärten Varianz. 0.85 = das Modell erklärt 85&nbsp;% der
+      Belegungsschwankungen. Berechnet auf dem Holdout (letzte 14&nbsp;Tage)
+      und beim Training gespeichert.</li>
     <li>Bewusst <strong>kein MAPE</strong>: bei <code>free → 0</code> explodiert der
       relative Fehler.</li>
   </ul>
@@ -493,55 +500,62 @@ FastAPI-ML (Port 80)
   const env = (typeof Api !== 'undefined' && Api.env) ? Api.env : 'prod';
   const base = window.location.origin;
 
+  // R² aus den aktiven Trainingsläufen holen
+  const r2Promise = fetch(`${base}/api/accuracy/runs?env=${env}`)
+    .then(r => r.json())
+    .then(runs => {
+      const r2 = {};
+      for (const run of runs) {
+        if (run.model_type === 'ml' && run.is_active && run.cv_r2 != null)
+          r2[run.horizon_h] = run.cv_r2;
+      }
+      return r2;
+    })
+    .catch(() => ({}));
+
   fetch(`${base}/api/accuracy/summary?env=${env}`)
     .then(r => r.json())
-    .then(data => {
+    .then(async data => {
       const tbody = document.getElementById('td-perf-body');
-      if (!tbody || !data.per_city) return;
+      if (!tbody || !data.entries) return;
+      const r2Map = await r2Promise;
 
-      // Aggregate from per_city data
-      const mlByH = {};
-      const blByH = {};
-      for (const city of Object.values(data.per_city)) {
-        for (const h of Object.keys(city)) {
-          const d = city[h];
-          if (!d || !d.ml) continue;
-          if (!mlByH[h]) mlByH[h] = {mae_free: 0, mae_occ: 0, bias: 0, n: 0};
-          mlByH[h].mae_free += (d.ml.mae_free || 0) * (d.ml.n || 1);
-          mlByH[h].mae_occ += (d.ml.mae_occ || 0) * (d.ml.n || 1);
-          mlByH[h].bias += (d.ml.bias_free || 0) * (d.ml.n || 1);
-          mlByH[h].n += (d.ml.n || 1);
-          if (d.baseline) {
-            if (!blByH[h]) blByH[h] = {mae_occ: 0, n: 0};
-            blByH[h].mae_occ += (d.baseline.mae_occ || 0) * (d.baseline.n || 1);
-            blByH[h].n += (d.baseline.n || 1);
-          }
+      const mlByH = {}, blByH = {};
+      for (const e of data.entries) {
+        const h = e.horizon_h;
+        if (e.model_type === 'ml') {
+          mlByH[h] = e;
+        } else if (e.model_type === 'baseline' && e.scope === 'global') {
+          blByH[h] = e;
         }
       }
 
       let html = '';
       for (const h of [1, 2, 4, 8]) {
         const ml = mlByH[h];
-        const bl = blByH[h];
         if (!ml) continue;
-        const maeFree = (ml.mae_free / ml.n).toFixed(1);
-        const maeOcc = (ml.mae_occ / ml.n).toFixed(2);
-        const bias = (ml.bias / ml.n).toFixed(1);
-        const blOcc = bl ? (bl.mae_occ / bl.n).toFixed(2) : '—';
-        const skill = bl ? (1 - (ml.mae_occ / ml.n) / (bl.mae_occ / bl.n)).toFixed(2) : '—';
+        const bl = blByH[h];
+        const blOcc = bl ? bl.mae_occ_pp.toFixed(2) : '—';
+        const skill = ml.skill != null ? ml.skill.toFixed(2) : '—';
         const skillClass = skill !== '—' && parseFloat(skill) < 0.1 ? 'text-danger' : '';
+        const r2 = r2Map[h] != null ? r2Map[h].toFixed(4) : '—';
         html += `<tr>
           <td>+${h}h</td>
-          <td class="text-end">±${maeFree}</td>
-          <td class="text-end">${maeOcc} pp</td>
-          <td class="text-end">${bias > 0 ? '+' : ''}${bias}</td>
+          <td class="text-end">±${ml.mae_free.toFixed(1)}</td>
+          <td class="text-end">${ml.mae_occ_pp.toFixed(2)} pp</td>
+          <td class="text-end">${ml.bias_free > 0 ? '+' : ''}${ml.bias_free.toFixed(1)}</td>
           <td class="text-end">${blOcc} pp</td>
           <td class="text-end ${skillClass}"><strong>${skill}</strong></td>
+          <td class="text-end">${r2}</td>
         </tr>`;
       }
-      tbody.innerHTML = html || '<tr><td colspan="6" class="text-muted">Keine Daten</td></tr>';
+      tbody.innerHTML = html || '<tr><td colspan="7" class="text-muted">Keine Daten</td></tr>';
     })
-    .catch(() => {});
+    .catch(() => {
+      const tbody = document.getElementById('td-perf-body');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-muted">' +
+        'Daten nicht verfügbar — API läuft nicht oder noch kein Training durchgeführt.</td></tr>';
+    });
 })();
 </script>
 </body>

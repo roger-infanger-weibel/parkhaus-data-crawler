@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS ai_model_runs (
     train_to      DATETIME     NULL,
     cv_mae_free   DECIMAL(10,3) NULL,      -- Holdout-MAE in freien Plaetzen
     cv_mae_occ    DECIMAL(6,3)  NULL,      -- Holdout-MAE in Belegungs-Prozentpunkten
+    cv_r2         DECIMAL(6,4) NULL,      -- R² auf Holdout (Bestimmtheitsmass)
     params_json   TEXT         NULL,
     artifact_path VARCHAR(255) NULL,
     is_active     TINYINT(1)   NOT NULL DEFAULT 0,

@@ -46,8 +46,21 @@ def _mae_metrics(pred_occ, frame) -> tuple[float, float]:
     return float(np.mean(err_occ * totals)), float(np.mean(err_occ) * 100)
 
 
+def _r2(pred_occ, frame) -> float:
+    """R² (Bestimmtheitsmass) auf der Belegungsquote."""
+    y = frame["target"].to_numpy(dtype=float)
+    p = np.asarray(pred_occ, dtype=float)
+    mask = ~(np.isnan(y) | np.isnan(p))
+    y, p = y[mask], p[mask]
+    if len(y) < 2:
+        return float("nan")
+    ss_res = np.sum((y - p) ** 2)
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
+    return float(1 - ss_res / ss_tot) if ss_tot > 0 else float("nan")
+
+
 def _insert_run(env, model_type, horizon_h, now, n_rows, train_from, train_to,
-                mae_free, mae_occ, params, artifact_path) -> int:
+                mae_free, mae_occ, params, artifact_path, r2=None) -> int:
     conn = db.get_conn(env)
     try:
         with conn.cursor() as cursor:
@@ -55,12 +68,14 @@ def _insert_run(env, model_type, horizon_h, now, n_rows, train_from, train_to,
                 """
                 INSERT INTO ai_model_runs
                     (model_type, horizon_h, trained_at, train_rows, train_from,
-                     train_to, cv_mae_free, cv_mae_occ, params_json, artifact_path)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     train_to, cv_mae_free, cv_mae_occ, cv_r2,
+                     params_json, artifact_path)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (model_type, horizon_h, now, n_rows, train_from, train_to,
                  None if mae_free is None or np.isnan(mae_free) else round(mae_free, 3),
                  None if mae_occ is None or np.isnan(mae_occ) else round(mae_occ, 3),
+                 None if r2 is None or np.isnan(r2) else round(r2, 4),
                  # nur der Dateiname - so funktionieren Modelle auch, wenn sie
                  # auf einer anderen Maschine trainiert und kopiert wurden
                  json.dumps(params), Path(artifact_path).name),
@@ -212,7 +227,9 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
         logger.info("Horizont %dh: trainiere auf %d Zeilen ...", h, len(train_f))
         model = ForecastModel(h).fit(train_f)
         model.prior = prior  # fuer identische Features bei der Prognose
-        mae_free, mae_occ = _mae_metrics(model.predict(hold_f), hold_f)
+        pred_occ = model.predict(hold_f)
+        mae_free, mae_occ = _mae_metrics(pred_occ, hold_f)
+        r2_val = _r2(pred_occ, hold_f)
 
         b_free, b_occ = _mae_metrics(
             baseline.predict_frame(hold_f).to_numpy(dtype=float), hold_f)
@@ -232,19 +249,21 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
             train_f["slot"].max().to_pydatetime(), mae_free, mae_occ,
             {"library": model.library, "features": features.FEATURE_COLUMNS,
              "holdout_days": HOLDOUT_DAYS},
-            artifact,
+            artifact, r2=r2_val,
         )
         activated = _activate(env, run_id, "ml", h, mae_occ, alt_mae_occ)
         results[h] = {
             "run_id": run_id, "activated": activated,
             "ml_mae_free": round(mae_free, 2), "ml_mae_occ_pp": round(mae_occ, 2),
+            "ml_r2": round(r2_val, 4) if not np.isnan(r2_val) else None,
             "vorheriges_modell_occ_pp": (round(alt_mae_occ, 2)
                                          if alt_mae_occ is not None else None),
             "baseline_mae_free": round(b_free, 2), "baseline_mae_occ_pp": round(b_occ, 2),
             "rows_train": len(train_f), "rows_holdout": len(hold_f),
         }
-        logger.info("Horizont %dh: ML MAE %.2f Plaetze / %.2f pp - Baseline %.2f / %.2f",
-                    h, mae_free, mae_occ, b_free, b_occ)
+        logger.info("Horizont %dh: ML MAE %.2f Plaetze / %.2f pp  R²=%.4f - "
+                    "Baseline %.2f / %.2f",
+                    h, mae_free, mae_occ, r2_val, b_free, b_occ)
 
         # Quantil-Modell (pessimistisches 20%-Quantil)
         logger.info("Horizont %dh: trainiere Quantil-Modell ...", h)
