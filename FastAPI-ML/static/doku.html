@@ -15,6 +15,7 @@
     <li class="nav-item"><a class="nav-link" href="/accuracy.html">Genauigkeit</a></li>
     <li class="nav-item"><a class="nav-link" href="/chat.html">Chat-Assistent</a></li>
     <li class="nav-item"><a class="nav-link active" href="/doku.html">Dokumentation</a></li>
+    <li class="nav-item"><a class="nav-link" href="/techdoc.html">TechDoc</a></li>
   </ul>
   <div class="dropdown me-3">
     <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
@@ -34,23 +35,26 @@
   <h2 class="mb-3">Wie diese Anwendung funktioniert</h2>
   <p class="lead">
     Sie sagt voraus, wie viele Parkplätze in den Parkhäusern von Luzern, Basel,
-    Bern, Zürich und St. Gallen in 1, 2, 4 und 8 Stunden frei sein werden — und
-    misst laufend nach, wie gut diese Vorhersagen tatsächlich waren.
+    Bern, Zürich und St.&nbsp;Gallen in 1, 2, 4 und 8&nbsp;Stunden frei sein werden —
+    und misst laufend nach, wie gut diese Vorhersagen tatsächlich waren.
   </p>
 
   <div class="card mb-4"><div class="card-body">
-    <h5 class="card-title">Die drei Seiten</h5>
+    <h5 class="card-title">Die vier Seiten</h5>
     <dl class="row mb-0">
       <dt class="col-sm-3">Prognose</dt>
-      <dd class="col-sm-9">Pro Parkhaus die Veränderung der letzten 2 Stunden,
-        der aktuelle Stand und die Vorhersage für die nächsten 8 Stunden.
+      <dd class="col-sm-9">Pro Parkhaus die Veränderung der letzten 2&nbsp;Stunden,
+        der aktuelle Stand und die Vorhersage für die nächsten 8&nbsp;Stunden.
         Ein Klick auf eine Zeile zeigt den Tagesverlauf mit Wetter und Events.</dd>
       <dt class="col-sm-3">Genauigkeit</dt>
       <dd class="col-sm-9">Wie stark die Prognosen im Schnitt danebenlagen —
         pro Parkhaus, pro Stadt und insgesamt.</dd>
       <dt class="col-sm-3">Chat-Assistent</dt>
       <dd class="col-sm-9">Fragen in normaler Sprache stellen, etwa
-        «Wo parke ich morgen um 19 Uhr in Luzern?».</dd>
+        «Wo parke ich morgen um 19&nbsp;Uhr in Luzern?».</dd>
+      <dt class="col-sm-3">TechDoc</dt>
+      <dd class="col-sm-9">Technische Dokumentation für Fachleute: Modellarchitektur,
+        Features, Metriken und API-Beschreibung.</dd>
     </dl>
   </div></div>
 
@@ -62,9 +66,9 @@
         <td><strong>Belegung</strong><br><small class="text-muted">freie und
           gesamte Plätze je Parkhaus</small></td>
         <td>Die offiziellen Parkleitsysteme der fünf Städte
-          (Luzern PLS, Basel und Zürich über ParkenDD, St. Gallen Open Data,
+          (Luzern PLS, Basel und Zürich über ParkenDD, St.&nbsp;Gallen Open Data,
           Bern XML-Schnittstelle)</td>
-        <td>alle 15 Minuten</td>
+        <td>alle 15&nbsp;Minuten</td>
       </tr>
       <tr>
         <td><strong>Wetter</strong><br><small class="text-muted">Temperatur,
@@ -74,287 +78,107 @@
         <td>zweimal täglich</td>
       </tr>
       <tr>
-        <td><strong>Veranstaltungen</strong></td>
-        <td>Theater, Konzerte und ähnliche Anlässe mit den betroffenen
-          Parkhäusern</td>
-        <td>zweimal täglich</td>
+        <td><strong>Veranstaltungen</strong><br><small class="text-muted">Konzerte,
+          Theater, Messen</small></td>
+        <td>Echte Veranstaltungsdaten, gescrapt von den Websites der Venues
+          (Hallenstadion, Tonhalle, Stadtcasino Basel, Luzerner Theater, OLMA).
+          Jeder Event wird den umliegenden Parkhäusern zugeordnet.</td>
+        <td>manuell / geplant</td>
+      </tr>
+      <tr>
+        <td><strong>Feiertage &amp; Schulferien</strong><br><small class="text-muted">
+          kantonal (BS, BE, LU, SG, ZH)</small></td>
+        <td>In der Datenbank hinterlegte Kalender inkl. Brückentagen</td>
+        <td>jährlich</td>
       </tr>
     </tbody>
   </table>
 
-  <div class="alert alert-warning">
-    <strong>Einschränkung bei den Events:</strong> die Veranstaltungen stammen
-    derzeit nicht aus einer echten Event-Datenbank, sondern werden nach einem
-    festen Muster erzeugt (wiederkehrende Termine für Stadttheater und KKL
-    Luzern sowie Theater 11 Zürich, jeweils Freitag bis Sonntag). Sie bilden
-    also den typischen Wochenrhythmus ab, nicht das tatsächliche Programm.
-    Für die anderen Städte sind gar keine Events erfasst.
-  </div>
-
-  <h4>Wo künstliche Intelligenz eingesetzt wird — und wo nicht</h4>
+  <h4>Wie die Vorhersage funktioniert</h4>
   <p>
-    Der Kern ist ein <strong>maschinelles Lernverfahren</strong> (Gradient
-    Boosting, konkret LightGBM), das aus der bisherigen Historie gelernt hat,
-    wie sich die Belegung entwickelt. Es gibt vier eigene Modelle, je eines für
-    1, 2, 4 und 8 Stunden im Voraus — weil eine Vorhersage über eine Stunde
-    ganz anderen Mustern folgt als eine über acht.
+    Ein Algorithmus lernt aus der Vergangenheit, wie sich die Belegung
+    typischerweise entwickelt. Er berücksichtigt dabei:
   </p>
-  <p>Was die Modelle als Anhaltspunkte verwenden:</p>
   <ul>
-    <li>den <strong>aktuellen Stand</strong> und die Werte von vor 1, 2 und 24
-      Stunden sowie von vor einer Woche</li>
-    <li><strong>Uhrzeit und Wochentag</strong> des Zielzeitpunkts</li>
+    <li>den <strong>aktuellen Stand</strong> und die Werte von vor 1, 2 und 24&nbsp;Stunden
+      sowie von vor einer Woche</li>
+    <li><strong>Uhrzeit, Wochentag und Monat</strong></li>
     <li>den <strong>üblichen Wert</strong> dieses Parkhauses zu dieser Zeit</li>
-    <li><strong>Wetter</strong> zum Zielzeitpunkt (Temperatur, Regen)</li>
-    <li><strong>Veranstaltungen</strong>, die dieses Parkhaus betreffen</li>
-    <li>welches <strong>Parkhaus</strong> und welche Stadt es ist</li>
+    <li><strong>Wetter</strong> (Temperatur, Regen)</li>
+    <li><strong>Veranstaltungen</strong> in der Nähe</li>
+    <li><strong>Feiertage, Brückentage und Schulferien</strong></li>
   </ul>
   <p>
-    Zum Vergleich läuft immer ein bewusst einfaches <strong>Basismodell</strong>
-    mit: es nimmt schlicht den Durchschnitt dieses Parkhauses zu dieser Uhrzeit
-    an diesem Wochentag. So lässt sich auf der Seite «Genauigkeit» jederzeit
-    ablesen, wie viel das gelernte Modell tatsächlich besser ist — statt es
-    einfach behaupten zu müssen.
+    Für jeden Prognosehorizont (+1h, +2h, +4h, +8h) gibt es ein
+    eigenes Modell, weil sich die Muster je nach Vorausschau unterscheiden.
+  </p>
+
+  <h5 class="mt-4">Drei Arten von Vorhersagen</h5>
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card h-100"><div class="card-body">
+        <h6 class="card-title">📊 Punktprognose</h6>
+        <p class="card-text small">«In 2&nbsp;Stunden sind voraussichtlich 45&nbsp;Plätze
+          frei.» — die beste Schätzung des Modells.</p>
+      </div></div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100"><div class="card-body">
+        <h6 class="card-title">🔒 Pessimistische Schätzung</h6>
+        <p class="card-text small">«Mit 80&nbsp;% Wahrscheinlichkeit sind mindestens
+          30&nbsp;Plätze frei.» — die vorsichtige Variante für alle,
+          die auf Nummer sicher gehen wollen.</p>
+      </div></div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100"><div class="card-body">
+        <h6 class="card-title">🚫 Wird es voll?</h6>
+        <p class="card-text small">«Wahrscheinlichkeit, dass weniger als
+          5&nbsp;Plätze frei sind: 12&nbsp;%.» — ein Frühwarnsignal.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <h5>Bias-Korrektur</h5>
+  <p>
+    Das Modell lernt über alle Parkhäuser gemeinsam. Einzelne Häuser können
+    dabei systematisch über- oder unterschätzt werden. Deshalb wird für jedes
+    Parkhaus der mittlere Fehler der letzten 14&nbsp;Tage gemessen und automatisch
+    herausgerechnet.
+  </p>
+
+  <h4>Wie gut die Prognosen sind</h4>
+  <p>
+    Jede Vorhersage wird gespeichert und später mit dem tatsächlichen Wert
+    verglichen. Angegeben ist der <strong>mittlere Fehler in Parkplätzen</strong>:
+    «±6» heisst, die Vorhersage lag im Schnitt um sechs Plätze daneben.
+  </p>
+  <p>
+    Zum Vergleich läuft ein bewusst einfaches <strong>Basismodell</strong>: es
+    nimmt schlicht den Durchschnitt dieses Parkhauses zu dieser Uhrzeit an
+    diesem Wochentag. So sieht man auf der Seite
+    <a href="/accuracy.html">Genauigkeit</a>, wie viel das KI-Modell
+    tatsächlich besser ist.
+  </p>
+  <p class="text-muted small">
+    Je weiter in die Zukunft, desto ungenauer. Grosse Parkhäuser haben
+    naturgemäss grössere absolute Fehler als kleine — auf der
+    Genauigkeitsseite steht deshalb zusätzlich der Fehler in
+    Belegungsprozent.
   </p>
 
   <div class="alert alert-secondary">
     <strong>Der Chat-Assistent ist keine KI.</strong> Er erkennt Fragen über
     feste Regeln und Schlüsselwörter und beantwortet sie aus der Datenbank. Er
-    versteht «Wo parke ich morgen um 19 Uhr in Luzern?», scheitert aber an frei
-    formulierten Fragen ausserhalb seiner Muster. Er ist so gebaut, dass später
-    ein Sprachmodell dahintergehängt werden kann.
+    versteht «Wo parke ich morgen um 19&nbsp;Uhr in Luzern?», scheitert aber an
+    frei formulierten Fragen ausserhalb seiner Muster.
   </div>
-
-  <h4>Wie gut die Prognosen sind</h4>
-  <p>
-    Jede erzeugte Prognose wird gespeichert und später mit dem tatsächlich
-    gemessenen Wert verglichen. Angegeben ist der <strong>mittlere Fehler in
-    Parkplätzen</strong>: «±6» heisst, die Vorhersage lag im Schnitt um sechs
-    Plätze daneben — mal darüber, mal darunter.
-  </p>
-  <p>
-    Je weiter in die Zukunft, desto ungenauer. Aktuelle Werte über alle Städte
-    (die Seite <a href="/accuracy.html">Genauigkeit</a> zeigt den Live-Stand):
-  </p>
-  <table class="table table-sm w-auto">
-    <thead><tr><th>Vorhersage</th><th class="text-end">gelerntes Modell</th>
-      <th class="text-end">einfacher Durchschnitt</th></tr></thead>
-    <tbody>
-      <tr><td>+1 Stunde</td><td class="text-end">±6</td><td class="text-end">±34</td></tr>
-      <tr><td>+2 Stunden</td><td class="text-end">±11</td><td class="text-end">±34</td></tr>
-      <tr><td>+4 Stunden</td><td class="text-end">±20</td><td class="text-end">±34</td></tr>
-      <tr><td>+8 Stunden</td><td class="text-end">±26</td><td class="text-end">±34</td></tr>
-    </tbody>
-  </table>
-  <p class="text-muted small">
-    Grosse Parkhäuser haben naturgemäss grössere absolute Fehler als kleine.
-    Auf der Genauigkeitsseite steht deshalb zusätzlich der Fehler in
-    Belegungsprozent, der sich über verschieden grosse Häuser vergleichen lässt.
-  </p>
-
-  <hr class="my-5">
-
-  <h3>Technische Details</h3>
-  <p class="text-muted">Ab hier wird es konkret — für alle, die es genauer wissen wollen.</p>
-
-  <h5 class="mt-4">Verarbeitungskette</h5>
-  <ol>
-    <li><strong>Scanner</strong> (eigener Dienst) holt alle 15 Minuten die
-      Stadt-APIs ab und schreibt nach <code>pls_fetch_current</code>
-      (<code>day, fetch_ts, city, id, name, free, total</code>).</li>
-    <li><strong>Rasterung:</strong> die Messwerte werden auf ein striktes
-      15-Minuten-Raster gelegt (letzter Wert je Slot). Lücken bis zu einer
-      Stunde werden fortgeschrieben, längere bleiben leer und fallen aus dem
-      Training heraus.</li>
-    <li><strong>Zielgrösse</strong> ist nicht die Zahl freier Plätze, sondern
-      die <em>Belegungsquote</em> <code>(total − free) / total</code> zwischen 0
-      und 1. Nur so lässt sich ein gemeinsames Modell über Häuser mit 50 und
-      mit 1100 Plätzen trainieren. Zurückgerechnet wird über das zuletzt
-      bekannte <code>total</code>.</li>
-    <li><strong>Prognose</strong> alle 15 Minuten für jedes Parkhaus × 4
-      Horizonte × 2 Modelle, gespeichert in <code>ai_predictions</code>.</li>
-    <li><strong>Auswertung</strong> alle 15 Minuten: gereifte Prognosen werden
-      dem nächstgelegenen Messwert innerhalb von ±20 Minuten zugeordnet, der
-      Fehler berechnet und in <code>ai_accuracy_daily</code> verdichtet.</li>
-  </ol>
-
-  <h5 class="mt-4">Modell</h5>
-  <ul>
-    <li><strong>LightGBM</strong>, Zielfunktion <code>regression_l1</code>
-      (robust gegen Ausreisser), 600 Bäume. Fällt die Bibliothek aus, springt
-      automatisch <code>HistGradientBoostingRegressor</code> aus scikit-learn ein.</li>
-    <li><strong>Ein globales Modell pro Horizont</strong> über alle Städte, mit
-      Parkhaus und Stadt als kategoriale Merkmale. Ein einzelnes Haus liefert
-      nur rund 96 Messwerte pro Tag — gemeinsam gelernt profitieren kleine
-      Häuser von den Mustern der grossen.</li>
-    <li><strong>Merkmale:</strong> Stunde, Viertelstunde, Wochentag, Monat
-      (auch als Sinus/Kosinus), Belegung jetzt sowie vor 1 h, 2 h, 24 h und
-      7 Tagen, Veränderung der letzten Stunde, gleitende Mittel über 3 h und
-      24 h samt Streuung, saisonaler Erwartungswert, Temperatur, Niederschlag,
-      Regen-Flag, Event aktiv / in Kürze / Zuschlag, Stadt, Parkhaus,
-      <code>log(total)</code>. Fehlende Werte bleiben fehlend — beide
-      Bibliotheken kommen damit nativ zurecht.</li>
-    <li><strong>Training</strong> nachts um 03:30 über die letzten 120 Tage
-      (auf kleinen Servern per <code>AI_TRAIN_DAYS</code> reduzierbar). Die
-      letzten 14 Tage dienen als Testfenster und fliessen nicht ins Lernen ein.</li>
-    <li><strong>Absicherung:</strong> ein frisch trainiertes Modell wird nur
-      aktiv, wenn es höchstens 10 % schlechter ist als das laufende. Nach einem
-      Datenausfall verdrängt so kein schlechtes Modell ein gutes.</li>
-  </ul>
-
-  <h5 class="mt-4">Basismodell</h5>
-  <p>
-    Mittelwert der Belegung je (Parkhaus, Wochentag, Stunde, Viertelstunde) über
-    acht Wochen, mit Rückfallkette auf Stundenmittel, Stadtmittel und
-    Hausmittel. Dazu additive Zuschläge für aktive Events und für Regen über
-    0,5 mm. Bewusst simpel — es ist der Massstab, nicht der Kandidat.
-  </p>
-
-  <h5 class="mt-4">Fehlermasse</h5>
-  <ul>
-    <li><strong>MAE in Plätzen</strong> — anschaulich, aber abhängig von der
-      Hausgrösse.</li>
-    <li><strong>MAE in Belegungsprozentpunkten</strong> — über verschieden
-      grosse Häuser vergleichbar.</li>
-    <li><strong>Bias</strong> — zeigt systematisches Über- oder Unterschätzen.</li>
-    <li><strong>Skill-Score</strong> <code>1 − MAE(Modell) / MAE(Basis)</code>:
-      0,84 heisst 84 % weniger Fehler als der einfache Durchschnitt.</li>
-    <li>Bewusst <em>kein</em> MAPE: zur Stosszeit geht die Zahl freier Plätze
-      gegen null, und der prozentuale Fehler würde ins Unendliche laufen.</li>
-  </ul>
-
-  <h5 class="mt-4">Parkhaus-Zuordnung</h5>
-  <p>
-    Messwerte und Stammdaten verwenden nicht dieselben Kennungen: in Basel und
-    Zürich stimmen sie überein, Luzern und St. Gallen liefern Kürzel wie
-    <code>SP03</code>, und Bern dreht die Wortreihenfolge um («Bahnhof Parking»
-    gegenüber «Bern Parkhaus Bahnhof»). Die Zuordnung geschieht deshalb an einer
-    einzigen Stelle über exakte Kennung, Namensvergleich und Wortmengen-Abgleich
-    und liegt in <code>ai_parkhaus_map</code>. Häuser ohne Treffer werden
-    trotzdem prognostiziert, nur ohne Event-Bezug.
-  </p>
-
-  <h5 class="mt-4">Tabellen in der Datenbank</h5>
-  <p>
-    MariaDB, zweimal parallel vorhanden: <code>ph_fetch_prod</code> für den
-    Betrieb und <code>ph_fetch_test</code> zum Erproben neuer Scanner-Versionen.
-    Die Umschaltung oben rechts wählt zwischen beiden.
-  </p>
-
-  <p class="mb-1"><strong>Vom Scanner befüllt</strong> — die KI-Anwendung liest
-    diese Tabellen nur:</p>
-  <table class="table table-sm">
-    <thead><tr><th>Tabelle</th><th>Inhalt</th><th class="text-end">Umfang</th></tr></thead>
-    <tbody>
-      <tr><td><code>pls_fetch_current</code></td>
-        <td>Alle Messwerte: <code>day, fetch_ts, city, id, name, free, total</code>.
-          Schlüssel ist (Tag, Stadt, Parkhaus, Zeitstempel). Herzstück der Historie.</td>
-        <td class="text-end">~1,5 Mio.</td></tr>
-      <tr><td><code>weather_forecasts</code></td>
-        <td>Stundenwetter je Stadt: <code>city_id, timestamp, temperature,
-          precipitation</code> — Vergangenheit und Vorhersage in derselben Tabelle.</td>
-        <td class="text-end">~26 000</td></tr>
-      <tr><td><code>local_events</code></td>
-        <td>Veranstaltungen mit Beginn, Ende, Kategorie und einem Zuschlag
-          <code>peak_occupancy_bonus</code> für die erwartete Mehrbelegung.</td>
-        <td class="text-end">160</td></tr>
-      <tr><td><code>event_parkhaus</code></td>
-        <td>Zuordnung, welche Parkhäuser ein Event betrifft.</td>
-        <td class="text-end">448</td></tr>
-      <tr><td><code>cities</code></td>
-        <td>Die fünf Städte mit Koordinaten und der jeweiligen API-Adresse.</td>
-        <td class="text-end">5</td></tr>
-      <tr><td><code>parkhaeuser</code></td>
-        <td>Stammdaten der Parkhäuser inklusive Gruppierung
-          (<code>parking_group</code>).</td>
-        <td class="text-end">85</td></tr>
-      <tr><td><code>log</code></td>
-        <td>Protokoll der Scanner-Läufe.</td>
-        <td class="text-end">~88 000</td></tr>
-      <tr><td><code>view_parkhaus_sax_strings</code></td>
-        <td>Sicht, die Tagesverläufe als Zeichenkette abbildet (SAX-Kodierung) —
-          wird von dieser Anwendung nicht verwendet.</td>
-        <td class="text-end">~15 000</td></tr>
-    </tbody>
-  </table>
-
-  <p class="mb-1"><strong>Von der KI-Anwendung angelegt</strong> — alle mit dem
-    Präfix <code>ai_</code>, damit die beiden Systeme sauber getrennt bleiben:</p>
-  <table class="table table-sm">
-    <thead><tr><th>Tabelle</th><th>Inhalt</th></tr></thead>
-    <tbody>
-      <tr><td><code>ai_predictions</code></td>
-        <td>Jede erzeugte Prognose mit Entstehungszeit, Zielzeit, Horizont und
-          Modell — und, sobald der Zeitpunkt vorbei ist, der tatsächlich
-          gemessene Wert samt Abweichung. Hier entsteht das Genauigkeits-Monitoring.</td></tr>
-      <tr><td><code>ai_accuracy_daily</code></td>
-        <td>Tagesweise verdichtete Fehlerwerte je Parkhaus, je Stadt und
-          insgesamt. Die Genauigkeitsseite liest nur diese Tabelle, nicht die
-          Millionen Einzelprognosen.</td></tr>
-      <tr><td><code>ai_model_runs</code></td>
-        <td>Jeder Trainingslauf mit Zeitpunkt, Datenmenge, Testfehler und dem
-          Vermerk, welches Modell gerade aktiv ist.</td></tr>
-      <tr><td><code>ai_parkhaus_map</code></td>
-        <td>Die Zuordnung zwischen den Kennungen der Messwerte und jenen der
-          Stammdaten, samt verwendeter Methode.</td></tr>
-      <tr><td><code>ai_chat_log</code></td>
-        <td>Verlauf des Chat-Assistenten mit erkannter Absicht.</td></tr>
-    </tbody>
-  </table>
-
-  <h5 class="mt-4">Schnittstelle</h5>
-  <p>Alle Endpunkte akzeptieren <code>?env=prod|test</code>. Vollständige,
-    interaktive Beschreibung unter <a href="/docs" target="_blank">/docs</a>.</p>
-  <table class="table table-sm">
-    <tbody>
-      <tr><td><code>/api/forecast/current/{stadt}</code></td><td>Aktuelle Werte und Prognosen aller Häuser</td></tr>
-      <tr><td><code>/api/forecast/parkhaus/{stadt}/{id}</code></td><td>Verlauf und Prognosen eines Hauses</td></tr>
-      <tr><td><code>/api/forecast/best/{stadt}</code></td><td>Empfehlung für einen Zeitpunkt</td></tr>
-      <tr><td><code>/api/accuracy/summary</code></td><td>Genauigkeit gesamt und je Stadt</td></tr>
-      <tr><td><code>/api/accuracy/timeseries</code></td><td>Verlauf der Genauigkeit</td></tr>
-      <tr><td><code>/api/chat</code></td><td>Chat-Assistent (POST)</td></tr>
-      <tr><td><code>/api/health</code></td><td>Zustand, aktive Modelle, Job-Zeiten</td></tr>
-    </tbody>
-  </table>
-
-  <h5 class="mt-4">Test-Umgebung aufrufen</h5>
-  <p>
-    Alle Zahlen stammen aus der Produktivdatenbank. Daneben gibt es eine
-    Test-Umgebung, in der neue Scanner-Versionen erprobt werden. Sie ist
-    bewusst versteckt, damit niemand versehentlich Testdaten für echte hält.
-  </p>
-  <table class="table table-sm w-auto">
-    <tbody>
-      <tr><td><code>?admin</code> an die Adresse anhängen</td>
-        <td>blendet die Umschaltung Prod/Test ein und merkt sich das</td></tr>
-      <tr><td><code>?admin=0</code></td>
-        <td>versteckt sie wieder und schaltet auf Prod zurück</td></tr>
-    </tbody>
-  </table>
-  <p class="text-muted small">
-    Läuft die Anzeige auf Test, steht das rot in der Fusszeile. Die
-    Freischaltung liegt im Browser des jeweiligen Geräts — sie ist eine
-    Bequemlichkeit, kein Zugriffsschutz.
-  </p>
 
   <h5 class="mt-4">Gespeicherte Einstellungen</h5>
   <p>
     Stadt, Modellwahl, Suchbegriff, Zeitraum und Horizont werden lokal im
-    Browser gespeichert (<code>localStorage</code>), damit sie beim nächsten
-    Besuch erhalten bleiben. Es werden keine Daten an den Server oder an
-    Dritte übermittelt; Cookies kommen dafür bewusst nicht zum Einsatz, weil
-    sie bei jeder Anfrage mitgeschickt würden. Löschen lässt sich das über die
-    Browser-Einstellungen («Websitedaten löschen»).
-  </p>
-
-  <h5 class="mt-4">Technischer Aufbau</h5>
-  <p>
-    Python mit FastAPI und uvicorn auf Port 8080, Datenhaltung in MariaDB,
-    Oberfläche als statisches HTML mit Bootstrap und Chart.js ohne Build-Schritt.
-    Die Hintergrundaufgaben (Prognose, Auswertung, Zuordnung, Training) laufen
-    über APScheduler im selben Prozess, fest auf die Zeitzone Europe/Zurich
-    gesetzt. Die Anwendung liest die bestehenden Tabellen nur und schreibt
-    ausschliesslich in eigene Tabellen mit dem Präfix <code>ai_</code>.
+    Browser gespeichert, damit sie beim nächsten Besuch erhalten bleiben.
+    Es werden keine Daten an Dritte übermittelt.
   </p>
 
   <footer id="app-footer" class="text-muted small py-4"></footer>

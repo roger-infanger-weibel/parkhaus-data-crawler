@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechDoc – Parkhaus KI-Prognose</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/app.css" rel="stylesheet">
+  <style>
+    .techdoc code { color: #d63384; }
+    .techdoc .metric-card { border-left: 4px solid #0d6efd; }
+    .techdoc .metric-card.warn { border-left-color: #ffc107; }
+    .techdoc .feature-tag {
+      display: inline-block; padding: 2px 8px; margin: 2px;
+      border-radius: 4px; font-size: 0.8rem;
+      background: #e9ecef; color: #495057;
+    }
+    .techdoc .feature-tag.lag { background: #cfe2ff; }
+    .techdoc .feature-tag.temporal { background: #d1e7dd; }
+    .techdoc .feature-tag.weather { background: #fff3cd; }
+    .techdoc .feature-tag.event { background: #f8d7da; }
+    .techdoc .feature-tag.calendar { background: #e2d9f3; }
+    .techdoc .feature-tag.meta { background: #d3d3d3; }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand navbar-dark bg-dark px-3 mb-4">
+  <a class="navbar-brand" href="/">🅿️ Parkhaus <span>KI</span>-Prognose</a>
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item"><a class="nav-link" href="/">Prognose</a></li>
+    <li class="nav-item"><a class="nav-link" href="/accuracy.html">Genauigkeit</a></li>
+    <li class="nav-item"><a class="nav-link" href="/chat.html">Chat-Assistent</a></li>
+    <li class="nav-item"><a class="nav-link" href="/doku.html">Dokumentation</a></li>
+    <li class="nav-item"><a class="nav-link active" href="/techdoc.html">TechDoc</a></li>
+  </ul>
+  <div class="dropdown me-3">
+    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
+            data-bs-toggle="dropdown" aria-expanded="false">Links</button>
+    <ul class="dropdown-menu dropdown-menu-end" id="link-menu"></ul>
+  </div>
+  <div class="env-box d-none">
+    <select id="env-select" class="form-select form-select-sm w-auto">
+      <option value="prod">Prod</option>
+      <option value="test">Test</option>
+    </select>
+  </div>
+</nav>
+
+<div class="container techdoc" style="max-width: 960px;">
+
+  <h2 class="mb-1">Technical Documentation</h2>
+  <p class="text-muted mb-4">Modellarchitektur, Feature Engineering, Evaluation und API —
+    für Data Scientists, ML Engineers und alle, die es genau wissen wollen.
+    <a href="/docs" target="_blank" class="ms-2">📘 Interactive API Docs (Swagger)</a>
+  </p>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-4">1. System Overview</h3>
+  <!-- ============================================================ -->
+  <p>
+    Multi-Horizon Occupancy Forecasting für 110&nbsp;Parkhäuser in 5&nbsp;Schweizer
+    Städten. Vier unabhängige Modelle (h&nbsp;∈&nbsp;{1,&nbsp;2,&nbsp;4,&nbsp;8})
+    prognostizieren alle 15&nbsp;Minuten die Belegungsquote
+    <code>occ&nbsp;=&nbsp;(total&nbsp;−&nbsp;free)&nbsp;/&nbsp;total&nbsp;∈&nbsp;[0,&nbsp;1]</code>.
+    Zusätzlich ein Quantil-Modell (α&nbsp;=&nbsp;0.2) und ein Binärklassifikator
+    (<code>P(free&nbsp;&lt;&nbsp;5)</code>) pro Horizont.
+  </p>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card metric-card p-3 h-100">
+      <div class="text-muted small">Datenpunkte</div>
+      <div class="fs-4 fw-bold" id="td-datapoints">~1.6 Mio.</div>
+      <div class="text-muted small">pls_fetch_current</div>
+    </div></div>
+    <div class="col-md-3"><div class="card metric-card p-3 h-100">
+      <div class="text-muted small">Parkhäuser</div>
+      <div class="fs-4 fw-bold">110</div>
+      <div class="text-muted small">5 Städte</div>
+    </div></div>
+    <div class="col-md-3"><div class="card metric-card p-3 h-100">
+      <div class="text-muted small">Features</div>
+      <div class="fs-4 fw-bold">31</div>
+      <div class="text-muted small">pro Observation</div>
+    </div></div>
+    <div class="col-md-3"><div class="card metric-card p-3 h-100">
+      <div class="text-muted small">Trainingsfenster</div>
+      <div class="fs-4 fw-bold">120 Tage</div>
+      <div class="text-muted small">rollierend</div>
+    </div></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">2. Model Architecture</h3>
+  <!-- ============================================================ -->
+
+  <h5>2.1 Regression (Punktprognose)</h5>
+  <table class="table table-sm">
+    <tbody>
+      <tr><td class="fw-bold" style="width:200px">Algorithmus</td>
+        <td>LightGBM (<code>LGBMRegressor</code>), Fallback: scikit-learn
+          <code>HistGradientBoostingRegressor</code></td></tr>
+      <tr><td class="fw-bold">Objective</td>
+        <td><code>regression_l1</code> (MAE) — robust gegen Ausreisser</td></tr>
+      <tr><td class="fw-bold">Hyperparameter</td>
+        <td><code>num_leaves=63, n_estimators=600, learning_rate=0.05,
+          subsample=0.8, colsample_bytree=0.8, min_child_samples=50</code></td></tr>
+      <tr><td class="fw-bold">Target</td>
+        <td><code>occ ∈ [0, 1]</code> (Belegungsquote), geclippt auf [0, 1] post-prediction</td></tr>
+      <tr><td class="fw-bold">Scope</td>
+        <td>Ein <strong>globales Modell pro Horizont</strong> über alle Städte und
+          Parkhäuser — mit <code>city</code> und <code>pls_key</code> als kategoriale Features.
+          Einzelne Häuser liefern nur ~96&nbsp;Samples/Tag; gemeinsames Training
+          ermöglicht Cross-Learning.</td></tr>
+    </tbody>
+  </table>
+
+  <h5>2.2 Quantile Regression (pessimistisch)</h5>
+  <table class="table table-sm">
+    <tbody>
+      <tr><td class="fw-bold" style="width:200px">Objective</td>
+        <td><code>quantile</code>, α&nbsp;=&nbsp;0.2</td></tr>
+      <tr><td class="fw-bold">Interpretation</td>
+        <td>«Mit 80&nbsp;% Wahrscheinlichkeit sind <em>mindestens</em> X Plätze frei.»
+          Konservative Schätzung für risikoaverse Nutzer.</td></tr>
+      <tr><td class="fw-bold">Output</td>
+        <td><code>predicted_free_q20</code> in <code>ai_predictions</code></td></tr>
+    </tbody>
+  </table>
+
+  <h5>2.3 Binary Classifier (Voll-Wahrscheinlichkeit)</h5>
+  <table class="table table-sm">
+    <tbody>
+      <tr><td class="fw-bold" style="width:200px">Algorithmus</td>
+        <td>LightGBM (<code>LGBMClassifier</code>), <code>objective='binary'</code></td></tr>
+      <tr><td class="fw-bold">Target</td>
+        <td><code>1 wenn free &lt; 5, sonst 0</code></td></tr>
+      <tr><td class="fw-bold">Output</td>
+        <td><code>predicted_full_prob ∈ [0, 1]</code> — P(Parkhaus praktisch voll)</td></tr>
+    </tbody>
+  </table>
+
+  <h5>2.4 Baseline (Referenzmodell)</h5>
+  <p>
+    Saisonaler Mittelwert je <code>(parkhaus, wochentag, stunde, viertelstunde)</code>
+    über 8&nbsp;Wochen, mit Rückfallkette auf Stundenmittel → Stadtmittel → Hausmittel.
+    Additive Zuschläge für aktive Events (+Bonus) und Regen &gt;&nbsp;0.5&nbsp;mm (+2&nbsp;pp).
+    Dient ausschliesslich als Benchmark — <em>kein</em> Ensemble-Bestandteil.
+  </p>
+
+  <h5>2.5 Bias-Korrektur (Post-Processing)</h5>
+  <p>
+    Pro <code>(city, pls_id, horizon_h)</code> wird der gewichtete mittlere Bias der
+    letzten 14&nbsp;Tage berechnet:
+  </p>
+  <pre class="bg-light p-2 rounded"><code>bias = Σ(bias_free × n) / Σ(n)    aus ai_accuracy_daily, min. 50 Evaluationen
+free_korrigiert = free − round(bias)</code></pre>
+  <p>
+    Gleicht systematische Abweichungen des globalen Modells bei einzelnen Häusern aus.
+    Wird nur auf ML-Prognosen angewandt, nicht auf Baseline.
+  </p>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">3. Feature Engineering</h3>
+  <!-- ============================================================ -->
+  <p>31 Features pro Observation, gruppiert nach Kategorie:</p>
+
+  <h6>Temporal (zyklisch kodiert)</h6>
+  <p>
+    <span class="feature-tag temporal">hour</span>
+    <span class="feature-tag temporal">quarter</span>
+    <span class="feature-tag temporal">weekday</span>
+    <span class="feature-tag temporal">is_weekend</span>
+    <span class="feature-tag temporal">month</span>
+    <span class="feature-tag temporal">sin_hour</span>
+    <span class="feature-tag temporal">cos_hour</span>
+    <span class="feature-tag temporal">sin_weekday</span>
+    <span class="feature-tag temporal">cos_weekday</span>
+  </p>
+
+  <h6>Kalender</h6>
+  <p>
+    <span class="feature-tag calendar">is_holiday</span>
+    <span class="feature-tag calendar">is_bridge_day</span>
+    <span class="feature-tag calendar">is_school_holiday</span>
+  </p>
+  <p class="small text-muted">
+    Kantonale Feiertage (BS, BE, LU, SG, ZH) inkl. Osterdatum-basierte bewegliche
+    Feiertage. Brückentage zwischen Feiertag und Wochenende. Schulferien pro Kanton
+    und Jahr. Gespeichert in <code>ai_feiertage</code> und <code>ai_schulferien</code>.
+  </p>
+
+  <h6>Lag Features &amp; Statistiken</h6>
+  <p>
+    <span class="feature-tag lag">occ_now</span>
+    <span class="feature-tag lag">occ_1h_ago</span>
+    <span class="feature-tag lag">occ_2h_ago</span>
+    <span class="feature-tag lag">occ_24h_ago</span>
+    <span class="feature-tag lag">occ_7d_ago</span>
+    <span class="feature-tag lag">delta_occ_1h</span>
+    <span class="feature-tag lag">occ_mean_3h</span>
+    <span class="feature-tag lag">occ_mean_24h</span>
+    <span class="feature-tag lag">occ_std_24h</span>
+    <span class="feature-tag lag">prior_occ</span>
+  </p>
+  <p class="small text-muted">
+    <code>prior_occ</code> = saisonaler Erwartungswert aus dem Trainingsteil
+    (kein Leakage ins Holdout). <code>delta_occ_1h</code> = Momentum der letzten Stunde.
+    Fehlende Lags bleiben <code>NaN</code> — LightGBM handhabt das nativ.
+  </p>
+
+  <h6>Wetter</h6>
+  <p>
+    <span class="feature-tag weather">temperature</span>
+    <span class="feature-tag weather">precipitation</span>
+    <span class="feature-tag weather">is_raining</span>
+  </p>
+  <p class="small text-muted">
+    Quelle: <a href="https://open-meteo.com" target="_blank">Open-Meteo API</a>,
+    stündlich pro Stadt. <code>is_raining</code> = binäres Flag bei &gt;&nbsp;0.1&nbsp;mm.
+    Zum Zielzeitpunkt interpoliert.
+  </p>
+
+  <h6>Events</h6>
+  <p>
+    <span class="feature-tag event">event_active</span>
+    <span class="feature-tag event">event_soon</span>
+    <span class="feature-tag event">event_bonus</span>
+  </p>
+  <p class="small text-muted">
+    Echte Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle,
+    Stadtcasino Basel, Luzerner Theater, OLMA). <code>event_bonus</code> = kategorieabhängiger
+    Zuschlag (Konzert 0.40, Sport 0.45, Messe 0.50 etc.).
+    <code>event_soon</code> = Event beginnt innerhalb der nächsten 2&nbsp;Stunden.
+  </p>
+
+  <h6>Metadaten</h6>
+  <p>
+    <span class="feature-tag meta">log_total</span>
+    <span class="feature-tag meta">city</span>
+    <span class="feature-tag meta">pls_key</span>
+  </p>
+  <p class="small text-muted">
+    <code>log_total</code> = log(Kapazität) — normalisiert den Grösseneffekt.
+    <code>city</code> und <code>pls_key</code> sind kategorial kodiert.
+  </p>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">4. Training Pipeline</h3>
+  <!-- ============================================================ -->
+  <table class="table table-sm">
+    <tbody>
+      <tr><td class="fw-bold" style="width:200px">Schedule</td>
+        <td>Täglich 03:30 Uhr (Europe/Zurich), APScheduler in-process</td></tr>
+      <tr><td class="fw-bold">Trainingsfenster</td>
+        <td>120 Tage rollierend (konfigurierbar via <code>AI_TRAIN_DAYS</code>)</td></tr>
+      <tr><td class="fw-bold">Holdout</td>
+        <td>Letzte 14 Tage — zeitbasierter Split, kein Random-Split (verhindert Temporal Leakage)</td></tr>
+      <tr><td class="fw-bold">Trainingsgrösse</td>
+        <td>~780 000 Zeilen pro Horizont</td></tr>
+      <tr><td class="fw-bold">Activation Gate</td>
+        <td>Neues Modell wird nur aktiviert wenn <code>MAE_neu ≤ 1.10 × MAE_alt</code>
+          (gemessen auf demselben Holdout). Schützt vor Qualitätseinbrüchen nach Datenausfällen.</td></tr>
+      <tr><td class="fw-bold">Pro Horizont</td>
+        <td>3 Modelle: Regression → Quantile (α=0.2) → Classifier (binary)</td></tr>
+      <tr><td class="fw-bold">Artefakte</td>
+        <td><code>models_store/*.joblib</code>, letzte 7 behalten, aktive geschützt</td></tr>
+      <tr><td class="fw-bold">Speicher</td>
+        <td>~735 MB bei 60-Tage-Fenster, ~1368 MB bei 120 Tagen</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">5. Evaluation &amp; Metriken</h3>
+  <!-- ============================================================ -->
+
+  <h5>5.1 Aktuelle Performance (letzte 7 Tage, Prod)</h5>
+  <table class="table table-sm table-hover" id="td-perf-table">
+    <thead class="table-light">
+      <tr>
+        <th>Horizont</th>
+        <th class="text-end">MAE<sub>free</sub></th>
+        <th class="text-end">MAE<sub>occ</sub> (pp)</th>
+        <th class="text-end">Bias<sub>free</sub></th>
+        <th class="text-end">Baseline MAE (pp)</th>
+        <th class="text-end">Skill Score</th>
+      </tr>
+    </thead>
+    <tbody id="td-perf-body">
+      <tr class="placeholder-glow">
+        <td colspan="6"><span class="placeholder col-12"></span></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="text-muted small mb-1"><strong>Metriken erklärt:</strong></p>
+  <ul class="small text-muted">
+    <li><strong>MAE<sub>free</sub></strong> — Mean Absolute Error in freien Plätzen.
+      Anschaulich, aber abhängig von der Hausgrösse.</li>
+    <li><strong>MAE<sub>occ</sub></strong> — MAE in Belegungsprozentpunkten.
+      Vergleichbar über unterschiedlich grosse Häuser.</li>
+    <li><strong>Bias<sub>free</sub></strong> — systematische Abweichung.
+      Positiv = Modell überschätzt die freien Plätze.</li>
+    <li><strong>Skill Score</strong> — <code>1 − MAE(ML) / MAE(Baseline)</code>.
+      0.72 = 72&nbsp;% weniger Fehler als der saisonale Durchschnitt.
+      Negativ = Modell schlechter als Baseline.</li>
+    <li>Bewusst <strong>kein MAPE</strong>: bei <code>free → 0</code> explodiert der
+      relative Fehler.</li>
+  </ul>
+
+  <h5>5.2 Evaluation Pipeline</h5>
+  <ol>
+    <li>Alle 15&nbsp;Min: gereifte Prognosen dem nächsten Messwert zuordnen (±20&nbsp;Min Toleranz)</li>
+    <li>Fehler berechnen: <code>error = predicted_free − actual_free</code></li>
+    <li>Tagesweise aggregieren in <code>ai_accuracy_daily</code>:
+      MAE, Bias, Anzahl je <code>(day, city, pls_id, model_type, horizon_h)</code></li>
+    <li>Stadtweite und globale Aggregate separat (mit <code>pls_id = ''</code>)</li>
+  </ol>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">6. Data Pipeline</h3>
+  <!-- ============================================================ -->
+  <pre class="bg-light p-3 rounded small"><code>Scanner (alle 15 Min)
+│  Stadt-APIs → pls_fetch_current (~1.6 Mio Zeilen)
+│  Open-Meteo  → weather_forecasts (2× täglich)
+│  Venues      → local_events + event_parkhaus (manuell)
+│
+FastAPI-ML (Port 80)
+├── :10/:25/:40/:55  predict.py   → ai_predictions
+│   └── Bias-Korrektur aus ai_accuracy_daily
+├── :13/:28/:43/:58  evaluate.py  → ai_accuracy_daily
+├── 03:15            identity.py  → ai_parkhaus_map
+└── 03:30            train.py     → ai_model_runs + models_store/
+                     └── Regression + Quantile + Classifier × 4 Horizonte</code></pre>
+
+  <h5>Rasterung &amp; Preprocessing</h5>
+  <ul>
+    <li>Messwerte werden auf ein striktes <strong>15-Minuten-Raster</strong> gelegt
+      (letzter Wert je Slot)</li>
+    <li>Lücken bis 1&nbsp;Stunde: Forward-Fill. Längere Lücken: <code>NaN</code>
+      (fallen aus dem Training)</li>
+    <li>Zielgrösse: <code>occ = (total − free) / total</code> — ermöglicht ein
+      globales Modell über Häuser mit 50 bis 1100&nbsp;Plätzen</li>
+    <li>Rückrechnung auf freie Plätze via letztes bekanntes <code>total</code></li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">7. Parkhaus Identity Mapping</h3>
+  <!-- ============================================================ -->
+  <p>
+    Die Messwert-IDs (<code>pls_fetch_current.id</code>) und Stammdaten-IDs
+    (<code>parkhaeuser.id</code>) verwenden unterschiedliche Namenskonventionen:
+  </p>
+  <table class="table table-sm">
+    <thead class="table-light"><tr><th>Stadt</th><th>Methode</th><th>Beispiel</th></tr></thead>
+    <tbody>
+      <tr><td>Basel, Zürich</td><td>Exakter Match</td><td><code>baselparkhaussteinen</code></td></tr>
+      <tr><td>Luzern, St. Gallen</td><td>Namens-Containment</td><td><code>SP03</code> → <code>luzernparkhausbahnhof</code></td></tr>
+      <tr><td>Bern</td><td>Wortmengen-Vergleich</td><td>«Bahnhof Parking» → <code>bernparkhausbahnhof</code></td></tr>
+    </tbody>
+  </table>
+  <p class="small text-muted">
+    Zentral gelöst in <code>core/identity.py</code>, Ergebnis in <code>ai_parkhaus_map</code>.
+    Häuser ohne Treffer werden trotzdem prognostiziert — nur ohne Event-Features.
+  </p>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">8. REST API</h3>
+  <!-- ============================================================ -->
+  <p>
+    Vollständige, interaktive Dokumentation:
+    <a href="/docs" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+      📘 Swagger UI öffnen</a>
+  </p>
+  <p>Alle Endpunkte akzeptieren <code>?env=prod|test</code>.</p>
+  <table class="table table-sm">
+    <thead class="table-light">
+      <tr><th>Endpoint</th><th>Methode</th><th>Beschreibung</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>/api/forecast/current/{stadt}</code></td><td>GET</td>
+        <td>Aktuelle Werte + Prognosen aller Häuser einer Stadt.
+          Enthält <code>free_q20</code> und <code>full_prob</code>.</td></tr>
+      <tr><td><code>/api/forecast/parkhaus/{stadt}/{id}</code></td><td>GET</td>
+        <td>Ist-Verlauf + Prognosen + Wetter + Events für ein Haus (Chart-Daten)</td></tr>
+      <tr><td><code>/api/forecast/best/{stadt}</code></td><td>GET</td>
+        <td>Top-5-Empfehlung für einen Zeitpunkt (<code>?at=</code>), inkl. MAE-Konfidenz</td></tr>
+      <tr><td><code>/api/accuracy/summary</code></td><td>GET</td>
+        <td>MAE, Bias, Skill-Score je Stadt und Horizont</td></tr>
+      <tr><td><code>/api/accuracy/parkhaus/{stadt}/{id}</code></td><td>GET</td>
+        <td>Detaillierte Genauigkeit eines Hauses</td></tr>
+      <tr><td><code>/api/accuracy/timeseries</code></td><td>GET</td>
+        <td>MAE-Verlauf über die letzten N Tage</td></tr>
+      <tr><td><code>/api/chat</code></td><td>POST</td>
+        <td>Regelbasierter Chat-Assistent</td></tr>
+      <tr><td><code>/api/health</code></td><td>GET</td>
+        <td>Status, aktive Modelle, Scheduler-Zeiten, DB-Info</td></tr>
+      <tr><td><code>/api/version</code></td><td>GET</td>
+        <td>Version (Zeitstempel der jüngsten Quelldatei)</td></tr>
+      <tr><td><code>/api/cities</code></td><td>GET</td>
+        <td>Verfügbare Städte</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">9. Datenbank-Schema</h3>
+  <!-- ============================================================ -->
+  <p>
+    MariaDB, zwei parallele Instanzen: <code>ph_fetch_prod</code> und
+    <code>ph_fetch_test</code>. Die KI-App liest bestehende Tabellen nur und
+    schreibt ausschliesslich in <code>ai_</code>-präfixierte Tabellen.
+  </p>
+
+  <h6>Scanner-Tabellen (read-only)</h6>
+  <table class="table table-sm">
+    <thead class="table-light"><tr><th>Tabelle</th><th>Inhalt</th><th class="text-end">~Zeilen</th></tr></thead>
+    <tbody>
+      <tr><td><code>pls_fetch_current</code></td><td>Alle Belegungsmesswerte (15-Min-Takt)</td><td class="text-end">1.6 Mio</td></tr>
+      <tr><td><code>weather_forecasts</code></td><td>Stündliches Wetter je Stadt</td><td class="text-end">27 000</td></tr>
+      <tr><td><code>local_events</code></td><td>Veranstaltungen mit Kategorie und Bonus</td><td class="text-end">393</td></tr>
+      <tr><td><code>event_parkhaus</code></td><td>Event → Parkhaus Zuordnung (n:m)</td><td class="text-end">720</td></tr>
+      <tr><td><code>parkhaeuser</code></td><td>Stammdaten inkl. <code>parking_group</code></td><td class="text-end">85</td></tr>
+      <tr><td><code>cities</code></td><td>Stadt-Konfiguration mit Koordinaten</td><td class="text-end">5</td></tr>
+    </tbody>
+  </table>
+
+  <h6>KI-Tabellen (read-write)</h6>
+  <table class="table table-sm">
+    <thead class="table-light"><tr><th>Tabelle</th><th>Inhalt</th></tr></thead>
+    <tbody>
+      <tr><td><code>ai_predictions</code></td>
+        <td>Jede Prognose: <code>predicted_free, predicted_occ, predicted_free_q20,
+          predicted_full_prob</code>, Zielzeit, Horizont, Modelltyp</td></tr>
+      <tr><td><code>ai_accuracy_daily</code></td>
+        <td>Tagesaggregierte Fehler: MAE, Bias, n je (Tag, Stadt, Parkhaus, Modell, Horizont)</td></tr>
+      <tr><td><code>ai_model_runs</code></td>
+        <td>Trainingsprotokoll: Zeitpunkt, Datenmenge, CV-MAE, Artefakt-Pfad, <code>is_active</code></td></tr>
+      <tr><td><code>ai_parkhaus_map</code></td>
+        <td>Identity-Mapping zwischen Messwert- und Stammdaten-IDs</td></tr>
+      <tr><td><code>ai_feiertage</code></td>
+        <td>Kantonale Feiertage: <code>(datum, kanton, name)</code></td></tr>
+      <tr><td><code>ai_schulferien</code></td>
+        <td>Schulferien pro Kanton und Jahr: <code>(kanton, jahr, von, bis)</code></td></tr>
+      <tr><td><code>ai_chat_log</code></td>
+        <td>Chat-Verlauf mit erkannter Absicht</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============================================================ -->
+  <h3 class="mt-5">10. Stack &amp; Deployment</h3>
+  <!-- ============================================================ -->
+  <table class="table table-sm">
+    <tbody>
+      <tr><td class="fw-bold" style="width:180px">Backend</td>
+        <td>Python 3.9+, FastAPI, uvicorn (1 Worker)</td></tr>
+      <tr><td class="fw-bold">ML</td>
+        <td>LightGBM (Fallback: scikit-learn), pandas, numpy</td></tr>
+      <tr><td class="fw-bold">Datenbank</td>
+        <td>MariaDB, pymysql</td></tr>
+      <tr><td class="fw-bold">Scheduler</td>
+        <td>APScheduler (in-process), Zeitzone Europe/Zurich</td></tr>
+      <tr><td class="fw-bold">Frontend</td>
+        <td>HTML, Bootstrap 5.3, Chart.js 4.4 — kein Build-Schritt</td></tr>
+      <tr><td class="fw-bold">Server</td>
+        <td>87.106.21.252, Port 80</td></tr>
+    </tbody>
+  </table>
+
+  <footer id="app-footer" class="text-muted small py-4"></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script>
+(function() {
+  const env = (typeof Api !== 'undefined' && Api.env) ? Api.env : 'prod';
+  const base = window.location.origin;
+
+  fetch(`${base}/api/accuracy/summary?env=${env}`)
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('td-perf-body');
+      if (!tbody || !data.per_city) return;
+
+      // Aggregate from per_city data
+      const mlByH = {};
+      const blByH = {};
+      for (const city of Object.values(data.per_city)) {
+        for (const h of Object.keys(city)) {
+          const d = city[h];
+          if (!d || !d.ml) continue;
+          if (!mlByH[h]) mlByH[h] = {mae_free: 0, mae_occ: 0, bias: 0, n: 0};
+          mlByH[h].mae_free += (d.ml.mae_free || 0) * (d.ml.n || 1);
+          mlByH[h].mae_occ += (d.ml.mae_occ || 0) * (d.ml.n || 1);
+          mlByH[h].bias += (d.ml.bias_free || 0) * (d.ml.n || 1);
+          mlByH[h].n += (d.ml.n || 1);
+          if (d.baseline) {
+            if (!blByH[h]) blByH[h] = {mae_occ: 0, n: 0};
+            blByH[h].mae_occ += (d.baseline.mae_occ || 0) * (d.baseline.n || 1);
+            blByH[h].n += (d.baseline.n || 1);
+          }
+        }
+      }
+
+      let html = '';
+      for (const h of [1, 2, 4, 8]) {
+        const ml = mlByH[h];
+        const bl = blByH[h];
+        if (!ml) continue;
+        const maeFree = (ml.mae_free / ml.n).toFixed(1);
+        const maeOcc = (ml.mae_occ / ml.n).toFixed(2);
+        const bias = (ml.bias / ml.n).toFixed(1);
+        const blOcc = bl ? (bl.mae_occ / bl.n).toFixed(2) : '—';
+        const skill = bl ? (1 - (ml.mae_occ / ml.n) / (bl.mae_occ / bl.n)).toFixed(2) : '—';
+        const skillClass = skill !== '—' && parseFloat(skill) < 0.1 ? 'text-danger' : '';
+        html += `<tr>
+          <td>+${h}h</td>
+          <td class="text-end">±${maeFree}</td>
+          <td class="text-end">${maeOcc} pp</td>
+          <td class="text-end">${bias > 0 ? '+' : ''}${bias}</td>
+          <td class="text-end">${blOcc} pp</td>
+          <td class="text-end ${skillClass}"><strong>${skill}</strong></td>
+        </tr>`;
+      }
+      tbody.innerHTML = html || '<tr><td colspan="6" class="text-muted">Keine Daten</td></tr>';
+    })
+    .catch(() => {});
+})();
+</script>
+</body>
+</html>
