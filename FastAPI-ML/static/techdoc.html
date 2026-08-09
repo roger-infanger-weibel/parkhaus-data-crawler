@@ -497,7 +497,7 @@ FastAPI-ML (Port 80)
 <script src="js/api.js"></script>
 <script>
 (function() {
-  const env = (typeof Api !== 'undefined' && Api.env) ? Api.env : 'prod';
+  const env = (typeof Api !== 'undefined' && Api.env) ? Api.env() : 'prod';
   const base = window.location.origin;
 
   // R² aus den aktiven Trainingsläufen holen
