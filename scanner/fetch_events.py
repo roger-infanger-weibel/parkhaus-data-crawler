@@ -1,7 +1,7 @@
 """Echte Veranstaltungsdaten von Venue-Websites scrapen.
 
-Ergaenzt die generierten Dummy-Events in local_events durch reale Daten.
 Pro Venue ein Scraper, der die oeffentliche Programmseite abfragt.
+Wird 2x taeglich automatisch vom Scanner-Scheduler aufgerufen.
 
     python scanner/fetch_events.py [--days 30] [--venue hallenstadion]
 

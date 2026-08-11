@@ -61,19 +61,51 @@ def run_get_event_and_weather_data():
     except Exception as e:
         logger.exception(f"Error running get_event_and_weather_data.py: {e}")
 
+def run_fetch_events():
+    """Execute the fetch_events.py scraper for real venue events."""
+    script_path = Path(__file__).parent / "fetch_events.py"
+
+    try:
+        logger.info("Running fetch_events.py...")
+        result = subprocess.run(
+            [sys.executable, str(script_path), "--days", "60"],
+            cwd=Path(__file__).parent,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+
+        if result.returncode == 0:
+            logger.info("fetch_events.py completed successfully")
+        else:
+            logger.error(f"fetch_events.py failed with return code {result.returncode}")
+            if result.stderr:
+                logger.error(f"Error: {result.stderr}")
+
+        if result.stdout:
+            logger.info(f"Output: {result.stdout}")
+
+    except Exception as e:
+        logger.exception(f"Error running fetch_events.py: {e}")
+
+
 def main():
     """Main entry point."""
     try:
         schedule.every(15).minutes.do(run_collect_data)
 
-        # Run event and weather data collection twice daily
+        # Run weather data collection twice daily
         schedule.every().day.at("06:00").do(run_get_event_and_weather_data)
         schedule.every().day.at("18:00").do(run_get_event_and_weather_data)
+
+        # Run event scraping twice daily (real venue events)
+        schedule.every().day.at("06:30").do(run_fetch_events)
+        schedule.every().day.at("18:30").do(run_fetch_events)
 
         # Run first collection immediately
         run_collect_data()
 
-        logger.info("Scheduler started - will run collect_data every 15 minutes and get_event_and_weather_data twice daily")
+        logger.info("Scheduler started - collect_data every 15 min, weather 2x daily, events 2x daily")
         
         while True:
             schedule.run_pending()

@@ -347,7 +347,7 @@ free_korrigiert = free − round(bias)</code></pre>
   <pre class="bg-light p-3 rounded small"><code>Scanner (alle 15 Min)
 │  Stadt-APIs → pls_fetch_current (~1.6 Mio Zeilen)
 │  Open-Meteo  → weather_forecasts (2× täglich)
-│  Venues      → local_events + event_parkhaus (manuell)
+│  Venues      → local_events + event_parkhaus (2× täglich, automatisch)
 │
 FastAPI-ML (Port 80)
 ├── :10/:25/:40/:55  predict.py   → ai_predictions

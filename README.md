@@ -49,8 +49,8 @@ parkhaus-data-crawler/
 | **stgallen.py** | Collector St. Gallen (Open Data) | `collect_data.py` |
 | **bern.py** | Collector Bern (XML); überschreibt auch `fetch_raw_data()` | `collect_data.py` |
 | **db_utils.py** | DB-Zugriff (`mysql.connector`), UPSERT, Mock-Modus für die Simulation | `base.py`, `collect_data.py` |
-| **get_event_and_weather_data.py** | Lädt Wetter von Open-Meteo und erzeugt Event-Einträge (`pymysql`) | `scheduler.py` |
-| **fetch_events.py** | Scraper für echte Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle, Stadtcasino Basel, Luzerner Theater, OLMA) | manuell / geplant |
+| **get_event_and_weather_data.py** | Lädt Wetter von Open-Meteo (`pymysql`) | `scheduler.py` |
+| **fetch_events.py** | Scraper für echte Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle, Stadtcasino Basel, Luzerner Theater, OLMA, Musical.ch) | `scheduler.py` (2× täglich) |
 | **cities.json** | Stadt-Konfiguration: IDs, API-Adressen, Aktivierung | `collect_data.py` |
 | **zurich_parking_map.json** | Zuordnung und Kapazitäten der Zürcher Parkhäuser; wird vom Collector aktualisiert | `zurich.py` |
 | **requirements.txt** | Abhängigkeiten | — |
@@ -125,13 +125,14 @@ und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
 | **routes_chat.py** | `/api/chat` |
 | **services.py** | Gemeinsame Logik für API und Chatbot |
 
-### chatbot/ — regelbasierter Assistent
+### chatbot/ — Assistent mit semantischer Sprachverarbeitung
 
 | Datei | Beschreibung |
 |---|---|
-| **engine.py** | Fassade `ChatEngine`, später gegen ein Sprachmodell austauschbar |
+| **engine.py** | Fassade `ChatEngine` mit Session-Kontext und Slot-Filling |
+| **semantic.py** | Intent-Klassifikation via Sentence-Transformer (lokales ML-Modell) |
 | **entities.py** | Erkennt Stadt, Parkhaus und deutsche Zeitangaben |
-| **intents.py** | Ordnet die Frage einer Absicht zu |
+| **intents.py** | Semantische + Regex-Klassifikation (Fallback) |
 | **handlers.py** | Beantwortet je Absicht aus der Datenbank |
 | **responses.py** | Deutsche Antworttexte |
 
@@ -193,9 +194,11 @@ scheduler.py  (Dauerprozess)
 │   ├── base.py + luzern/basel/bern/zurich/stgallen.py ──→ Stadt-APIs
 │   └── db_utils.py ──→ pls_fetch_current, log
 │
-└── get_event_and_weather_data.py  (06:00 + 18:00)
-    ├── Open-Meteo API ──→ weather_forecasts
-    └── erzeugte Events ──→ local_events, event_parkhaus
+├── get_event_and_weather_data.py  (06:00 + 18:00)
+│   └── Open-Meteo API ──→ weather_forecasts
+│
+└── fetch_events.py  (06:30 + 18:30)
+    └── Venue-Websites ──→ local_events, event_parkhaus
 
 web_server.py  (Port 80)
 └── db_utils.py ──→ MariaDB (nur lesend) ──→ index.html / logs.html

@@ -10,7 +10,7 @@ laufendes Genauigkeits-Monitoring und ein deutschsprachiger Chat-Assistent.
 |---|---|
 | **Prognose** (`/`) | Aktuelle Belegung + Prognosen +1/2/4/8 h pro Parkhaus, Detail-Chart mit Ist-Verlauf, Wetter und Events |
 | **Genauigkeit** (`/accuracy.html`) | MAE pro Horizont/Stadt/Parkhaus, KI vs. Basismodell, Skill-Score, Verlauf, Trainingsläufe |
-| **Chat** (`/chat.html`) | Regelbasierter Assistent: Verfügbarkeit, Prognosen, Empfehlungen, Wetter, Events, Genauigkeit |
+| **Chat** (`/chat.html`) | Assistent mit semantischer Sprachverarbeitung (lokales ML-Modell): Verfügbarkeit, Prognosen, Empfehlungen, Wetter, Events, Genauigkeit |
 | **Dokumentation** (`/doku.html`) | Erklärung für Nutzer (Datenquellen, wo ML eingesetzt wird) plus technischer Teil mit Tabellenübersicht |
 
 ## Architektur
@@ -142,12 +142,13 @@ Manuelle Checkliste: die vier Seiten öffnen, im Chat die Beispielfragen
 stellen, `/api/health` prüfen (aktive Modelle, letzte Prognose, Job-Status,
 geladene `.env`).
 
-## Chatbot-Erweiterung (LLM)
+## Chatbot — semantische Intent-Erkennung
 
-`chatbot/engine.py` definiert die Fassade `ChatEngine`. Die Handler liefern
-bereits strukturierte Daten – ein späterer `LLMEngine` (z.B. Claude API)
-kann sie unverändert als Tools nutzen; nur Klassifikation und
-Antwortformulierung würden ersetzt.
+`chatbot/semantic.py` nutzt ein lokales Sentence-Transformer-Modell
+(`paraphrase-multilingual-MiniLM-L12-v2`, ~120 MB) für die Intent-Klassifikation
+via Cosine-Similarity. Der Regex-Fallback in `intents.py` greift nur, wenn das
+Modell nicht verfügbar ist oder der Score unter 0.45 liegt. Es werden keine
+Daten an externe KI-Dienste gesendet.
 
 ## Hinweise
 
@@ -157,10 +158,9 @@ Antwortformulierung würden ersetzt.
   leere lokale Datenbanken (eingebauter Schutz).
 - Häuser ohne Stammdaten-Match (15 von 110, v.a. Bern und St. Gallen) werden
   trotzdem prognostiziert, nur ohne Event-Features.
-- Events: neben den erzeugten Dummy-Events (Stadttheater/KKL Luzern, Theater 11
-  Zürich) gibt es jetzt den Scraper `scanner/fetch_events.py` für echte
-  Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle, Stadtcasino
-  Basel, Musical.ch, OLMA). Die Venue→Parkhaus-Zuordnung ist manuell gepflegt.
+- Events werden automatisch 2× täglich von `scanner/fetch_events.py` gescrapt
+  (Hallenstadion, Tonhalle, Stadtcasino Basel, Luzerner Theater, Musical.ch,
+  OLMA). Die Venue→Parkhaus-Zuordnung ist manuell gepflegt.
 - Ist der Prognosestand älter als 30 Minuten, warnt die Prognoseseite. Die
   Spalten +1 h bis +8 h zählen ab dem Prognosestand, nicht ab der Uhrzeit
   des Betrachters.

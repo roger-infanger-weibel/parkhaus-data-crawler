@@ -248,5 +248,5 @@ def store_historical_events():
 if __name__ == "__main__":
     fetch_and_store_historical_weather()
     fetch_and_store_forecast_weather()
-    store_historical_events()
-    print("\nFertig! Alle Daten sind importiert.")
+    print("\nFertig! Wetterdaten importiert.")
+    print("Hinweis: Events werden via fetch_events.py automatisch gescraped.")
