@@ -66,7 +66,7 @@ class RuleBasedEngine(ChatEngine):
         entities = E.extract(text, now, self._mapping(env))
         session = self._session(session_id)
 
-        intent = I.classify(folded, entities, now)
+        intent = I.classify(folded, entities, now, raw_text=text)
 
         # Slot-Filling: vorher fehlte die Stadt, jetzt kam nur "Luzern" o.ae.
         if session.pending_intent and entities.get("city") and intent in ("fallback", "current"):

@@ -1,5 +1,10 @@
-"""Intent-Klassifikation: geordnete Regeln, erster Treffer gewinnt."""
+"""Intent-Klassifikation: semantisch (Sentence-Transformer) + Regex-Fallback."""
+import logging
 import re
+
+from chatbot import semantic
+
+logger = logging.getLogger(__name__)
 
 INTENTS = [
     ("greeting", r"\b(hallo|hi|hoi|gruezi|gruessech|guten\s+(tag|morgen|abend)|salue|salut)\b"),
@@ -29,18 +34,24 @@ def _liegt_in_zukunft(entities: dict, now) -> bool:
     return (zeit["at"] - now).total_seconds() > JETZT_TOLERANZ_MIN * 60
 
 
-def classify(folded: str, entities: dict, now=None) -> str:
+def classify(folded: str, entities: dict, now=None, raw_text: str = "") -> str:
+    # 1. Semantische Klassifikation (Sentence-Transformer)
+    sem = semantic.classify(raw_text or folded)
+    if sem is not None:
+        intent, score = sem
+        logger.debug("Semantic: '%s' → %s (%.2f)", raw_text or folded, intent, score)
+        if intent == "current" and _liegt_in_zukunft(entities, now):
+            return "forecast"
+        return intent
+
+    # 2. Regex-Fallback
     for intent, pattern in INTENTS:
         if re.search(pattern, folded):
-            # Eine Zeitangabe macht aus der Bestandsfrage eine Prognosefrage -
-            # aber nur, wenn sie wirklich in der Zukunft liegt. "jetzt" und
-            # "gerade" sind zwar ausdrueckliche Zeitangaben, gemeint ist aber
-            # der Ist-Wert; eine Prognose fuer den aktuellen Moment waere
-            # schlechter als die Messung selbst.
             if intent == "current" and _liegt_in_zukunft(entities, now):
                 return "forecast"
             return intent
-    # Kein Schluesselwort: Zeit + Stadt deutet auf Prognose/Empfehlung
+
+    # 3. Kein Treffer: heuristische Fallbacks
     if _liegt_in_zukunft(entities, now) and entities.get("city"):
         return "best_parking"
     if entities.get("parkhaus"):
