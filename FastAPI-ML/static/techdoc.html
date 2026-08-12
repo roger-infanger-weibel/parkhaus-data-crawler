@@ -491,76 +491,7 @@ FastAPI-ML (Port 80)
     </tbody>
   </table>
 
-  <footer id="app-footer" class="text-muted small py-4"></footer>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/api.js"></script>
-<script>
-(function() {
-  const env = (typeof Api !== 'undefined' && Api.env) ? Api.env() : 'prod';
-  const base = window.location.origin;
-
-  // R² aus den aktiven Trainingsläufen holen
-  const r2Promise = fetch(`${base}/api/accuracy/runs?env=${env}`)
-    .then(r => r.json())
-    .then(runs => {
-      const r2 = {};
-      for (const run of runs) {
-        if (run.model_type === 'ml' && run.is_active && run.cv_r2 != null)
-          r2[run.horizon_h] = run.cv_r2;
-      }
-      return r2;
-    })
-    .catch(() => ({}));
-
-  fetch(`${base}/api/accuracy/summary?env=${env}`)
-    .then(r => r.json())
-    .then(async data => {
-      const tbody = document.getElementById('td-perf-body');
-      if (!tbody || !data.entries) return;
-      const r2Map = await r2Promise;
-
-      const mlByH = {}, blByH = {};
-      for (const e of data.entries) {
-        const h = e.horizon_h;
-        if (e.model_type === 'ml') {
-          mlByH[h] = e;
-        } else if (e.model_type === 'baseline' && e.scope === 'global') {
-          blByH[h] = e;
-        }
-      }
-
-      let html = '';
-      for (const h of [1, 2, 4, 8]) {
-        const ml = mlByH[h];
-        if (!ml) continue;
-        const bl = blByH[h];
-        const blOcc = bl ? bl.mae_occ_pp.toFixed(2) : '—';
-        const skill = ml.skill != null ? ml.skill.toFixed(2) : '—';
-        const skillClass = skill !== '—' && parseFloat(skill) < 0.1 ? 'text-danger' : '';
-        const r2 = r2Map[h] != null ? r2Map[h].toFixed(4) : '—';
-        html += `<tr>
-          <td>+${h}h</td>
-          <td class="text-end">±${ml.mae_free.toFixed(1)}</td>
-          <td class="text-end">${ml.mae_occ_pp.toFixed(2)} pp</td>
-          <td class="text-end">${ml.bias_free > 0 ? '+' : ''}${ml.bias_free.toFixed(1)}</td>
-          <td class="text-end">${blOcc} pp</td>
-          <td class="text-end ${skillClass}"><strong>${skill}</strong></td>
-          <td class="text-end">${r2}</td>
-        </tr>`;
-      }
-      tbody.innerHTML = html || '<tr><td colspan="7" class="text-muted">Keine Daten</td></tr>';
-    })
-    .catch(() => {
-      const tbody = document.getElementById('td-perf-body');
-      if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-muted">' +
-        'Daten nicht verfügbar — API läuft nicht oder noch kein Training durchgeführt.</td></tr>';
-    });
-})();
-</script>
-
-  <h3 class="mt-5">11. Change History</h3>
+  <h3 class="mt-5" id="changelog">11. Change History</h3>
   <p class="text-muted small mb-3">Änderungsprotokoll aus der Zusammenarbeit mit Claude Code — Anfrage und Umsetzung.</p>
 
   <style>
@@ -712,7 +643,72 @@ FastAPI-ML (Port 80)
             <div class="ch-react">5 Stadt-Collectoren, Scheduler alle 15 Min, MariaDB, .env-Konfiguration.</div></td></tr>
   </tbody></table>
 
+  <footer id="app-footer" class="text-muted small py-4"></footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script>
+(function() {
+  const env = (typeof Api !== 'undefined' && Api.env) ? Api.env() : 'prod';
+  const base = window.location.origin;
+
+  const r2Promise = fetch(`${base}/api/accuracy/runs?env=${env}`)
+    .then(r => r.json())
+    .then(runs => {
+      const r2 = {};
+      for (const run of runs) {
+        if (run.model_type === 'ml' && run.is_active && run.cv_r2 != null)
+          r2[run.horizon_h] = run.cv_r2;
+      }
+      return r2;
+    })
+    .catch(() => ({}));
+
+  fetch(`${base}/api/accuracy/summary?env=${env}`)
+    .then(r => r.json())
+    .then(async data => {
+      const tbody = document.getElementById('td-perf-body');
+      if (!tbody || !data.entries) return;
+      const r2Map = await r2Promise;
+
+      const mlByH = {}, blByH = {};
+      for (const e of data.entries) {
+        const h = e.horizon_h;
+        if (e.model_type === 'ml') {
+          mlByH[h] = e;
+        } else if (e.model_type === 'baseline' && e.scope === 'global') {
+          blByH[h] = e;
+        }
+      }
+
+      let html = '';
+      for (const h of [1, 2, 4, 8]) {
+        const ml = mlByH[h];
+        if (!ml) continue;
+        const bl = blByH[h];
+        const blOcc = bl ? bl.mae_occ_pp.toFixed(2) : '—';
+        const skill = ml.skill != null ? ml.skill.toFixed(2) : '—';
+        const skillClass = skill !== '—' && parseFloat(skill) < 0.1 ? 'text-danger' : '';
+        const r2 = r2Map[h] != null ? r2Map[h].toFixed(4) : '—';
+        html += `<tr>
+          <td>+${h}h</td>
+          <td class="text-end">±${ml.mae_free.toFixed(1)}</td>
+          <td class="text-end">${ml.mae_occ_pp.toFixed(2)} pp</td>
+          <td class="text-end">${ml.bias_free > 0 ? '+' : ''}${ml.bias_free.toFixed(1)}</td>
+          <td class="text-end">${blOcc} pp</td>
+          <td class="text-end ${skillClass}"><strong>${skill}</strong></td>
+          <td class="text-end">${r2}</td>
+        </tr>`;
+      }
+      tbody.innerHTML = html || '<tr><td colspan="7" class="text-muted">Keine Daten</td></tr>';
+    })
+    .catch(() => {
+      const tbody = document.getElementById('td-perf-body');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-muted">' +
+        'Daten nicht verfügbar — API läuft nicht oder noch kein Training durchgeführt.</td></tr>';
+    });
+})();
+</script>
 </body>
 </html>
