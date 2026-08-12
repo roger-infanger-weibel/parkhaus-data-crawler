@@ -34,7 +34,21 @@ def _liegt_in_zukunft(entities: dict, now) -> bool:
     return (zeit["at"] - now).total_seconds() > JETZT_TOLERANZ_MIN * 60
 
 
+_KEYWORD_OVERRIDES = [
+    ("events", re.compile(r"\b(events?|veranstaltung|konzert|festival|theater)\w*")),
+    ("weather", re.compile(r"\b(wetter|regen|regnet|temperatur)\w*")),
+    ("accuracy", re.compile(r"\b(genau|zuverlaess|treffsicher|qualitaet)\w*")),
+]
+
+
 def classify(folded: str, entities: dict, now=None, raw_text: str = "") -> str:
+    # 0. Eindeutige Schlüsselwörter überstimmen den Semantic Classifier
+    for kw_intent, kw_pat in _KEYWORD_OVERRIDES:
+        if kw_pat.search(folded):
+            if kw_intent == "current" and _liegt_in_zukunft(entities, now):
+                return "forecast"
+            return kw_intent
+
     # 1. Semantische Klassifikation (Sentence-Transformer)
     sem = semantic.classify(raw_text or folded)
     if sem is not None:

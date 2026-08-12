@@ -55,6 +55,11 @@ EXAMPLES: dict[str, list[str]] = {
         "spielt die tonhalle heute abend",
         "irgendwelche events in der nähe",
         "was findet statt",
+        "gibt es am 14.8. events in zürich",
+        "events am 14. august",
+        "veranstaltungen am 20.09. in bern",
+        "welche events gibt es am freitag in luzern",
+        "was läuft am 15. juli in basel",
     ],
     "best_parking": [
         "wo parke ich am besten", "welches parkhaus empfiehlst du",
