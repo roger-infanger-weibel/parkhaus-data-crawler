@@ -510,6 +510,9 @@ FastAPI-ML (Port 80)
 
   <div class="ch-day">12. August 2026</div>
   <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Scanner Code Quality von C+ auf B verbessern (Top-5 Refactoring)</div>
+            <div class="ch-react">1) constants.py: SWISS_TZ, USER_AGENT zentral (statt 8x dupliziert). 2) Basel/Zürich: _is_stale, normalize_parkendd, collect, _collect_fallback in Basisklasse verschoben (~130 Zeilen eliminiert). 3) scheduler.py: 3 identische run_*-Funktionen durch eine generische _run_script ersetzt. 4) get_event_and_weather_data.py: pymysql durch db_utils.get_connection ersetzt, Weather-Duplikat in _fetch_weather zusammengefasst. 5) Dead Code: store_historical_events (100 Zeilen), unused imports, redundante Bedingungen entfernt.</div></td></tr>
     <tr><td style="width:100px"><span class="ch-tag ch-fix">Fehler</span></td>
         <td><div class="ch-req">Chatbot erkennt Datumsangaben wie «14.8.» oder «14. August» nicht</div>
             <div class="ch-react">entities.py: Datums-Parser um explizite Formate ergänzt (TT.MM., TT.MM.JJJJ, TT. Monatsname).</div></td></tr>

@@ -7,16 +7,14 @@ mode to test the collection pipeline without writing to the database.
 """
 
 import argparse
-import gc
 import json
 import os
 import sys
 import time
 from datetime import datetime
-from zoneinfo import ZoneInfo
-
-SWISS_TZ = ZoneInfo("Europe/Zurich")
 from pathlib import Path
+
+from constants import SWISS_TZ
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -185,8 +183,6 @@ def main():
         except Exception as e:
             print(f"Error connecting to database for logging: {e}")
 
-    gc.collect()
-
     for city_id, stats in results.items():
         success = stats.get('success', False)
         status = "SUCCESS" if success else "FAILED"
@@ -214,9 +210,6 @@ def main():
                 db_utils.insert_log(cursor, severity, log_text)
             except Exception as e:
                 print(f"Error inserting individual log for {city_id}: {e}")
-
-        if gc.get_count()[0] > 500:
-            gc.collect()
 
     if conn:
         try:

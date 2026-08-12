@@ -6,10 +6,8 @@ Parses XML data from parking-bern.ch.
 import xml.etree.ElementTree as ET
 import requests
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from base import BaseParkingCollector
-
-SWISS_TZ = ZoneInfo("Europe/Zurich")
+from constants import SWISS_TZ
 
 
 class BernCollector(BaseParkingCollector):

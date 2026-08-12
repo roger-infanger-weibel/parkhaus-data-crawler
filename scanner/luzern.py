@@ -3,10 +3,8 @@ Luzern parking data collector.
 """
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from base import BaseParkingCollector
-
-SWISS_TZ = ZoneInfo("Europe/Zurich")
+from constants import SWISS_TZ
 
 
 class LuzernCollector(BaseParkingCollector):

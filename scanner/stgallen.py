@@ -3,10 +3,8 @@ St. Gallen parking data collector.
 """
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from base import BaseParkingCollector
-
-SWISS_TZ = ZoneInfo("Europe/Zurich")
+from constants import SWISS_TZ
 
 
 class StGallenCollector(BaseParkingCollector):
@@ -42,7 +40,7 @@ class StGallenCollector(BaseParkingCollector):
         for record in raw_data.get("records", []):
             fields = record.get("fields", {})
             parking_id = str(fields.get("ph_id", ""))
-            if not parking_id or parking_id == "":
+            if not parking_id:
                 continue
 
             # Map St. Gallen status to standard status

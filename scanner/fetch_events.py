@@ -25,6 +25,8 @@ from db_utils import get_connection
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+from constants import SWISS_TZ
+
 HEADERS = {
     "User-Agent": "Parkhaus-Crawler/1.0 (Forschungsprojekt)",
     "Accept-Language": "de-CH,de;q=0.9",

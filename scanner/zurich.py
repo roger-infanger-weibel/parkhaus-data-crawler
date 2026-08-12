@@ -1,7 +1,7 @@
 """
-Zürich parking data collector.
+Zuerich parking data collector.
 Primary: ParkenDD API
-Fallback: Stadt Zürich Parkleitsystem RSS (pls-zh.ch)
+Fallback: Stadt Zuerich Parkleitsystem RSS (pls-zh.ch)
 """
 
 import json
@@ -10,13 +10,10 @@ import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
+
 from base import BaseParkingCollector
+from constants import SWISS_TZ, USER_AGENT
 
-SWISS_TZ = ZoneInfo("Europe/Zurich")
-
-FALLBACK_URL = "https://www.pls-zh.ch/plsFeed/rss"
-STALE_THRESHOLD_MINUTES = 30
 
 def _load_parking_map():
     map_path = Path(__file__).parent / "zurich_parking_map.json"
@@ -27,27 +24,52 @@ RSS_PARKING_MAP = _load_parking_map()
 
 
 class ZurichCollector(BaseParkingCollector):
-    """Collector for Zürich parking data from ParkenDD API with PLS RSS fallback."""
+    """Collector for Zuerich parking data from ParkenDD API with PLS RSS fallback."""
 
-    def _is_stale(self, timestamp_str):
-        """Check if a timestamp is older than STALE_THRESHOLD_HOURS."""
+    FALLBACK_URL = "https://www.pls-zh.ch/plsFeed/rss"
+
+    def normalize_data(self, raw_data):
+        return self.normalize_parkendd(raw_data, use_global_ts=True)
+
+    def _post_fetch_hook(self, raw_data):
+        """Update zurich_parking_map.json with fresh total values from ParkenDD."""
+        global RSS_PARKING_MAP
         try:
-            dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=SWISS_TZ)
-            age_minutes = (datetime.now(SWISS_TZ) - dt.astimezone(SWISS_TZ)).total_seconds() / 60
-            return age_minutes > STALE_THRESHOLD_MINUTES
-        except (ValueError, TypeError):
-            return True
+            lots = raw_data.get("lots", [])
+            if not lots:
+                return
+
+            pid_to_rss = {}
+            for rss_pid, info in RSS_PARKING_MAP.items():
+                pid_to_rss[info["id"]] = rss_pid
+
+            updated = False
+            for lot in lots:
+                parkendd_id = lot.get("id", "")
+                total = lot.get("total", 0)
+                name = lot.get("name", "")
+                rss_pid = pid_to_rss.get(parkendd_id)
+                if rss_pid and RSS_PARKING_MAP[rss_pid]["total"] != total:
+                    RSS_PARKING_MAP[rss_pid]["total"] = total
+                    updated = True
+                if rss_pid and name and RSS_PARKING_MAP[rss_pid]["name"] != name:
+                    RSS_PARKING_MAP[rss_pid]["name"] = name
+                    updated = True
+
+            if updated:
+                map_path = Path(__file__).parent / "zurich_parking_map.json"
+                with open(map_path, "w", encoding="utf-8") as f:
+                    json.dump(RSS_PARKING_MAP, f, indent=4, ensure_ascii=False)
+                print(f"[{datetime.now(SWISS_TZ)}] Zuerich: zurich_parking_map.json updated from ParkenDD")
+
+        except Exception as e:
+            print(f"[{datetime.now(SWISS_TZ)}] Zuerich: Failed to update parking map: {e}")
 
     def _fetch_fallback(self):
-        """Fetch data from Stadt Zürich PLS RSS feed."""
-        print(f"[{datetime.now(SWISS_TZ)}] Zürich: ParkenDD data is stale, switching to pls-zh.ch RSS fallback...")
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            'Accept': 'application/xml'
-        }
-        response = requests.get(FALLBACK_URL, timeout=30, headers=headers)
+        """Fetch data from Stadt Zuerich PLS RSS feed."""
+        print(f"[{datetime.now(SWISS_TZ)}] Zuerich: ParkenDD data is stale, switching to pls-zh.ch RSS fallback...")
+        headers = {'User-Agent': USER_AGENT, 'Accept': 'application/xml'}
+        response = requests.get(self.FALLBACK_URL, timeout=30, headers=headers)
         response.raise_for_status()
         return response.text
 
@@ -92,12 +114,9 @@ class ZurichCollector(BaseParkingCollector):
                 total = 0
 
             parkings[parking_id] = {
-                "id": parking_id,
-                "name": name,
-                "free": free,
-                "total": total,
-                "status": status,
-                "timestamp": ts
+                "id": parking_id, "name": name,
+                "free": free, "total": total,
+                "status": status, "timestamp": ts,
             }
 
             if latest_ts is None or ts > latest_ts:
@@ -107,108 +126,5 @@ class ZurichCollector(BaseParkingCollector):
             "status": "success",
             "city": self.city_id,
             "data": {"parkings": parkings},
-            "timestamp": latest_ts or datetime.now(SWISS_TZ).isoformat()
-        }
-
-    def _update_parking_map(self, raw_data):
-        """Update zurich_parking_map.json with fresh total values from ParkenDD."""
-        global RSS_PARKING_MAP
-        try:
-            lots = raw_data.get("lots", [])
-            if not lots:
-                return
-
-            pid_to_rss = {}
-            for rss_pid, info in RSS_PARKING_MAP.items():
-                pid_to_rss[info["id"]] = rss_pid
-
-            updated = False
-            for lot in lots:
-                parkendd_id = lot.get("id", "")
-                total = lot.get("total", 0)
-                name = lot.get("name", "")
-                rss_pid = pid_to_rss.get(parkendd_id)
-                if rss_pid and RSS_PARKING_MAP[rss_pid]["total"] != total:
-                    RSS_PARKING_MAP[rss_pid]["total"] = total
-                    updated = True
-                if rss_pid and name and RSS_PARKING_MAP[rss_pid]["name"] != name:
-                    RSS_PARKING_MAP[rss_pid]["name"] = name
-                    updated = True
-
-            if updated:
-                map_path = Path(__file__).parent / "zurich_parking_map.json"
-                with open(map_path, "w", encoding="utf-8") as f:
-                    json.dump(RSS_PARKING_MAP, f, indent=4, ensure_ascii=False)
-                print(f"[{datetime.now(SWISS_TZ)}] Zürich: zurich_parking_map.json updated from ParkenDD")
-
-        except Exception as e:
-            print(f"[{datetime.now(SWISS_TZ)}] Zürich: Failed to update parking map: {e}")
-
-    def collect(self):
-        """Collect with automatic fallback to PLS RSS if ParkenDD is stale."""
-        try:
-            raw_data = self.fetch_raw_data()
-            if not raw_data:
-                return self._collect_fallback()
-
-            last_updated = raw_data.get("last_updated", "")
-            if self._is_stale(last_updated):
-                print(f"[{datetime.now(SWISS_TZ)}] Zürich: ParkenDD data from {last_updated} is stale")
-                return self._collect_fallback()
-
-            self._update_parking_map(raw_data)
-
-            normalized = self.normalize_data(raw_data)
-            if not normalized:
-                return self._collect_fallback()
-
-            return self.save_data(normalized)
-
-        except Exception as e:
-            print(f"[{datetime.now(SWISS_TZ)}] Zürich: ParkenDD failed ({e}), trying fallback...")
-            return self._collect_fallback()
-
-    def _collect_fallback(self):
-        """Run full collect cycle using the RSS fallback."""
-        try:
-            rss_text = self._fetch_fallback()
-            normalized = self._normalize_fallback(rss_text)
-            if normalized:
-                print(f"[{datetime.now(SWISS_TZ)}] Zürich: Using pls-zh.ch RSS fallback data")
-                return self.save_data(normalized)
-            return {'success': False, 'inserted': 0, 'duplicates': 0, 'failed': 0,
-                    'error': 'Fallback returned no data', 'latest_data_ts': None,
-                    'simulation_mode': self.simulation_mode}
-        except Exception as e:
-            print(f"[{datetime.now(SWISS_TZ)}] Zürich: Fallback also failed: {e}")
-            return {'success': False, 'inserted': 0, 'duplicates': 0, 'failed': 0,
-                    'error': f'Both APIs failed: {e}', 'latest_data_ts': None,
-                    'simulation_mode': self.simulation_mode}
-
-    def normalize_data(self, raw_data):
-        """Normalize ParkenDD API data."""
-        if not raw_data or "lots" not in raw_data:
-            return None
-
-        parkings = {}
-
-        for lot in raw_data.get("lots", []):
-            parking_id = lot.get("id", "")
-            if not parking_id:
-                continue
-
-            parkings[parking_id] = {
-                "id": parking_id,
-                "name": lot.get("name", parking_id),
-                "free": lot.get("free", 0),
-                "total": lot.get("total", 0),
-                "status": lot.get("state", "unknown"),
-                "timestamp": raw_data.get("last_updated", datetime.now(SWISS_TZ).isoformat())
-            }
-
-        return {
-            "status": "success",
-            "city": self.city_id,
-            "data": {"parkings": parkings},
-            "timestamp": datetime.now(SWISS_TZ).isoformat()
+            "timestamp": latest_ts or datetime.now(SWISS_TZ).isoformat(),
         }
