@@ -155,11 +155,26 @@ async function loadDetail(plsId) {
       `<span class="me-3 small">${fmtTs(w.ts)} ${w.precipitation > 0.5 ? '🌧️' : '☀️'} ${Math.round(w.temperature)}°</span>`
     ).join('') : '<span class="small text-muted">keine Daten</span>');
 
-  document.getElementById('detail-events').innerHTML =
-    '<strong class="small">Events heute/morgen</strong><br>' +
-    (data.events.length ? data.events.map(e =>
+  const evBox = document.getElementById('detail-events');
+  if (!data.events.length) {
+    evBox.innerHTML = '<strong class="small">Events heute / morgen</strong><br>' +
+      '<span class="small text-muted">keine Veranstaltungen erfasst</span>';
+  } else {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const tom = new Date(now); tom.setDate(tom.getDate() + 1);
+    const tomStr = tom.toISOString().slice(0, 10);
+    const heute = data.events.filter(e => e.start?.slice(0, 10) === todayStr);
+    const morgen = data.events.filter(e => e.start?.slice(0, 10) === tomStr);
+    const fmtEv = ev => ev.map(e =>
       `<div class="small">${e.affects_this ? '⚠️ ' : ''}${e.title} – ${e.venue} (${fmtTs(e.start)}–${fmtTs(e.end)})</div>`
-    ).join('') : '<span class="small text-muted">keine Veranstaltungen erfasst</span>');
+    ).join('');
+    let html = '';
+    if (heute.length) html += `<strong class="small">Events heute (${todayStr.slice(5).replace('-','.')}.):</strong><br>${fmtEv(heute)}`;
+    if (morgen.length) html += `${heute.length ? '<br>' : ''}<strong class="small">Events morgen (${tomStr.slice(5).replace('-','.')}.):</strong><br>${fmtEv(morgen)}`;
+    if (!html) html = '<strong class="small">Events heute / morgen</strong><br><span class="small text-muted">keine Veranstaltungen erfasst</span>';
+    evBox.innerHTML = html;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
