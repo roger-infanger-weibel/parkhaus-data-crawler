@@ -559,5 +559,160 @@ FastAPI-ML (Port 80)
     });
 })();
 </script>
+
+  <h3 class="mt-5">11. Change History</h3>
+  <p class="text-muted small mb-3">Änderungsprotokoll aus der Zusammenarbeit mit Claude Code — Anfrage und Umsetzung.</p>
+
+  <style>
+    .ch-tag { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+              padding: 0.1rem 0.45rem; border-radius: 3px; white-space: nowrap; }
+    .ch-feat { color: #1a6b4a; background: #e8f5ee; }
+    .ch-fix  { color: #b85c1f; background: #fdf0e6; }
+    .ch-imp  { color: #2d5fa0; background: #e9f0fa; }
+    .ch-req  { font-size: 0.82rem; }
+    .ch-req::before { content: "Anfrage: "; font-weight: 600; color: #888; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .ch-react { font-size: 0.8rem; color: #888; }
+    .ch-react::before { content: "→ "; font-weight: 700; }
+    .ch-day { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+              color: #888; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; margin: 1.2rem 0 0.5rem; }
+  </style>
+
+  <div class="ch-day">12. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Genauigkeitsseite: Radar-Charts statt Balken, 3 Tabs, 4 Spalten pro Horizont</div>
+            <div class="ch-react">Balkendiagramm durch 4 Radar-Charts (KI vs. Basis pro Stadt) ersetzt. Seite in 3 Tabs: Übersicht, Parkhaus, Trainingsläufe.</div></td></tr>
+    <tr><td><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Events nach Heute/Morgen gruppiert anzeigen mit Datum</div>
+            <div class="ch-react">forecast.js: Events nach Heute und Morgen getrennt mit Datumsanzeige.</div></td></tr>
+    <tr><td><span class="ch-tag ch-fix">Fehler</span></td>
+        <td><div class="ch-req">fetch_events.py schlägt fehl mit «unrecognized arguments: --days 60»</div>
+            <div class="ch-react">scheduler.py: --days 60 entfernt, fetch_events.py akzeptiert nur --venue.</div></td></tr>
+    <tr><td><span class="ch-tag ch-fix">Fehler</span></td>
+        <td><div class="ch-req">copy-github.sh klont den falschen Branch</div>
+            <div class="ch-react">--branch main explizit in git clone eingefügt.</div></td></tr>
+    <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Fake/Dummy-Events aus der Datenbank löschen</div>
+            <div class="ch-react">170 Fake-Events + 476 Zuordnungen pro DB gelöscht (prod + test).</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">11. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Chatbot intelligenter machen mit lokalem ML-Modell (keine externen API-Kosten)</div>
+            <div class="ch-react">Sentence-Transformer (paraphrase-multilingual-MiniLM-L12-v2, ~120 MB) integriert. 8 Intents, Cosine-Similarity, Regex-Fallback.</div></td></tr>
+    <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Alle Dokumentationen mit neuem Chatbot und Event-Automatisierung aktualisieren</div>
+            <div class="ch-react">doku.html, techdoc.html, chat.html, alle README.md: «Regelbasierter Assistent» → «semantische Sprachverarbeitung», Events «manuell» → «automatisch».</div></td></tr>
+    <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Events sollen automatisch gescrapt werden, nicht manuell erzeugt</div>
+            <div class="ch-react">scheduler.py: fetch_events.py als Job um 06:30/18:30. store_historical_events() entfernt.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">9. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-fix">Fehler</span></td>
+        <td><div class="ch-req">R²-Wert wird in TechDoc nicht angezeigt (zeigt «—»)</div>
+            <div class="ch-react">Api.env (Property) → Api.env() (Funktion). Fetch-URL war mit Funktionsbody statt «prod» zusammengebaut.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">7. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">R²-Metrik (Bestimmtheitsmass) einführen</div>
+            <div class="ch-react">R² in train.py berechnet (Holdout), in ai_model_runs gespeichert, über API ausgeliefert, in TechDoc angezeigt.</div></td></tr>
+    <tr><td><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Auto-Migration für neue DB-Spalten beim App-Start</div>
+            <div class="ch-react">main.py: _auto_migrate() prüft information_schema und fügt fehlende Spalten per ALTER TABLE hinzu.</div></td></tr>
+    <tr><td><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">TechDoc Kapitel 5 (Live-Daten) ist leer</div>
+            <div class="ch-react">JS repariert: data.per_city → data.entries. Performance-Tabelle gefüllt.</div></td></tr>
+    <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Features auf 40 erweitern mit Interaktionen</div>
+            <div class="ch-react">9 Interaktions-Features, exponentielle Bias-Gewichtung, Subsampling für Normalstunden.</div></td></tr>
+    <tr><td><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Neue TechDoc-Seite für Data Scientists</div>
+            <div class="ch-react">techdoc.html mit 5 Kapiteln: Modellarchitektur, Features, Metriken, API, Live-Daten.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">6. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">4 Prognose-Verbesserungen (Bias, Kalender, Quantil, Events)</div>
+            <div class="ch-react">Bias-Korrektur (14-Tage-Mittel), Kalender aus DB, Quantil-Modell (α=0.2), Voll-Klassifikator, Event-Scraper für 6 Venues.</div></td></tr>
+    <tr><td><span class="ch-tag ch-fix">Fehler</span></td>
+        <td><div class="ch-req">None-Werte bei MAE in _insert_run für Klassifikator</div>
+            <div class="ch-react">None-Check für mae_free/mae_occ vor INSERT.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">5. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">UI: Prod als Default, Suchfeld, gemerkte Einstellungen</div>
+            <div class="ch-react">Umschalter nur mit ?admin sichtbar. Suchfeld, localStorage-Persistenz, Footer mit Version.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">4. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Umzug auf neuen Server (87.106.21.252)</div>
+            <div class="ch-react">FastAPI-ML auf eigenen Server migriert. Holdout-Vergleich gegen vorheriges Modell.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">31. Juli 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-fix">Fehler</span></td>
+        <td><div class="ch-req">Chat tot über plain HTTP, «jetzt»-Fragen ohne Daten</div>
+            <div class="ch-react">HTTP-Fallback, Chat-Handler für «jetzt» liefert aktuelle Messwerte.</div></td></tr>
+    <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Training vom Server auslagern (zu wenig RAM)</div>
+            <div class="ch-react">Training auf PC, Modelle per SCP übertragen. MODELL-REFRESH.md erstellt.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">30. Juli 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">KI-Prognose-App (FastAPI-ML) erstellen</div>
+            <div class="ch-react">Komplette App: LightGBM für 4 Horizonte, Prognoseseite, Genauigkeits-Dashboard, Chat, Dokumentation.</div></td></tr>
+    <tr><td><span class="ch-tag ch-fix">Fehler</span></td>
+        <td><div class="ch-req">Training hängt, Server-Speicher explodiert (641 MB RAM)</div>
+            <div class="ch-react">Speicherlimits via systemd-run, Training mit --days begrenzt.</div></td></tr>
+    <tr><td><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">systemd-Units, Autostart, Start-Scripts</div>
+            <div class="ch-react">4 Service-Dateien, install-systemd.sh, start-all.sh, crontab @reboot.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">29. Juli 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Wetter, 24h-Prognose, Prod/Test-Umschaltung im Flask-Dashboard</div>
+            <div class="ch-react">Wetteranzeige, Event-Sektion, ?env= Parameter, Fallback-APIs für Basel/Zürich.</div></td></tr>
+    <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Von JSON-Dateien auf DB-Tabellen umstellen</div>
+            <div class="ch-react">Städte/Parkhäuser aus DB statt JSON. Statische Dateien entfernt.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">28. Juli 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Wetter-/Event-Daten sammeln, Projektstruktur aufräumen</div>
+            <div class="ch-react">Open-Meteo API, Event-Generierung. flask/ und scanner/ Ordnerstruktur.</div></td></tr>
+    <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Crawler robuster machen</div>
+            <div class="ch-react">Retry mit Backoff, UPSERT, Snapshot-Fallback, St. Gallen API-Mapping korrigiert.</div></td></tr>
+    <tr><td><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Simulationsmodus für den Crawler</div>
+            <div class="ch-react">--simulation Flag, MockCursor für Tests.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">12. Juli 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Initiales Projekt: Parkhaus-Daten-Crawler</div>
+            <div class="ch-react">5 Stadt-Collectoren, Scheduler alle 15 Min, MariaDB, .env-Konfiguration.</div></td></tr>
+  </tbody></table>
+
+</div>
+
 </body>
 </html>
