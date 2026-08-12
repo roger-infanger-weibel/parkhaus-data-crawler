@@ -58,15 +58,48 @@ def extract_time(folded: str, now: datetime) -> Optional[dict]:
     if re.search(r"\b(jetzt|gerade|aktuell|im moment)\b", folded):
         return {"at": now, "explicit": True}
 
+    MONTH_NAMES = {
+        "januar": 1, "februar": 2, "maerz": 3, "april": 4, "mai": 5,
+        "juni": 6, "juli": 7, "august": 8, "september": 9, "oktober": 10,
+        "november": 11, "dezember": 12,
+    }
+
     # Tag bestimmen
     day = None
-    if re.search(r"\buebermorgen\b", folded):
+
+    # "14.8.", "14.08.", "14.8.2026", "14. august"
+    m_date = re.search(r"\b(\d{1,2})\.(\d{1,2})\.(\d{4})?(?:\b|(?=\s|$))", folded)
+    if not m_date:
+        m_date = re.search(
+            r"\b(\d{1,2})\.\s*(" + "|".join(MONTH_NAMES) + r")\b", folded)
+        if m_date:
+            d, mon = int(m_date.group(1)), MONTH_NAMES[m_date.group(2)]
+            yr = now.year
+            candidate = now.date().replace(month=mon, day=d)
+            if candidate < now.date():
+                yr += 1
+            try:
+                day = now.date().replace(year=yr, month=mon, day=d)
+            except ValueError:
+                pass
+    if m_date and day is None and m_date.lastindex and m_date.group(2).isdigit():
+        d, mon = int(m_date.group(1)), int(m_date.group(2))
+        yr = int(m_date.group(3)) if m_date.lastindex >= 3 and m_date.group(3) else now.year
+        try:
+            candidate = now.date().replace(year=yr, month=mon, day=d)
+            if candidate < now.date() and not (m_date.lastindex >= 3 and m_date.group(3)):
+                yr += 1
+            day = now.date().replace(year=yr, month=mon, day=d)
+        except ValueError:
+            pass
+
+    if day is None and re.search(r"\buebermorgen\b", folded):
         day = now.date() + timedelta(days=2)
-    elif re.search(r"\bmorgen\b", folded) and not re.search(r"\bmorgens\b", folded):
+    elif day is None and re.search(r"\bmorgen\b", folded) and not re.search(r"\bmorgens\b", folded):
         day = now.date() + timedelta(days=1)
-    elif re.search(r"\bheute\b", folded):
+    elif day is None and re.search(r"\bheute\b", folded):
         day = now.date()
-    else:
+    elif day is None:
         for name, wd in WEEKDAYS.items():
             if re.search(r"\b(am\s+)?" + name + r"\b", folded):
                 ahead = (wd - now.weekday()) % 7
