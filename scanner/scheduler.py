@@ -68,7 +68,7 @@ def run_fetch_events():
     try:
         logger.info("Running fetch_events.py...")
         result = subprocess.run(
-            [sys.executable, str(script_path), "--days", "60"],
+            [sys.executable, str(script_path)],
             cwd=Path(__file__).parent,
             capture_output=True,
             text=True,
