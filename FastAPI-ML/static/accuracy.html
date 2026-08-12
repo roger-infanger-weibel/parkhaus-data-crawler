@@ -53,15 +53,17 @@
     <div class="col-lg-6">
       <div class="card mb-4">
         <div class="card-body">
-          <h6 class="card-title">MAE pro Stadt und Horizont
+          <h6 class="card-title">KI vs. Basis pro Stadt
             <span class="float-end">
-              <select id="chart-model" class="form-select form-select-sm d-inline w-auto">
-                <option value="ml" selected>KI-Modell</option>
-                <option value="baseline">Basis</option>
+              <select id="radar-horizon" class="form-select form-select-sm d-inline w-auto">
+                <option value="1" selected>+1 h</option>
+                <option value="2">+2 h</option>
+                <option value="4">+4 h</option>
+                <option value="8">+8 h</option>
               </select>
             </span>
           </h6>
-          <canvas id="city-chart" height="200"></canvas>
+          <canvas id="city-chart" height="250"></canvas>
         </div>
       </div>
     </div>

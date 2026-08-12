@@ -31,26 +31,63 @@ async function loadSummary() {
   drawCityChart(data.entries);
 }
 
+let lastEntries = [];
+
 function drawCityChart(entries) {
-  const modelType = document.getElementById('chart-model').value;
+  lastEntries = entries;
+  const h = parseInt(document.getElementById('radar-horizon').value);
   const cities = [...new Set(entries.filter(e => e.scope !== 'global').map(e => e.scope))];
-  const horizons = [1, 2, 4, 8];
-  const palette = ['#0d6efd', '#198754', '#fd7e14', '#dc3545'];
-  const datasets = horizons.map((h, i) => ({
-    label: `+${h} h`,
-    backgroundColor: palette[i],
-    data: cities.map(c => {
-      const e = entries.find(x => x.scope === c && x.model_type === modelType && x.horizon_h === h);
-      return e ? e.mae_free : null;
-    }),
-  }));
+  const labels = cities.map(c => CITY_LABELS[c] || c);
+
+  const mlData = cities.map(c => {
+    const e = entries.find(x => x.scope === c && x.model_type === 'ml' && x.horizon_h === h);
+    return e ? e.mae_free : null;
+  });
+  const baseData = cities.map(c => {
+    const e = entries.find(x => x.scope === c && x.model_type === 'baseline' && x.horizon_h === h);
+    return e ? e.mae_free : null;
+  });
+
   if (cityChart) cityChart.destroy();
   cityChart = new Chart(document.getElementById('city-chart'), {
-    type: 'bar',
-    data: { labels: cities.map(c => CITY_LABELS[c] || c), datasets },
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Basis',
+          data: baseData,
+          borderColor: '#fd7e14',
+          backgroundColor: 'rgba(253, 126, 20, 0.15)',
+          borderWidth: 2,
+          pointRadius: 4,
+        },
+        {
+          label: 'KI-Modell',
+          data: mlData,
+          borderColor: '#198754',
+          backgroundColor: 'rgba(25, 135, 84, 0.15)',
+          borderWidth: 2,
+          pointRadius: 4,
+        },
+      ],
+    },
     options: {
-      scales: { y: { beginAtZero: true, title: { display: true, text: 'MAE (Plätze)' } } },
-      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        r: {
+          beginAtZero: true,
+          ticks: { stepSize: 5 },
+          pointLabels: { font: { size: 13 } },
+        },
+      },
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ±${ctx.parsed.r.toFixed(1)} Plätze`,
+          },
+        },
+      },
     },
   });
 }
@@ -129,7 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initCitySelectors();
   // Zuletzt gewaehlte Einstellungen wiederherstellen und kuenftig merken
   Merker.binden('days-select', '14', () => { loadSummary(); loadPerParkhaus(); });
-  Merker.binden('chart-model', 'ml', loadSummary);
+  Merker.binden('radar-horizon', '1', () => drawCityChart(lastEntries));
   Merker.binden('ts-scope', 'global', loadTimeseries);
   Merker.binden('ts-horizon', '1', loadTimeseries);
   Merker.binden('city-select', null, loadPerParkhaus);
