@@ -117,8 +117,26 @@ def current_forecasts(env: str, city: str) -> dict:
 
     past = past_values(env, city, now_local())
 
+    # Parkhaeuser ohne Bewegung in 48 h unterdrücken (defekter Sensor o.ae.)
+    cutoff_48h = now_local() - timedelta(hours=48)
+    inactive = set()
+    movement_rows = db.query(
+        """
+        SELECT id AS pls_id, MIN(free) AS min_free, MAX(free) AS max_free
+        FROM pls_fetch_current
+        WHERE city = %s AND fetch_ts >= %s
+        GROUP BY id
+        HAVING MIN(free) = MAX(free)
+        """,
+        (city, cutoff_48h), env=env,
+    )
+    for mr in movement_rows:
+        inactive.add(mr["pls_id"])
+
     result = []
     for pls_id, snap in sorted(snapshots.items(), key=lambda kv: kv[1]["name"]):
+        if pls_id in inactive:
+            continue
         m = mapping.get(pls_id, {})
         # Rueckblick: Wert von damals plus Veraenderung bis jetzt
         history = {}

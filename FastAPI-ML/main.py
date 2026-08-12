@@ -46,6 +46,14 @@ async def lifespan(app: FastAPI):
     if config.SCHEDULER_ENABLED:
         from jobs import scheduler
         scheduler.start()
+        # Sofort eine Prognose erzeugen, damit nach Neustart nicht
+        # "Prognose veraltet" erscheint.
+        try:
+            from forecast import predict
+            predict.run(config.DEFAULT_ENV)
+            logger.info("Initiale Prognose nach Start erzeugt")
+        except Exception:
+            logger.warning("Initiale Prognose fehlgeschlagen", exc_info=True)
     else:
         logger.info("Scheduler deaktiviert (AI_SCHEDULER_ENABLED=0)")
     yield
