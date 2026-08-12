@@ -525,6 +525,12 @@ FastAPI-ML (Port 80)
     <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
         <td><div class="ch-req">Fake/Dummy-Events aus der Datenbank löschen</div>
             <div class="ch-react">170 Fake-Events + 476 Zuordnungen pro DB gelöscht (prod + test).</div></td></tr>
+    <tr><td><span class="ch-tag ch-fix">Fehler</span></td>
+        <td><div class="ch-req">«Prognose ist veraltet» erscheint nach jedem Server-Neustart</div>
+            <div class="ch-react">predict.run() wird jetzt sofort beim App-Start ausgeführt (main.py lifespan), damit frische Prognosen vor dem ersten Request vorliegen.</div></td></tr>
+    <tr><td><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Parkhäuser ohne Bewegungen in 48 h automatisch ausblenden</div>
+            <div class="ch-react">services.py: Parkhäuser mit min(free)=max(free) über 48 h werden aus der Prognosetabelle gefiltert (defekter Sensor / inaktiv).</div></td></tr>
   </tbody></table>
 
   <div class="ch-day">11. August 2026</div>
