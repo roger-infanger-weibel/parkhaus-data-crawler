@@ -13,7 +13,7 @@ fi
 echo "🚀 Starte Download des gesamten Repositories..."
 
 # Komplettes Repo ohne tiefen Verlauf in den Zielordner kopieren
-git clone --depth 1 "$REPO_URL" "$TARGET_DIR"
+git clone --depth 1 --branch main "$REPO_URL" "$TARGET_DIR"
 
 if [ -d "$TARGET_DIR" ]; then
     # Git-Verlauf entfernen, da keine Weiterarbeit im Git-Verbund gewünscht ist
