@@ -1,13 +1,13 @@
-const radarCharts = {};
-let tsChart = null;
+const radarCharts = {}, tsCharts = {};
 const CITY_LABELS = { luzern: 'Luzern', basel: 'Basel', bern: 'Bern',
                       zurich: 'Zürich', stgallen: 'St. Gallen' };
 
 function days() { return document.getElementById('days-select').value; }
+function scope() { return document.getElementById('scope-select').value; }
 
 async function loadSummary() {
-  const data = await Api.get('/api/accuracy/summary', { days: days() });
-  const global = data.entries.filter(e => e.scope === 'global');
+  const data = await Api.get('/api/accuracy/summary', { days: days(), scope: scope() });
+  const global = data.entries.filter(e => e.scope === 'global' || e.scope === scope());
 
   [1, 2, 4, 8].forEach(h => {
     const ml = global.find(e => e.model_type === 'ml' && e.horizon_h === h);
@@ -91,26 +91,39 @@ function drawRadarCharts(entries) {
   });
 }
 
-async function loadTimeseries() {
-  const scope = document.getElementById('ts-scope').value;
-  const horizon = document.getElementById('ts-horizon').value;
-  const data = await Api.get('/api/accuracy/timeseries', { scope, horizon, days: 60 });
-  const daysAxis = [...new Set(Object.values(data.series).flat().map(p => p.day))].sort();
-  const colors = { ml: '#198754', baseline: '#fd7e14' };
-  const datasets = Object.entries(data.series).map(([mt, points]) => ({
-    label: mt === 'ml' ? 'KI-Modell' : 'Basis',
-    borderColor: colors[mt], tension: 0.2, pointRadius: 2,
-    data: daysAxis.map(d => points.find(p => p.day === d)?.mae_free ?? null),
-  }));
-  if (tsChart) tsChart.destroy();
-  tsChart = new Chart(document.getElementById('ts-chart'), {
-    type: 'line',
-    data: { labels: daysAxis, datasets },
-    options: {
-      scales: { y: { beginAtZero: true, title: { display: true, text: 'MAE (Plätze)' } } },
-      plugins: { legend: { position: 'bottom' } },
-    },
-  });
+async function loadAllTimeseries() {
+  const sc = scope();
+  const tsScope = sc === 'global' ? 'global' : 'city:' + sc;
+
+  for (const h of [1, 2, 4, 8]) {
+    const canvas = document.getElementById('ts-' + h);
+    if (!canvas) continue;
+
+    const data = await Api.get('/api/accuracy/timeseries', { scope: tsScope, horizon: h, days: 60 });
+    const daysAxis = [...new Set(Object.values(data.series).flat().map(p => p.day))].sort();
+    const colors = { ml: '#198754', baseline: '#fd7e14' };
+    const datasets = Object.entries(data.series).map(([mt, points]) => ({
+      label: mt === 'ml' ? 'KI' : 'Basis',
+      borderColor: colors[mt], tension: 0.2, pointRadius: 1, borderWidth: 1.5,
+      data: daysAxis.map(d => points.find(p => p.day === d)?.mae_free ?? null),
+    }));
+
+    if (tsCharts[h]) tsCharts[h].destroy();
+    tsCharts[h] = new Chart(canvas, {
+      type: 'line',
+      data: { labels: daysAxis, datasets },
+      options: {
+        scales: {
+          x: { display: false },
+          y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: `+${h} h`, font: { size: 11 }, padding: 2 },
+        },
+      },
+    });
+  }
 }
 
 async function loadPerParkhaus() {
@@ -156,20 +169,22 @@ async function initCitySelectors() {
   const cities = await Api.get('/api/cities');
   document.getElementById('city-select').innerHTML =
     cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  const tsScope = document.getElementById('ts-scope');
-  tsScope.innerHTML = '<option value="global" selected>Gesamt</option>' +
-    cities.map(c => `<option value="city:${c.id}">${c.name}</option>`).join('');
+  const scopeSel = document.getElementById('scope-select');
+  scopeSel.innerHTML = '<option value="global" selected>Gesamt</option>' +
+    cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function loadOverview() {
+  loadSummary();
+  loadAllTimeseries();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initCitySelectors();
-  // Zuletzt gewaehlte Einstellungen wiederherstellen und kuenftig merken
-  Merker.binden('days-select', '14', () => { loadSummary(); loadPerParkhaus(); });
-  // Radar-Charts werden direkt in loadSummary gezeichnet
-  Merker.binden('ts-scope', 'global', loadTimeseries);
-  Merker.binden('ts-horizon', '1', loadTimeseries);
+  Merker.binden('scope-select', 'global', loadOverview);
+  Merker.binden('days-select', '14', () => { loadOverview(); loadPerParkhaus(); });
   Merker.binden('city-select', null, loadPerParkhaus);
   Merker.binden('ph-horizon', '1', loadPerParkhaus);
 
-  await Promise.all([loadSummary(), loadTimeseries(), loadPerParkhaus(), loadRuns()]);
+  await Promise.all([loadOverview(), loadPerParkhaus(), loadRuns()]);
 });

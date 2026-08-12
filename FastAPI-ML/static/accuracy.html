@@ -33,6 +33,12 @@
 <div class="container-fluid px-4">
   <div class="row g-3 mb-3 align-items-end">
     <div class="col-auto">
+      <label class="form-label mb-1" for="scope-select">Auswertung</label>
+      <select id="scope-select" class="form-select">
+        <option value="global" selected>Gesamt</option>
+      </select>
+    </div>
+    <div class="col-auto">
       <label class="form-label mb-1" for="days-select">Zeitraum</label>
       <select id="days-select" class="form-select">
         <option value="7">7 Tage</option>
@@ -40,56 +46,61 @@
         <option value="30">30 Tage</option>
       </select>
     </div>
-    <div class="col-auto text-muted small">
-      Kennzahl: mittlerer absoluter Fehler (MAE) in freien Plätzen –
-      «±12» heisst: die Prognose lag im Schnitt 12 Plätze daneben.
+    <div class="col-auto text-muted small pt-2">
+      MAE in freien Plätzen – «±12» heisst: im Schnitt 12 Plätze daneben.
     </div>
   </div>
 
-  <h6>Gesamt über alle Städte (KI-Modell vs. Basis)</h6>
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="card"><div class="card-body py-2" id="kpi-1"></div></div>
-      <canvas id="radar-1" height="200"></canvas>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card"><div class="card-body py-2" id="kpi-2"></div></div>
-      <canvas id="radar-2" height="200"></canvas>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card"><div class="card-body py-2" id="kpi-4"></div></div>
-      <canvas id="radar-4" height="200"></canvas>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card"><div class="card-body py-2" id="kpi-8"></div></div>
-      <canvas id="radar-8" height="200"></canvas>
-    </div>
-  </div>
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-uebersicht" data-bs-toggle="tab"
+              data-bs-target="#pane-uebersicht" type="button" role="tab">Übersicht</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-parkhaus" data-bs-toggle="tab"
+              data-bs-target="#pane-parkhaus" type="button" role="tab">Parkhaus</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-training" data-bs-toggle="tab"
+              data-bs-target="#pane-training" type="button" role="tab">Trainingsläufe</button>
+    </li>
+  </ul>
 
-  <div class="row">
-    <div class="col-lg-6">
-      <div class="card mb-4">
-        <div class="card-body">
-          <h6 class="card-title">Verlauf Tages-MAE
-            <span class="float-end">
-              <select id="ts-scope" class="form-select form-select-sm d-inline w-auto">
-                <option value="global" selected>Gesamt</option>
-              </select>
-              <select id="ts-horizon" class="form-select form-select-sm d-inline w-auto">
-                <option value="1" selected>+1 h</option>
-                <option value="2">+2 h</option>
-                <option value="4">+4 h</option>
-                <option value="8">+8 h</option>
-              </select>
-            </span>
-          </h6>
-          <canvas id="ts-chart" height="200"></canvas>
+  <div class="tab-content">
+    <!-- Tab Übersicht -->
+    <div class="tab-pane fade show active" id="pane-uebersicht" role="tabpanel">
+      <h6>KI-Modell vs. Basis</h6>
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card"><div class="card-body py-2" id="kpi-1"></div></div>
         </div>
+        <div class="col-6 col-md-3">
+          <div class="card"><div class="card-body py-2" id="kpi-2"></div></div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card"><div class="card-body py-2" id="kpi-4"></div></div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card"><div class="card-body py-2" id="kpi-8"></div></div>
+        </div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3"><canvas id="radar-1" height="200"></canvas></div>
+        <div class="col-6 col-md-3"><canvas id="radar-2" height="200"></canvas></div>
+        <div class="col-6 col-md-3"><canvas id="radar-4" height="200"></canvas></div>
+        <div class="col-6 col-md-3"><canvas id="radar-8" height="200"></canvas></div>
+      </div>
+      <h6>Verlauf Tages-MAE</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><canvas id="ts-1" height="150"></canvas></div>
+        <div class="col-6 col-md-3"><canvas id="ts-2" height="150"></canvas></div>
+        <div class="col-6 col-md-3"><canvas id="ts-4" height="150"></canvas></div>
+        <div class="col-6 col-md-3"><canvas id="ts-8" height="150"></canvas></div>
       </div>
     </div>
 
-  <div class="row">
-    <div class="col-lg-7">
+    <!-- Tab Parkhaus -->
+    <div class="tab-pane fade" id="pane-parkhaus" role="tabpanel">
       <div class="card mb-4">
         <div class="card-body">
           <h6 class="card-title">Pro Parkhaus
@@ -114,7 +125,9 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-5">
+
+    <!-- Tab Trainingsläufe -->
+    <div class="tab-pane fade" id="pane-training" role="tabpanel">
       <div class="card mb-4">
         <div class="card-body">
           <h6 class="card-title">Trainingsläufe</h6>
@@ -128,6 +141,7 @@
       </div>
     </div>
   </div>
+
   <footer id="app-footer" class="text-muted small py-4"></footer>
 </div>
 
