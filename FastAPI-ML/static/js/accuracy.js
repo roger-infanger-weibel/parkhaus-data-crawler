@@ -1,4 +1,5 @@
-let cityChart = null, tsChart = null;
+const radarCharts = {};
+let tsChart = null;
 const CITY_LABELS = { luzern: 'Luzern', basel: 'Basel', bern: 'Bern',
                       zurich: 'Zürich', stgallen: 'St. Gallen' };
 
@@ -7,88 +8,86 @@ function days() { return document.getElementById('days-select').value; }
 async function loadSummary() {
   const data = await Api.get('/api/accuracy/summary', { days: days() });
   const global = data.entries.filter(e => e.scope === 'global');
-  const cards = [1, 2, 4, 8].map(h => {
+
+  [1, 2, 4, 8].forEach(h => {
     const ml = global.find(e => e.model_type === 'ml' && e.horizon_h === h);
     const base = global.find(e => e.model_type === 'baseline' && e.horizon_h === h);
-    if (!ml && !base) return '';
+    const el = document.getElementById('kpi-' + h);
+    if (!el) return;
+    if (!ml && !base) { el.innerHTML = '<span class="text-muted small">Keine Daten</span>'; return; }
     const skill = ml?.skill;
-    return `
-      <div class="col-6 col-md-3">
-        <div class="card"><div class="card-body py-2">
-          <div class="kpi-label">Prognose +${h} h</div>
-          <div class="kpi-value">±${(ml || base).mae_free.toFixed(1)}</div>
-          <div class="small text-muted">
-            Basis: ±${base ? base.mae_free.toFixed(1) : '–'}
-            ${skill != null ? ` · <span class="${skill >= 0 ? 'skill-pos' : 'skill-neg'}">${(skill * 100).toFixed(0)} % besser</span>` : ''}
-          </div>
-          <div class="small text-muted">${(ml || base).n} Auswertungen</div>
-        </div></div>
-      </div>`;
-  }).join('');
-  document.getElementById('kpi-cards').innerHTML =
-    cards || '<div class="col text-muted">Noch keine ausgewerteten Prognosen.</div>';
+    el.innerHTML = `
+      <div class="kpi-label">Prognose +${h} h</div>
+      <div class="kpi-value">±${(ml || base).mae_free.toFixed(1)}</div>
+      <div class="small text-muted">
+        Basis: ±${base ? base.mae_free.toFixed(1) : '–'}
+        ${skill != null ? ` · <span class="${skill >= 0 ? 'skill-pos' : 'skill-neg'}">${(skill * 100).toFixed(0)} % besser</span>` : ''}
+      </div>
+      <div class="small text-muted">${(ml || base).n} Auswertungen</div>`;
+  });
 
-  drawCityChart(data.entries);
+  drawRadarCharts(data.entries);
 }
 
-let lastEntries = [];
-
-function drawCityChart(entries) {
-  lastEntries = entries;
-  const h = parseInt(document.getElementById('radar-horizon').value);
+function drawRadarCharts(entries) {
   const cities = [...new Set(entries.filter(e => e.scope !== 'global').map(e => e.scope))];
   const labels = cities.map(c => CITY_LABELS[c] || c);
 
-  const mlData = cities.map(c => {
-    const e = entries.find(x => x.scope === c && x.model_type === 'ml' && x.horizon_h === h);
-    return e ? e.mae_free : null;
-  });
-  const baseData = cities.map(c => {
-    const e = entries.find(x => x.scope === c && x.model_type === 'baseline' && x.horizon_h === h);
-    return e ? e.mae_free : null;
-  });
+  [1, 2, 4, 8].forEach(h => {
+    const canvas = document.getElementById('radar-' + h);
+    if (!canvas) return;
 
-  if (cityChart) cityChart.destroy();
-  cityChart = new Chart(document.getElementById('city-chart'), {
-    type: 'radar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Basis',
-          data: baseData,
-          borderColor: '#fd7e14',
-          backgroundColor: 'rgba(253, 126, 20, 0.15)',
-          borderWidth: 2,
-          pointRadius: 4,
-        },
-        {
-          label: 'KI-Modell',
-          data: mlData,
-          borderColor: '#198754',
-          backgroundColor: 'rgba(25, 135, 84, 0.15)',
-          borderWidth: 2,
-          pointRadius: 4,
-        },
-      ],
-    },
-    options: {
-      scales: {
-        r: {
-          beginAtZero: true,
-          ticks: { stepSize: 5 },
-          pointLabels: { font: { size: 13 } },
-        },
+    const mlData = cities.map(c => {
+      const e = entries.find(x => x.scope === c && x.model_type === 'ml' && x.horizon_h === h);
+      return e ? e.mae_free : null;
+    });
+    const baseData = cities.map(c => {
+      const e = entries.find(x => x.scope === c && x.model_type === 'baseline' && x.horizon_h === h);
+      return e ? e.mae_free : null;
+    });
+
+    if (radarCharts[h]) radarCharts[h].destroy();
+    radarCharts[h] = new Chart(canvas, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Basis',
+            data: baseData,
+            borderColor: '#fd7e14',
+            backgroundColor: 'rgba(253, 126, 20, 0.15)',
+            borderWidth: 1.5,
+            pointRadius: 2,
+          },
+          {
+            label: 'KI-Modell',
+            data: mlData,
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.15)',
+            borderWidth: 1.5,
+            pointRadius: 2,
+          },
+        ],
       },
-      plugins: {
-        legend: { position: 'bottom' },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.dataset.label}: ±${ctx.parsed.r.toFixed(1)} Plätze`,
+      options: {
+        scales: {
+          r: {
+            beginAtZero: true,
+            ticks: { display: false },
+            pointLabels: { font: { size: 10 } },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ±${ctx.parsed.r.toFixed(1)}`,
+            },
           },
         },
       },
-    },
+    });
   });
 }
 
@@ -166,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initCitySelectors();
   // Zuletzt gewaehlte Einstellungen wiederherstellen und kuenftig merken
   Merker.binden('days-select', '14', () => { loadSummary(); loadPerParkhaus(); });
-  Merker.binden('radar-horizon', '1', () => drawCityChart(lastEntries));
+  // Radar-Charts werden direkt in loadSummary gezeichnet
   Merker.binden('ts-scope', 'global', loadTimeseries);
   Merker.binden('ts-horizon', '1', loadTimeseries);
   Merker.binden('city-select', null, loadPerParkhaus);

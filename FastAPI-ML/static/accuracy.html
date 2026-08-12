@@ -47,26 +47,26 @@
   </div>
 
   <h6>Gesamt über alle Städte (KI-Modell vs. Basis)</h6>
-  <div class="row g-3 mb-4" id="kpi-cards"></div>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card"><div class="card-body py-2" id="kpi-1"></div></div>
+      <canvas id="radar-1" height="200"></canvas>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card"><div class="card-body py-2" id="kpi-2"></div></div>
+      <canvas id="radar-2" height="200"></canvas>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card"><div class="card-body py-2" id="kpi-4"></div></div>
+      <canvas id="radar-4" height="200"></canvas>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card"><div class="card-body py-2" id="kpi-8"></div></div>
+      <canvas id="radar-8" height="200"></canvas>
+    </div>
+  </div>
 
   <div class="row">
-    <div class="col-lg-6">
-      <div class="card mb-4">
-        <div class="card-body">
-          <h6 class="card-title">KI vs. Basis pro Stadt
-            <span class="float-end">
-              <select id="radar-horizon" class="form-select form-select-sm d-inline w-auto">
-                <option value="1" selected>+1 h</option>
-                <option value="2">+2 h</option>
-                <option value="4">+4 h</option>
-                <option value="8">+8 h</option>
-              </select>
-            </span>
-          </h6>
-          <canvas id="city-chart" height="250"></canvas>
-        </div>
-      </div>
-    </div>
     <div class="col-lg-6">
       <div class="card mb-4">
         <div class="card-body">
@@ -87,7 +87,6 @@
         </div>
       </div>
     </div>
-  </div>
 
   <div class="row">
     <div class="col-lg-7">
