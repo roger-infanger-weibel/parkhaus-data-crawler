@@ -1040,7 +1040,7 @@
             function loadEvents() {
                 const env = document.getElementById('env-select').value;
                 const city = document.getElementById('city-select').value;
-                const tbody = document.getElementById('events-table-body');
+                const tbody = document.getElementById('upcoming-events-tbody');
 
                 if (!city || city === 'Loading cities...') {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Wähle eine Stadt aus</td></tr>';
@@ -1124,8 +1124,7 @@
                                         <th>Category</th>
                                     </tr>
                                 </thead>
-                                <tbody id="events-table-body">
-                                    <tr><td colspan="5" class="text-center text-muted">Loading events...</td></tr>
+                                <tbody id="upcoming-events-tbody">
                                 </tbody>
                             </table>
                         </div>
