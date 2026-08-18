@@ -1021,8 +1021,7 @@ ALL_SCRAPERS = [
     StJakobshalleScraper(),
     TheaterStGallenScraper(),
     BernExpoScraper(),
-    KKLLuzernScraper(),  # JamBase
-    ObrassoKKLScraper(),  # Obrasso (Ergänzung)
+    KKLLuzernScraper(),  # JamBase: 13+ Events
     MesseLuzernScraper(),
     StadtkellerLuzernScraper(),
     LuzernTopEventsScraper(),
