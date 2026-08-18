@@ -982,25 +982,32 @@
 
             function checkCookieConsent() {
                 const consent = localStorage.getItem(CONSENT_KEY);
-                if (consent === null) {
-                    document.getElementById('cookie-banner').style.display = 'block';
+                const banner = document.getElementById('cookie-banner');
+                if (banner && consent === null) {
+                    banner.style.display = 'block';
                 }
             }
 
             function acceptCookies() {
                 localStorage.setItem(CONSENT_KEY, 'true');
-                document.getElementById('cookie-banner').style.display = 'none';
+                const banner = document.getElementById('cookie-banner');
+                if (banner) {
+                    banner.style.display = 'none';
+                }
                 // Try to save current state now that we have permission
                 savePreferences();
             }
 
             function declineCookies() {
-                // We still store the refusal so we don't ask again, 
+                // We still store the refusal so we don't ask again,
                 // but we will clear other data and stop saving preferences.
-                // Note: Storing the refusal is generally considered "strictly necessary" 
+                // Note: Storing the refusal is generally considered "strictly necessary"
                 // and exempt from consent requirements in many jurisdictions.
                 localStorage.setItem(CONSENT_KEY, 'false');
-                document.getElementById('cookie-banner').style.display = 'none';
+                const banner = document.getElementById('cookie-banner');
+                if (banner) {
+                    banner.style.display = 'none';
+                }
                 clearPreferences();
             }
 
