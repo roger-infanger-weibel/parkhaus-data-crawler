@@ -737,58 +737,55 @@ class BernExpoScraper(VenueScraper):
 
 
 class KKLLuzernScraper(VenueScraper):
+    """KKL Luzern: nutzt TicketCorner als Datenquelle (76+ Events)."""
     _cfg = _venue_config("KKLLuzernScraper")
     name = _cfg.get("name", "KKL Luzern")
     city = _cfg.get("city", "luzern")
     parkhaus_ids = _cfg.get("parkhaus_ids", [])
 
     def fetch(self) -> list[dict]:
-        existing = _existing_event_ids(self.name)
         events = []
         try:
-            _time.sleep(2)
-            resp = self._get(self._cfg["url"], retries=3)
+            # TicketCorner: https://www.ticketcorner.ch/city/luzern-19/venue/kkl-luzern-13752/
+            url = "https://www.ticketcorner.ch/city/luzern-19/venue/kkl-luzern-13752/"
+            resp = self._get(url, retries=2)
             soup = BeautifulSoup(resp.text, "html.parser")
-            for article in soup.select("a[href^='/events/'] article, article"):
-                parent = article.find_parent("a")
-                if not parent or not parent.get("href", "").startswith("/events/"):
+
+            # Events sind in Text-Struktur: Datum Wochentag Zeit - Titel
+            # z.B: "14 Sept. 2026 Mo. 19:30 Music Night mit Heimweh"
+            text = soup.get_text(" ", strip=True)
+
+            # Pattern: [TAG] [MONAT.] [JAHR] [WOCHENTAG.] [STUNDE:MINUTE] [TITEL]
+            pattern = r'(\d{1,2})\s+(Jan\.|Feb\.|Mär\.|Apr\.|Mai|Juni|Juli|Aug\.|Sept\.|Okt\.|Nov\.|Dez\.)\s+(\d{4})\s+(Mo\.|Di\.|Mi\.|Do\.|Fr\.|Sa\.|So\.)\s+(\d{1,2}):(\d{2})\s+([^0-9]+?)(?=\d{1,2}\s+(?:Jan\.|Feb\.|Mär\.|Apr\.|Mai|Juni|Juli|Aug\.|Sept\.|Okt\.|Nov\.|Dez\.)|$)'
+
+            for match in re.finditer(pattern, text):
+                day = int(match.group(1))
+                mon_str = match.group(2).lower().rstrip(".")
+                year = int(match.group(3))
+                hour = int(match.group(5))
+                minute = int(match.group(6))
+                title = match.group(7).strip()
+
+                if len(title) < 5:
                     continue
-                title_el = article.select_one("h1, h2, h3, h4")
-                if not title_el:
+
+                mon = MONATE_DE.get(mon_str[:3])
+                if not mon:
                     continue
-                title = title_el.get_text(strip=True)
-                if len(title) < 3:
+
+                try:
+                    dt = datetime(year, mon, day, hour, minute)
+                except ValueError:
                     continue
-                text = article.get_text(" ", strip=True)
-                m = re.search(r'(\d{1,2})\.\s*(\w+)\.?\s*(\d{4})\s*\|\s*(\d{1,2}):(\d{2})', text)
-                if m:
-                    mon_str = m.group(2).lower().rstrip(".")
-                    mon = MONATE_DE.get(mon_str[:3])
-                    if mon:
-                        dt = datetime(int(m.group(3)), mon, int(m.group(1)),
-                                      int(m.group(4)), int(m.group(5)))
-                    else:
-                        continue
-                else:
-                    dt = _parse_de_date(text)
-                    if not dt:
-                        continue
-                    time = _parse_time(text)
-                    if time:
-                        dt = dt.replace(hour=time[0], minute=time[1])
-                    else:
-                        dt = dt.replace(hour=19, minute=30)
-                eid = _event_id(self.name, title, dt)
-                if eid in existing:
-                    continue
+
                 events.append({
                     "title": title, "venue": self.name,
                     "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
                     "category": _guess_category(title),
                 })
         except Exception as e:
-            logger.warning("KKL Luzern: %s", e)
-        logger.info("KKL: %d neu, %d bereits in DB", len(events), len(existing))
+            logger.warning("KKL Luzern (TicketCorner): %s", e)
+        logger.info("KKL Luzern: %d Events gefunden", len(events))
         return events
 
 
