@@ -515,6 +515,9 @@ FastAPI-ML (Port 80)
   <div class="ch-day">18. August 2026</div>
   <table class="table table-sm"><tbody>
     <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">12 neue Venue-Scraper für bessere Event-Abdeckung</div>
+            <div class="ch-react">fetch_events.py: 12 neue Scraper hinzugefügt — Opernhaus Zürich, Schauspielhaus Zürich, Kongresshaus Zürich, THE HALL (ex Samsung Hall), Theater Basel, St. Jakobshalle Basel, Konzert &amp; Theater St. Gallen, BernExpo, KKL Luzern, Messe Luzern, Stadtkeller Luzern, Luzern Top Events (mit Detail-Lookup für exakte Daten von Marathon, Festivals etc.). venues.json entsprechend erweitert. Insgesamt jetzt 18 Scraper (vorher 6), deckt alle 5 Städte ab. luzern.com/veranstaltungen (JS/Vue), myswitzerland.com (Bot-Protection), guidle.com (JS/API) wurden geprüft aber sind nicht direkt scrapbar.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
         <td><div class="ch-req">Nginx Reverse Proxy Setup für parkhaus-wetter.roil.ch</div>
             <div class="ch-react">1) Nginx 1.24 als Reverse Proxy installiert, FastAPI auf Port 8000 (lokal, 127.0.0.1) verlagert. 2) HTTP → HTTPS Redirect konfiguriert. 3) SSL/TLS mit Let's Encrypt Certbot eingerichtet, Auto-Renewal aktiviert. 4) DNS A-Record für parkhaus-wetter.roil.ch auf 87.106.21.252 (neue Server-IP) konfiguriert. 5) Umfassende Dokumentation (NGINX-REVERSE-PROXY-SETUP.md) erstellt und ins GitHub gepusht. 6) Nginx-Konfiguration mit Proxy-Headers (X-Real-IP, X-Forwarded-For, X-Forwarded-Proto) für korrekte Client-IP-Erkennung. 7) Production-ready Setup: Domain über HTTPS erreichbar, App liegt hinter Reverse Proxy.</div></td></tr>
     <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>

@@ -68,6 +68,94 @@
             "url": "https://www.olma-messen.ch/veranstaltungen/",
             "parkhaus_ids": ["stgallenparkhausolmamessen", "stgallenparkhausolmaparkplatz"],
             "default_category": "messe"
+        },
+        {
+            "scraper": "OpernhausZurichScraper",
+            "name": "Opernhaus Zürich",
+            "city": "zurich",
+            "url": "https://www.opernhaus.ch/spielplan/",
+            "parkhaus_ids": ["zuerichparkhausopera", "zuerichparkhaushohepromenade"],
+            "default_category": "oper"
+        },
+        {
+            "scraper": "SchauspielhausZurichScraper",
+            "name": "Schauspielhaus Zürich",
+            "city": "zurich",
+            "url": "https://www.schauspielhaus.ch/de/spielplan",
+            "parkhaus_ids": ["zuerichparkhaushohepromenade", "zuerichparkhausutoquai"],
+            "default_category": "theater"
+        },
+        {
+            "scraper": "KongresshausZurichScraper",
+            "name": "Kongresshaus Zürich",
+            "city": "zurich",
+            "url": "https://www.kongresshaus.ch/de/erleben/eventkalender",
+            "parkhaus_ids": ["zuerichparkhausbleicherweg", "zuerichparkhaushohepromenade"]
+        },
+        {
+            "scraper": "TheHallScraper",
+            "name": "THE HALL",
+            "city": "zurich",
+            "url": "https://www.thehall.ch/de/eventkalender/",
+            "parkhaus_ids": ["zuerichparkhausmessezuerichag"]
+        },
+        {
+            "scraper": "TheaterBaselScraper",
+            "name": "Theater Basel",
+            "city": "basel",
+            "url": "https://www.theater-basel.ch/kalender",
+            "parkhaus_ids": ["baselparkhaussteinen"]
+        },
+        {
+            "scraper": "StJakobshalleScraper",
+            "name": "St. Jakobshalle",
+            "city": "basel",
+            "url": "https://stjakobshalle.ch/events",
+            "parkhaus_ids": ["baselparkhausmesse"]
+        },
+        {
+            "scraper": "TheaterStGallenScraper",
+            "name": "Konzert & Theater St. Gallen",
+            "city": "stgallen",
+            "url": "https://www.konzertundtheater.ch/programm/kalender/",
+            "parkhaus_ids": ["stgallenparkhausolmamessen"]
+        },
+        {
+            "scraper": "BernExpoScraper",
+            "name": "BernExpo",
+            "city": "bern",
+            "url": "https://www.bernexpo.ch/veranstaltungen",
+            "parkhaus_ids": ["p08"],
+            "default_category": "messe"
+        },
+        {
+            "scraper": "KKLLuzernScraper",
+            "name": "KKL Luzern",
+            "city": "luzern",
+            "url": "https://www.kkl-luzern.ch/events",
+            "parkhaus_ids": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"]
+        },
+        {
+            "scraper": "MesseLuzernScraper",
+            "name": "Messe Luzern",
+            "city": "luzern",
+            "url": "https://www.messeluzern.ch/",
+            "parkhaus_ids": ["luzernparkhauskesselturm"],
+            "default_category": "messe"
+        },
+        {
+            "scraper": "StadtkellerLuzernScraper",
+            "name": "Stadtkeller Luzern",
+            "city": "luzern",
+            "url": "https://stadtkeller.ch/events",
+            "parkhaus_ids": ["luzernparkingstadttheater", "luzernparkhauskesselturm"]
+        },
+        {
+            "scraper": "LuzernTopEventsScraper",
+            "name": "Luzern Top Events",
+            "city": "luzern",
+            "url": "https://www.luzern.com/de/stadt/veranstaltungen/top-events",
+            "parkhaus_ids": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"]
         }
     ]
 }
