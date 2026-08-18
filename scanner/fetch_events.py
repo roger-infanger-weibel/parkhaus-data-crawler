@@ -746,61 +746,55 @@ class KKLLuzernScraper(VenueScraper):
     def fetch(self) -> list[dict]:
         events = []
         try:
-            # JamBase: englische Event-Liste (funktioniert zuverlässig)
+            # JamBase: englische Event-Liste
             url = "https://www.jambase.com/venue/kkl-luzern"
             _time.sleep(2)
             resp = self._get(url, retries=2)
             soup = BeautifulSoup(resp.text, "html.parser")
 
-            # Suche Event-Blöcke direkt im HTML
             MONATE_EN = {
                 "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
                 "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
             }
 
-            text = soup.get_text("\n")
-            logger.info("JamBase HTML-Länge: %d Zeichen", len(text))
+            lines = [l.strip() for l in soup.get_text("\n").split("\n") if l.strip()]
 
-            # Debug: Zeige erste Event-Zeilen
-            sample_lines = [l.strip() for l in text.split("\n") if any(d in l for d in ["Oct", "Sep", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"])][:5]
-            if sample_lines:
-                logger.info("JamBase Sample-Zeilen: %s", sample_lines)
-
-            # Finde alle Zeilen mit Datum-Pattern
-            for line in text.split("\n"):
-                line = line.strip()
-                if not line:
-                    continue
-                # Pattern: "Mon Oct 19, 2026" oder "Fri Oct 9, 2026"
-                m = re.search(r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})', line)
+            # Struktur: Wochentag, Datum, Title auf separaten Zeilen
+            i = 0
+            while i < len(lines):
+                # Suche Datum-Zeile: "Oct 9, 2026" oder "Nov 2, 2026"
+                m = re.search(r'([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})', lines[i])
                 if not m:
+                    i += 1
                     continue
 
-                mon_str = m.group(2).lower()
-                day = int(m.group(3))
-                year = int(m.group(4))
-
-                # Title ist nach dem Datum
-                title_start = m.end()
-                title = line[title_start:].strip()
-
-                if len(title) < 3 or title.startswith("KKL"):
-                    continue
+                mon_str = m.group(1).lower()
+                day = int(m.group(2))
+                year = int(m.group(3))
 
                 mon = MONATE_EN.get(mon_str[:3])
                 if not mon:
+                    i += 1
                     continue
 
-                try:
-                    dt = datetime(year, mon, day, 19, 30)  # Default 19:30
-                except ValueError:
-                    continue
+                # Title ist die nächste Zeile (nach Datum)
+                if i + 1 < len(lines):
+                    title = lines[i + 1].strip()
 
-                events.append({
-                    "title": title, "venue": self.name,
-                    "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
-                    "category": _guess_category(title),
-                })
+                    # Ignoriere KKL-Meta-Zeilen
+                    if len(title) >= 3 and not title.startswith("KKL") and not title in ["Tickets", "Info", "Calendar", "Infos anzeigen"]:
+                        try:
+                            dt = datetime(year, mon, day, 19, 30)
+                            events.append({
+                                "title": title, "venue": self.name,
+                                "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
+                                "category": _guess_category(title),
+                            })
+                        except ValueError:
+                            pass
+
+                i += 1
+
         except Exception as e:
             logger.warning("KKL Luzern (JamBase): %s", e)
         logger.info("KKL Luzern: %d Events gefunden", len(events))
