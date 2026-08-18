@@ -7,7 +7,10 @@ import time
 from datetime import datetime
 from abc import ABC, abstractmethod
 
+import mysql.connector
+
 from constants import SWISS_TZ, USER_AGENT, STALE_THRESHOLD_MINUTES
+from db_utils import get_connection, insert_measurement
 
 
 def _now():
@@ -220,9 +223,6 @@ class BaseParkingCollector(ABC):
         date_str = now.strftime("%Y-%m-%d")
 
         try:
-            from db_utils import get_connection, insert_measurement
-            import mysql.connector
-
             conn = get_connection(simulation_mode=self.simulation_mode)
             cursor = conn.cursor()
 
@@ -254,7 +254,7 @@ class BaseParkingCollector(ABC):
                     insert_measurement(cursor, db_data)
                     success_count += 1
                     inserted_names.append(pname)
-                except (mysql.connector.Error, Exception) as e:
+                except Exception as e:
                     fail_count += 1
                     print(f"[{now}] {self.city_name}: Failed to upsert parking {pid}: {e}")
 

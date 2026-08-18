@@ -8,12 +8,14 @@ Weboberflächen dar — eine klassische und eine mit KI-Prognose.
 
 | Server | Dienste | HealthCheck | API-Doc |
 |---|---|---|---|
-| **87.106.21.252** | KI-Prognose (FastAPI-ML), Port 80 | [Health](http://87.106.21.252:80/api/health) | [Docs](http://87.106.21.252:80/docs) |
+| **87.106.21.252** | Nginx (Reverse Proxy Port 80/443), FastAPI-ML (Port 8000 lokal) | [Health](https://parkhaus-wetter.roil.ch/api/health) | [Docs](https://parkhaus-wetter.roil.ch/docs) |
 | **87.106.222.137** | Scanner prod + test, Flask-Dashboard Port 80 |  - | - |
 | `parkhaus.roil.ch` | MariaDB (`ph_fetch_prod`, `ph_fetch_test`) |  — | - |
 
+**Domain:** `parkhaus-wetter.roil.ch` (mit SSL/TLS über Let's Encrypt)  
 Die KI-Prognose ist am 04.08.2026 auf einen eigenen, grösseren Server
-umgezogen und trainiert ihre Modelle seither selbst.
+umgezogen und trainiert ihre Modelle seither selbst. Am 18.08.2026 wurde
+ein Nginx Reverse Proxy eingerichtet für Https/Domain-Access.
 
 ## Die vier Bestandteile
 
@@ -42,16 +44,18 @@ parkhaus-data-crawler/
 |---|---|---|
 | **scheduler.py** | Dauerprozess: startet die Sammlung alle 15 Min, Wetter/Events um 06:00 und 18:00 | manuell bzw. `start-prod.sh` |
 | **collect_data.py** | Orchestrator: ruft alle Stadt-Collector auf, protokolliert in die DB. CLI mit `--simulation` | `scheduler.py` |
-| **base.py** | Abstrakte Basisklasse `BaseParkingCollector` mit Retry-Logik und Fallback auf den letzten Snapshot | alle Collector erben davon |
+| **constants.py** | Gemeinsame Konstanten: `SWISS_TZ`, `USER_AGENT`, `STALE_THRESHOLD_MINUTES` | alle Module |
+| **base.py** | Abstrakte Basisklasse `BaseParkingCollector` mit Retry-Logik, Fallback-Pattern und `error_result()`-Factory | alle Collector erben davon |
 | **luzern.py** | Collector Luzern (PLS-API) | `collect_data.py` |
 | **basel.py** | Collector Basel (ParkenDD) | `collect_data.py` |
 | **zurich.py** | Collector Zürich (ParkenDD); pflegt zusätzlich `zurich_parking_map.json` | `collect_data.py` |
 | **stgallen.py** | Collector St. Gallen (Open Data) | `collect_data.py` |
 | **bern.py** | Collector Bern (XML); überschreibt auch `fetch_raw_data()` | `collect_data.py` |
 | **db_utils.py** | DB-Zugriff (`mysql.connector`), UPSERT, Mock-Modus für die Simulation | `base.py`, `collect_data.py` |
-| **get_event_and_weather_data.py** | Lädt Wetter von Open-Meteo (`pymysql`) | `scheduler.py` |
-| **fetch_events.py** | Scraper für echte Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle, Stadtcasino Basel, Luzerner Theater, OLMA, Musical.ch) | `scheduler.py` (2× täglich) |
-| **cities.json** | Stadt-Konfiguration: IDs, API-Adressen, Aktivierung | `collect_data.py` |
+| **get_event_and_weather_data.py** | Lädt Wetter von Open-Meteo (Koordinaten aus `cities.json`) | `scheduler.py` |
+| **fetch_events.py** | Scraper für echte Veranstaltungsdaten (Konfiguration aus `venues.json`) | `scheduler.py` (2× täglich) |
+| **cities.json** | Stadt-Konfiguration: IDs, API-Adressen, Koordinaten, Bern-Parkhaus-Mapping | `collect_data.py`, `bern.py`, `get_event_and_weather_data.py` |
+| **venues.json** | Venue-Konfiguration: URLs, Parkhaus-IDs, Category-Bonuses, Venue→City-Zuordnungen | `fetch_events.py` |
 | **zurich_parking_map.json** | Zuordnung und Kapazitäten der Zürcher Parkhäuser; wird vom Collector aktualisiert | `zurich.py` |
 | **requirements.txt** | Abhängigkeiten | — |
 | **version.py**, **__init__.py**, **.gitignore** | Versionsnummer, Package-Marker, Ausnahmen | — |
@@ -163,7 +167,8 @@ und schreibt ausschliesslich in eigene Tabellen mit dem Präfix `ai_`.
 `python -m pytest tests/ -q`.
 
 **Dokumentation:** [README](FastAPI-ML/README.md) ·
-[MODELL-REFRESH](FastAPI-ML/MODELL-REFRESH.md) (wöchentliche Routine)
+[MODELL-REFRESH](FastAPI-ML/MODELL-REFRESH.md) (wöchentliche Routine) ·
+[NGINX-REVERSE-PROXY-SETUP](FastAPI-ML/NGINX-REVERSE-PROXY-SETUP.md) (Installation & Betrieb)
 
 ---
 

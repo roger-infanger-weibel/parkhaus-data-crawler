@@ -1,21 +1,27 @@
 import datetime
+import json
 import requests
+from pathlib import Path
 
 from constants import SWISS_TZ
 from db_utils import get_connection
 
-CITIES = [
-    {"id": "basel", "name": "Basel", "lat": 47.5596, "lon": 7.5886},
-    {"id": "zurich", "name": "Zuerich", "lat": 47.3769, "lon": 8.5417},
-    {"id": "bern", "name": "Bern", "lat": 46.9480, "lon": 7.4474},
-    {"id": "luzern", "name": "Luzern", "lat": 47.0502, "lon": 8.3093},
-    {"id": "stgallen", "name": "St. Gallen", "lat": 47.4239, "lon": 9.3748},
-]
+
+def _load_cities():
+    config_path = Path(__file__).parent / "cities.json"
+    with open(config_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return [
+        {"id": cid, "name": cfg["name"], "lat": cfg["lat"], "lon": cfg["lon"]}
+        for cid, cfg in data["cities"].items()
+        if cfg.get("enabled", True)
+    ]
 
 
 def _fetch_weather(cursor, connection, api_base, label, extra_params=""):
     """Shared logic for historical and forecast weather fetching."""
-    for city in CITIES:
+    cities = _load_cities()
+    for city in cities:
         print(f"Lade {label} fuer {city['name']}...")
         url = (
             f"{api_base}?"

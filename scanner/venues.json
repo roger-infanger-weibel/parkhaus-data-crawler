@@ -1,0 +1,73 @@
+{
+    "category_bonus": {
+        "konzert": 0.40,
+        "musical": 0.40,
+        "oper": 0.35,
+        "theater": 0.30,
+        "sport": 0.45,
+        "messe": 0.50,
+        "festival": 0.45,
+        "comedy": 0.30,
+        "show": 0.35,
+        "klassik": 0.30,
+        "default": 0.20
+    },
+    "venues": [
+        {
+            "scraper": "HallenstadionScraper",
+            "name": "Hallenstadion",
+            "city": "zurich",
+            "url": "https://www.hallenstadion.ch/de/events",
+            "parkhaus_ids": ["zuerichparkhausmessezuerichag"],
+            "default_hour": 20
+        },
+        {
+            "scraper": "TonhalleScraper",
+            "name": "Tonhalle",
+            "city": "zurich",
+            "url": "https://www.tonhalle-orchester.ch/konzerte/kalender/",
+            "parkhaus_ids": ["zuerichparkhausutoquai", "zuerichparkhaushohepromenade"],
+            "default_category": "klassik"
+        },
+        {
+            "scraper": "StadtcasinoBaselScraper",
+            "name": "Stadtcasino Basel",
+            "city": "basel",
+            "url": "https://www.stadtcasino-basel.ch/de/programm",
+            "parkhaus_ids": ["baselparkhaussteinen"],
+            "default_category": "klassik"
+        },
+        {
+            "scraper": "LuzernerTheaterScraper",
+            "name": "Luzerner Theater",
+            "city": "luzern",
+            "url": "https://www.luzernertheater.ch/spielplan/kalender",
+            "parkhaus_ids": ["luzernparkingstadttheater", "luzernparkhauskesselturm"]
+        },
+        {
+            "scraper": "MusicalChScraper",
+            "name": "Musical.ch",
+            "city": "",
+            "url": "https://www.musical.ch/de/spielplan",
+            "parkhaus_ids": [],
+            "venue_city_map": {
+                "theater 11": {"city": "zurich", "parkhaus_ids": ["zuerichparkplatztheater11", "zuerichparkhausmessezuerichag"]},
+                "musical theater": {"city": "basel", "parkhaus_ids": ["baselparkhaussteinen"]},
+                "st. jakobshalle": {"city": "basel", "parkhaus_ids": ["baselparkhausmesse"]},
+                "theater basel": {"city": "basel", "parkhaus_ids": ["baselparkhaussteinen"]},
+                "hallenstadion": {"city": "zurich", "parkhaus_ids": ["zuerichparkhausmessezuerichag"]},
+                "samsung hall": {"city": "zurich", "parkhaus_ids": ["zuerichparkhausmessezuerichag"]},
+                "kkl": {"city": "luzern", "parkhaus_ids": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"]},
+                "stade de suisse": {"city": "bern", "parkhaus_ids": ["bernparkhausbahnhof"]}
+            }
+        },
+        {
+            "scraper": "OlmaScraper",
+            "name": "OLMA Messen",
+            "city": "stgallen",
+            "url": "https://www.olma-messen.ch/veranstaltungen/",
+            "parkhaus_ids": ["stgallenparkhausolmamessen", "stgallenparkhausolmaparkplatz"],
+            "default_category": "messe"
+        }
+    ]
+}

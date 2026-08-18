@@ -57,10 +57,12 @@ python init_db.py --env test          # ai_*-Tabellen anlegen
 python -m core.identity --env test    # Parkhaus-Mapping aufbauen
 python -m forecast.train --env test   # Erst-Training (~5 Min)
 python -m scripts.backfill_predictions --env test --days 7   # optional: Dashboard sofort füllen
-uvicorn main:app --host 0.0.0.0 --port 80 --workers 1
+uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
-Wichtig: **genau 1 Worker**, sonst läuft der Scheduler mehrfach.
+Wichtig: **genau 1 Worker**, sonst läuft der Scheduler mehrfach. 
+**Production (18.08.2026+):** Nginx läuft als Reverse Proxy auf Port 80/443 und leitet an FastAPI auf Port 8000 weiter.
+Details: [NGINX-REVERSE-PROXY-SETUP.md](NGINX-REVERSE-PROXY-SETUP.md)
 Konfiguration über die gemeinsame `.env` im Repo-Root (siehe `.env.example`);
 `AI_DEFAULT_ENV` steuert, gegen welche DB die Scheduler-Jobs laufen.
 DB-Rechte: zur Laufzeit nur `SELECT, INSERT, UPDATE, DELETE`;
@@ -101,9 +103,11 @@ python init_db.py --env prod        # nur beim allerersten Mal
 ./start-fastapi-ml.sh               # bzw. /root/start-all.sh
 ```
 
-Vorausgesetzt: Port 80 in der Firewall **und** im IONOS Cloud Panel
-freigegeben, in der `.env` `AI_DEFAULT_ENV=prod`. Der Port lässt sich über
-`AI_APP_PORT` ändern.
+**Production (seit 18.08.2026):** FastAPI läuft intern auf Port 8000; Nginx 
+handhabt öffentliche Ports 80 (HTTP) und 443 (HTTPS, Let's Encrypt) als 
+Reverse Proxy. In der `.env` sollte `AI_DEFAULT_ENV=prod` und 
+`AI_APP_HOST=127.0.0.1, AI_APP_PORT=8000` gesetzt sein. 
+Firewall-Freigaben bei Nginx — siehe [NGINX-REVERSE-PROXY-SETUP.md](NGINX-REVERSE-PROXY-SETUP.md).
 
 Autostart nach einem Neustart läuft über den crontab-Eintrag
 `@reboot sleep 60 && /root/start-all.sh`. Alternativ gibt es systemd-Units
@@ -117,8 +121,8 @@ Besucher versehentlich auf Testdaten.
 
 | Aufruf | Wirkung |
 |---|---|
-| `http://87.106.21.252/?admin` | Umschalter erscheint, Freischaltung bleibt gemerkt |
-| `http://87.106.21.252/?admin=0` | Umschalter wieder verstecken und auf prod zurück |
+| `https://parkhaus-wetter.roil.ch/?admin` | Umschalter erscheint, Freischaltung bleibt gemerkt |
+| `https://parkhaus-wetter.roil.ch/?admin=0` | Umschalter wieder verstecken und auf prod zurück |
 
 Läuft die Oberfläche auf Test, steht das zusätzlich rot in der Fusszeile.
 Gemerkt wird die Freischaltung im `localStorage` des Browsers, gilt also pro

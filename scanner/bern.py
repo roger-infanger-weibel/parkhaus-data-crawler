@@ -3,11 +3,21 @@ Bern parking data collector.
 Parses XML data from parking-bern.ch.
 """
 
+import json
 import xml.etree.ElementTree as ET
 import requests
 from datetime import datetime
+from pathlib import Path
+
 from base import BaseParkingCollector
 from constants import SWISS_TZ
+
+
+def _load_parking_map():
+    config_path = Path(__file__).parent / "cities.json"
+    with open(config_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data["cities"]["bern"].get("parking_map", {})
 
 
 class BernCollector(BaseParkingCollector):
@@ -53,31 +63,17 @@ class BernCollector(BaseParkingCollector):
             except ValueError:
                 timestamp = datetime.now(SWISS_TZ).isoformat()
 
-            # Mapping of XML name to (ID, Name)
-            OFFICIAL_PARKINGS = {
-                "P01": ("p01", "Bahnhof Parking"),
-                "P02": ("p02", "Metro Parking"),
-                "P03": ("p03", "Rathaus Parking"),
-                "P04": ("p04", "Parking City West"),
-                "P05": ("p05", "Mobiliar Parking"),
-                "P06": ("p06", "Casinoparking"),
-                "P08": ("p08", "Expo Parking"),
-                "P10": ("p10", "Kursaal Parking"),
-                "P+R": ("p_r", "Park + Ride Neufeld"),
-                "Kurzparking Bahnhof": ("p01b", "SBB Kurzparking"),
-            }
+            parking_map = _load_parking_map()
 
             parkings = {}
             for parking in root.findall("parking"):
                 xml_name = parking.get("name")
-                if not xml_name:
+                if not xml_name or xml_name not in parking_map:
                     continue
-                
-                # Only keep official parkings
-                if xml_name not in OFFICIAL_PARKINGS:
-                    continue
-                
-                parking_id, name = OFFICIAL_PARKINGS[xml_name]
+
+                mapping = parking_map[xml_name]
+                parking_id = mapping["id"]
+                name = mapping["name"]
                 
                 try:
                     free = int(parking.get("spacefree", 0))

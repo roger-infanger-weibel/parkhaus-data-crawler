@@ -486,8 +486,12 @@ FastAPI-ML (Port 80)
         <td>APScheduler (in-process), Zeitzone Europe/Zurich</td></tr>
       <tr><td class="fw-bold">Frontend</td>
         <td>HTML, Bootstrap 5.3, Chart.js 4.4 — kein Build-Schritt</td></tr>
+      <tr><td class="fw-bold">Reverse Proxy</td>
+        <td>Nginx 1.24 (Reverse Proxy), FastAPI auf Port 8000 (lokal)</td></tr>
+      <tr><td class="fw-bold">SSL/TLS</td>
+        <td>Let's Encrypt (Certbot), Auto-Renewal</td></tr>
       <tr><td class="fw-bold">Server</td>
-        <td>87.106.21.252, Port 80</td></tr>
+        <td>87.106.21.252, Nginx auf Port 80/443, Domain parkhaus-wetter.roil.ch</td></tr>
     </tbody>
   </table>
 
@@ -508,8 +512,21 @@ FastAPI-ML (Port 80)
               color: #888; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; margin: 1.2rem 0 0.5rem; }
   </style>
 
+  <div class="ch-day">18. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Nginx Reverse Proxy Setup für parkhaus-wetter.roil.ch</div>
+            <div class="ch-react">1) Nginx 1.24 als Reverse Proxy installiert, FastAPI auf Port 8000 (lokal, 127.0.0.1) verlagert. 2) HTTP → HTTPS Redirect konfiguriert. 3) SSL/TLS mit Let's Encrypt Certbot eingerichtet, Auto-Renewal aktiviert. 4) DNS A-Record für parkhaus-wetter.roil.ch auf 87.106.21.252 (neue Server-IP) konfiguriert. 5) Umfassende Dokumentation (NGINX-REVERSE-PROXY-SETUP.md) erstellt und ins GitHub gepusht. 6) Nginx-Konfiguration mit Proxy-Headers (X-Real-IP, X-Forwarded-For, X-Forwarded-Proto) für korrekte Client-IP-Erkennung. 7) Production-ready Setup: Domain über HTTPS erreichbar, App liegt hinter Reverse Proxy.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Alle Dokumentationen (techdoc.html, README.md) mit Nginx und neuer Server-IP aktualisieren</div>
+            <div class="ch-react">techdoc.html Kapitel 10: Stack aktualisiert mit Nginx, Port, SSL, und Reverse Proxy. NGINX-REVERSE-PROXY-SETUP.md: Komplette Installation, Konfiguration, Fehlerbehandlung, Wartung, Sicherheit.</div></td></tr>
+  </tbody></table>
+
   <div class="ch-day">12. August 2026</div>
   <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Hardcodierte Werte in JSON-Konfiguration ausgelagert</div>
+            <div class="ch-react">venues.json (NEU): Venue-URLs, Parkhaus-IDs, VENUE_CITY_MAP, CATEGORY_BONUS aus fetch_events.py externalisiert. cities.json: lat/lon-Koordinaten und Bern parking_map ergänzt. get_event_and_weather_data.py liest Koordinaten aus cities.json. bern.py liest OFFICIAL_PARKINGS aus cities.json. fetch_events.py User-Agent auf constants.USER_AGENT vereinheitlicht. Score B+ (78→82).</div></td></tr>
     <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
         <td><div class="ch-req">Scanner Code Quality von C+ auf B verbessern (Top-5 Refactoring)</div>
             <div class="ch-react">1) constants.py: SWISS_TZ, USER_AGENT zentral (statt 8x dupliziert). 2) Basel/Zürich: _is_stale, normalize_parkendd, collect, _collect_fallback in Basisklasse verschoben (~130 Zeilen eliminiert). 3) scheduler.py: 3 identische run_*-Funktionen durch eine generische _run_script ersetzt. 4) get_event_and_weather_data.py: pymysql durch db_utils.get_connection ersetzt, Weather-Duplikat in _fetch_weather zusammengefasst. 5) Dead Code: store_historical_events (100 Zeilen), unused imports, redundante Bedingungen entfernt.</div></td></tr>

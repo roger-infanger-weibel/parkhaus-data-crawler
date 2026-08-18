@@ -15,6 +15,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 import requests
@@ -25,18 +26,29 @@ from db_utils import get_connection
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-from constants import SWISS_TZ
+from constants import SWISS_TZ, USER_AGENT
 
 HEADERS = {
-    "User-Agent": "Parkhaus-Crawler/1.0 (Forschungsprojekt)",
+    "User-Agent": USER_AGENT,
     "Accept-Language": "de-CH,de;q=0.9",
 }
 
-CATEGORY_BONUS = {
-    "konzert": 0.40, "musical": 0.40, "oper": 0.35, "theater": 0.30,
-    "sport": 0.45, "messe": 0.50, "festival": 0.45, "comedy": 0.30,
-    "show": 0.35, "klassik": 0.30, "default": 0.20,
-}
+
+def _load_venues_config():
+    config_path = Path(__file__).parent / "venues.json"
+    with open(config_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+_VENUES_CONFIG = _load_venues_config()
+CATEGORY_BONUS = _VENUES_CONFIG["category_bonus"]
+
+
+def _venue_config(scraper_name):
+    for v in _VENUES_CONFIG["venues"]:
+        if v["scraper"] == scraper_name:
+            return v
+    return {}
 
 MONATE_DE = {
     "jan": 1, "feb": 2, "mär": 3, "mar": 3, "apr": 4, "mai": 5, "jun": 6,
@@ -111,14 +123,15 @@ class VenueScraper(ABC):
 
 
 class HallenstadionScraper(VenueScraper):
-    name = "Hallenstadion"
-    city = "zurich"
-    parkhaus_ids = ["zuerichparkhausmessezuerichag"]
+    _cfg = _venue_config("HallenstadionScraper")
+    name = _cfg.get("name", "Hallenstadion")
+    city = _cfg.get("city", "zurich")
+    parkhaus_ids = _cfg.get("parkhaus_ids", [])
 
     def fetch(self) -> list[dict]:
         events = []
         try:
-            resp = self._get("https://www.hallenstadion.ch/de/events")
+            resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
             for card in soup.select("a[href*='/events/']"):
                 h5 = card.select_one("h5")
@@ -145,14 +158,15 @@ class HallenstadionScraper(VenueScraper):
 
 
 class TonhalleScraper(VenueScraper):
-    name = "Tonhalle"
-    city = "zurich"
-    parkhaus_ids = ["zuerichparkhausutoquai", "zuerichparkhaushohepromenade"]
+    _cfg = _venue_config("TonhalleScraper")
+    name = _cfg.get("name", "Tonhalle")
+    city = _cfg.get("city", "zurich")
+    parkhaus_ids = _cfg.get("parkhaus_ids", [])
 
     def fetch(self) -> list[dict]:
         events = []
         try:
-            resp = self._get("https://www.tonhalle-orchester.ch/konzerte/kalender/")
+            resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
             for div in soup.select("div.event[data-timestamp]"):
                 h3 = div.select_one("h3")
@@ -172,14 +186,15 @@ class TonhalleScraper(VenueScraper):
 
 
 class StadtcasinoBaselScraper(VenueScraper):
-    name = "Stadtcasino Basel"
-    city = "basel"
-    parkhaus_ids = ["baselparkhaussteinen"]
+    _cfg = _venue_config("StadtcasinoBaselScraper")
+    name = _cfg.get("name", "Stadtcasino Basel")
+    city = _cfg.get("city", "basel")
+    parkhaus_ids = _cfg.get("parkhaus_ids", [])
 
     def fetch(self) -> list[dict]:
         events = []
         try:
-            resp = self._get("https://www.stadtcasino-basel.ch/de/programm")
+            resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
             seen = set()
             for link in soup.select("a[href*='/programm/veranstaltungen/']"):
@@ -211,25 +226,20 @@ class StadtcasinoBaselScraper(VenueScraper):
 
 class MusicalChScraper(VenueScraper):
     """musical.ch listet Shows in mehreren Schweizer Staedten."""
-    name = "Musical.ch"
-    city = ""  # wird pro Event bestimmt
-    parkhaus_ids = []
+    _cfg = _venue_config("MusicalChScraper")
+    name = _cfg.get("name", "Musical.ch")
+    city = _cfg.get("city", "")
+    parkhaus_ids = _cfg.get("parkhaus_ids", [])
 
     VENUE_CITY_MAP = {
-        "theater 11": ("zurich", ["zuerichparkplatztheater11", "zuerichparkhausmessezuerichag"]),
-        "musical theater": ("basel", ["baselparkhaussteinen"]),
-        "st. jakobshalle": ("basel", ["baselparkhausmesse"]),
-        "theater basel": ("basel", ["baselparkhaussteinen"]),
-        "hallenstadion": ("zurich", ["zuerichparkhausmessezuerichag"]),
-        "samsung hall": ("zurich", ["zuerichparkhausmessezuerichag"]),
-        "kkl": ("luzern", ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"]),
-        "stade de suisse": ("bern", ["bernparkhausbahnhof"]),
+        k: (v["city"], v["parkhaus_ids"])
+        for k, v in _cfg.get("venue_city_map", {}).items()
     }
 
     def fetch(self) -> list[dict]:
         events = []
         try:
-            resp = self._get("https://www.musical.ch/de/spielplan")
+            resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
             for card in soup.select("a[href*='/de/']"):
                 heading = card.select_one("h2, h3, h4, strong")
@@ -265,14 +275,15 @@ class MusicalChScraper(VenueScraper):
 
 
 class OlmaScraper(VenueScraper):
-    name = "OLMA Messen"
-    city = "stgallen"
-    parkhaus_ids = ["stgallenparkhausolmamessen", "stgallenparkhausolmaparkplatz"]
+    _cfg = _venue_config("OlmaScraper")
+    name = _cfg.get("name", "OLMA Messen")
+    city = _cfg.get("city", "stgallen")
+    parkhaus_ids = _cfg.get("parkhaus_ids", [])
 
     def fetch(self) -> list[dict]:
         events = []
         try:
-            resp = self._get("https://www.olma-messen.ch/veranstaltungen/")
+            resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
             for link in soup.select("a[href*='/veranstaltung/']"):
                 title = link.get_text(strip=True)
@@ -299,14 +310,15 @@ class OlmaScraper(VenueScraper):
 
 
 class LuzernerTheaterScraper(VenueScraper):
-    name = "Luzerner Theater"
-    city = "luzern"
-    parkhaus_ids = ["luzernparkingstadttheater", "luzernparkhauskesselturm"]
+    _cfg = _venue_config("LuzernerTheaterScraper")
+    name = _cfg.get("name", "Luzerner Theater")
+    city = _cfg.get("city", "luzern")
+    parkhaus_ids = _cfg.get("parkhaus_ids", [])
 
     def fetch(self) -> list[dict]:
         events = []
         try:
-            resp = self._get("https://www.luzernertheater.ch/spielplan/kalender")
+            resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
             for item in soup.select("div.spielplan-item[id]"):
                 date_id = item.get("id", "")

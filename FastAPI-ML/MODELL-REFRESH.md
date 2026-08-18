@@ -77,14 +77,14 @@ besser als ein besseres, das keine Prognosen erzeugt.
 ## Kontrollieren
 
 ```bash
-curl -sS http://localhost/api/health
+curl -sS https://parkhaus-wetter.roil.ch/api/health
 ```
 
 - **`active_runs`** zeigt fünf Einträge; die Zeitstempel sollten vom heutigen
   Lauf sein (ausser bei einem «NICHT aktiviert»-Horizont)
 - **`last_prediction`** wird beim nächsten Viertelstunden-Lauf frisch
 
-Oder im Browser auf `http://87.106.21.252/`: erscheint dort die rote Warnung
+Oder im Browser auf `https://parkhaus-wetter.roil.ch/`: erscheint dort die rote Warnung
 «Prognose veraltet», hat etwas nicht geklappt. Das Log sagt dann, was:
 
 ```bash

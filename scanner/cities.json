@@ -3,6 +3,8 @@
         "luzern": {
             "enabled": true,
             "name": "Luzern",
+            "lat": 47.0502,
+            "lon": 8.3093,
             "collector": "luzern.LuzernCollector",
             "api_url": "https://info.pls-luzern.ch/TeqParkingWS/GetFreeParks",
             "official_url": "https://www.pls-luzern.ch/",
@@ -11,6 +13,8 @@
         "basel": {
             "enabled": true,
             "name": "Basel",
+            "lat": 47.5596,
+            "lon": 7.5886,
             "collector": "basel.BaselCollector",
             "api_url": "https://api.parkendd.de/Basel",
             "official_url": "https://www.parkleitsystem-basel.ch/",
@@ -19,6 +23,8 @@
         "stgallen": {
             "enabled": true,
             "name": "St. Gallen",
+            "lat": 47.4239,
+            "lon": 9.3748,
             "collector": "stgallen.StGallenCollector",
             "api_url": "https://daten.stadt.sg.ch/api/records/1.0/search/?dataset=freie-parkplatze-in-der-stadt-stgallen-pls&rows=100",
             "official_url": "https://www.pls-sg.ch/",
@@ -27,6 +33,8 @@
         "zurich": {
             "enabled": true,
             "name": "Zürich",
+            "lat": 47.3769,
+            "lon": 8.5417,
             "collector": "zurich.ZurichCollector",
             "api_url": "https://api.parkendd.de/Zuerich",
             "official_url": "https://www.pls-zh.ch/",
@@ -35,10 +43,24 @@
         "bern": {
             "enabled": true,
             "name": "Bern",
+            "lat": 46.9480,
+            "lon": 7.4474,
             "collector": "bern.BernCollector",
             "api_url": "https://www.parking-bern.ch/parkdata.xml",
             "official_url": "https://www.parking-bern.ch/",
-            "description": "Parking Bern - ~28 facilities"
+            "description": "Parking Bern - ~28 facilities",
+            "parking_map": {
+                "P01": {"id": "p01", "name": "Bahnhof Parking"},
+                "P02": {"id": "p02", "name": "Metro Parking"},
+                "P03": {"id": "p03", "name": "Rathaus Parking"},
+                "P04": {"id": "p04", "name": "Parking City West"},
+                "P05": {"id": "p05", "name": "Mobiliar Parking"},
+                "P06": {"id": "p06", "name": "Casinoparking"},
+                "P08": {"id": "p08", "name": "Expo Parking"},
+                "P10": {"id": "p10", "name": "Kursaal Parking"},
+                "P+R": {"id": "p_r", "name": "Park + Ride Neufeld"},
+                "Kurzparking Bahnhof": {"id": "p01b", "name": "SBB Kurzparking"}
+            }
         }
     }
 }

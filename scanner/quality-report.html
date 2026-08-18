@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Quality Report — scanner/</title>
+<style>
+  :root {
+    --bg: #f6f7fb; --bg-card: #ffffff; --bg-card-alt: #f0f2f8;
+    --text: #1e2a3a; --text-muted: #6b7a8d; --text-code: #d63384;
+    --border: #dce1ea; --border-light: #e8ecf2;
+    --red: #dc3545; --red-bg: #fdf0f0; --red-border: #f5c6cb;
+    --amber: #e67e22; --amber-bg: #fef9f0; --amber-border: #fde3a7;
+    --blue: #2980b9; --blue-bg: #eef6fc; --blue-border: #b8daff;
+    --green: #27ae60; --green-bg: #f0faf4; --green-border: #b8e6cc;
+    --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: ui-monospace, 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12151e; --bg-card: #1a1e2e; --bg-card-alt: #222738;
+      --text: #d8dce6; --text-muted: #8892a4; --text-code: #f07daa;
+      --border: #2e3448; --border-light: #262b3a;
+      --red: #f87171; --red-bg: #2a1a1a; --red-border: #5c2020;
+      --amber: #fbbf24; --amber-bg: #2a2214; --amber-border: #5c4a14;
+      --blue: #60a5fa; --blue-bg: #162032; --blue-border: #1e3a5f;
+      --green: #4ade80; --green-bg: #142a1e; --green-border: #1a4a2a;
+      --shadow: 0 1px 3px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12151e; --bg-card: #1a1e2e; --bg-card-alt: #222738;
+    --text: #d8dce6; --text-muted: #8892a4; --text-code: #f07daa;
+    --border: #2e3448; --border-light: #262b3a;
+    --red: #f87171; --red-bg: #2a1a1a; --red-border: #5c2020;
+    --amber: #fbbf24; --amber-bg: #2a2214; --amber-border: #5c4a14;
+    --blue: #60a5fa; --blue-bg: #162032; --blue-border: #1e3a5f;
+    --green: #4ade80; --green-bg: #142a1e; --green-border: #1a4a2a;
+    --shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-body); line-height: 1.6;
+    max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem;
+  }
+
+  h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 .25rem; letter-spacing: -.02em; }
+  .subtitle { color: var(--text-muted); font-size: .9rem; margin-bottom: 2rem; }
+
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 2rem; }
+  .stat {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .stat-value { font-size: 1.8rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .stat.critical .stat-value { color: var(--red); }
+  .stat.warning .stat-value { color: var(--amber); }
+  .stat.info .stat-value { color: var(--blue); }
+  .stat.ok .stat-value { color: var(--green); }
+
+  .gauge-wrap { text-align: center; margin-bottom: 2.5rem; }
+  .gauge-bar { height: 10px; border-radius: 5px; background: var(--border-light); overflow: hidden; max-width: 400px; margin: .5rem auto; }
+  .gauge-fill { height: 100%; border-radius: 5px; transition: width .5s; }
+  .gauge-label { font-size: .8rem; color: var(--text-muted); }
+  .gauge-score { font-size: 2.4rem; font-weight: 800; }
+
+  .comparison {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center;
+    margin-bottom: 2.5rem; padding: 1rem; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: var(--shadow);
+  }
+  .comp-col { text-align: center; }
+  .comp-arrow { font-size: 1.5rem; color: var(--green); font-weight: 700; }
+  .comp-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .comp-value { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .comp-detail { font-size: .75rem; color: var(--text-muted); }
+
+  .category { margin-bottom: 1.5rem; }
+  .cat-header {
+    display: flex; align-items: center; gap: .5rem; cursor: pointer;
+    padding: .6rem .8rem; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: var(--shadow); user-select: none;
+  }
+  .cat-header:hover { background: var(--bg-card-alt); }
+  .cat-header .arrow { transition: transform .2s; font-size: .7rem; color: var(--text-muted); }
+  .cat-header.open .arrow { transform: rotate(90deg); }
+  .cat-title { font-weight: 700; font-size: .95rem; flex: 1; }
+  .cat-count {
+    font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .cat-count.critical { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .cat-count.warning { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .cat-count.info { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .cat-count.ok { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+
+  .findings { display: none; padding: .5rem 0 0; }
+  .findings.open { display: block; }
+
+  .finding {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 6px; padding: .7rem .9rem; margin-bottom: .5rem;
+    box-shadow: var(--shadow);
+  }
+  .finding-header { display: flex; align-items: baseline; gap: .5rem; margin-bottom: .25rem; flex-wrap: wrap; }
+  .badge {
+    font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+  }
+  .badge.critical { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .badge.warning { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .badge.info { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .badge.ok { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .file-ref { font-family: var(--font-mono); font-size: .78rem; color: var(--text-code); }
+  .finding-desc { font-size: .85rem; color: var(--text); }
+  .finding-detail { font-size: .8rem; color: var(--text-muted); margin-top: .25rem; }
+
+  code { font-family: var(--font-mono); font-size: .82em; color: var(--text-code); background: var(--bg-card-alt); padding: 1px 5px; border-radius: 3px; }
+
+  .file-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .85rem; }
+  .file-table th { text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); padding: .4rem .6rem; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+  .file-table td { padding: .35rem .6rem; border-bottom: 1px solid var(--border-light); font-variant-numeric: tabular-nums; }
+  .file-table td:nth-child(2), .file-table td:nth-child(3) { text-align: right; font-family: var(--font-mono); font-size: .8rem; }
+  .file-table tr:last-child td { font-weight: 700; border-top: 2px solid var(--border); }
+
+  .resolved { text-decoration: line-through; opacity: .5; }
+
+  @media (max-width: 600px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .comparison { grid-template-columns: 1fr; }
+    .comp-arrow { transform: rotate(90deg); }
+    body { padding: 1rem; }
+  }
+
+  details > summary { cursor: pointer; font-size: .85rem; color: var(--text-muted); margin-top: .5rem; }
+</style>
+</head>
+<body>
+
+<h1>Code Quality Report</h1>
+<p class="subtitle"><code>scanner/</code> — 14 Python-Dateien, 1 716 Zeilen · Analyse vom 12. August 2026 (nach Refactoring)</p>
+
+<div class="summary">
+  <div class="stat ok"><div class="stat-value">0</div><div class="stat-label">Kritisch</div></div>
+  <div class="stat ok"><div class="stat-value">0</div><div class="stat-label">Warnungen</div></div>
+  <div class="stat info"><div class="stat-value">8</div><div class="stat-label">Hinweis</div></div>
+  <div class="stat ok"><div class="stat-value">1 716</div><div class="stat-label">Zeilen total</div></div>
+</div>
+
+<div class="gauge-wrap">
+  <div class="gauge-score" style="color: var(--green);">A</div>
+  <div class="gauge-bar"><div class="gauge-fill" style="width:90%; background: linear-gradient(90deg, var(--amber), var(--green));"></div></div>
+  <div class="gauge-label">Gesamt-Score: 90 / 100 — sauber strukturiert, nur noch kleinere Code Smells</div>
+</div>
+
+<!-- Vorher/Nachher -->
+<div class="comparison">
+  <div class="comp-col">
+    <div class="comp-label">Vorher</div>
+    <div class="comp-value" style="color: var(--amber);">C+ (52)</div>
+    <div class="comp-detail">2 147 Zeilen · 6 kritisch · 12 Warnungen · 14 Hinweise</div>
+  </div>
+  <div class="comp-arrow">&#10132;</div>
+  <div class="comp-col">
+    <div class="comp-label">Nachher</div>
+    <div class="comp-value" style="color: var(--green);">A (90)</div>
+    <div class="comp-detail">1 716 Zeilen · 0 kritisch · 0 Warnungen · 8 Hinweise</div>
+  </div>
+</div>
+
+<!-- ============ Behobene Findings ============ -->
+<div class="category">
+  <div class="cat-header open" onclick="toggle(this)">
+    <span class="arrow">&#9654;</span>
+    <span class="cat-title">Behobene Findings (Top-5 Refactoring)</span>
+    <span class="cat-count ok">24 behoben</span>
+  </div>
+  <div class="findings open">
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">constants.py (NEU)</span>
+      </div>
+      <div class="finding-desc"><code>SWISS_TZ</code> war in 8 Dateien dupliziert — jetzt einmal in <code>constants.py</code>, alle importieren von dort.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">constants.py</span>
+      </div>
+      <div class="finding-desc"><code>USER_AGENT</code> und <code>STALE_THRESHOLD_MINUTES</code> zentralisiert — vier verschiedene User-Agent-Strings bereinigt.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">base.py</span>
+      </div>
+      <div class="finding-desc"><code>_is_stale()</code>, <code>normalize_parkendd()</code>, <code>collect()</code>, <code>_collect_fallback()</code>, <code>_fetch_fallback()</code> in die Basisklasse verschoben — ~130 Zeilen Duplikate in Basel/Zuerich eliminiert.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">base.py</span>
+      </div>
+      <div class="finding-desc"><code>error_result()</code> Factory ersetzt 13 inline Error-Dicts.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">scheduler.py</span>
+      </div>
+      <div class="finding-desc">Drei nahezu identische <code>run_*</code>-Funktionen durch eine einzige <code>_run_script(name, timeout)</code> ersetzt. Datei von 120 auf 60 Zeilen reduziert.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">get_event_and_weather_data.py</span>
+      </div>
+      <div class="finding-desc"><code>pymysql</code>-Verbindung durch <code>db_utils.get_connection()</code> ersetzt — einheitlicher DB-Zugriff im gesamten Scanner.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">get_event_and_weather_data.py</span>
+      </div>
+      <div class="finding-desc">Duplizierte Wetter-Fetch-Logik in eine gemeinsame <code>_fetch_weather()</code> zusammengefuehrt.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">get_event_and_weather_data.py</span>
+      </div>
+      <div class="finding-desc"><code>store_historical_events()</code> — 100 Zeilen Dead Code entfernt (nie aufgerufen).</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">base.py</span>
+      </div>
+      <div class="finding-desc">Unused imports <code>os</code>, <code>json</code> entfernt.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">stgallen.py</span>
+      </div>
+      <div class="finding-desc">Redundante Bedingung <code>if not parking_id or parking_id == ""</code> vereinfacht.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">collect_data.py</span>
+      </div>
+      <div class="finding-desc"><code>import gc</code> und alle <code>gc.collect()</code>-Aufrufe entfernt (unnoetig).</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">get_event_and_weather_data.py</span>
+      </div>
+      <div class="finding-desc">Doppelte DB-Config-Konstanten (DB_HOST, DB_PORT usw.) entfernt.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">basel.py</span>
+      </div>
+      <div class="finding-desc">Von 145 auf 55 Zeilen reduziert durch Nutzung der Basisklassen-Methoden.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">zurich.py</span>
+      </div>
+      <div class="finding-desc">Von 215 auf 130 Zeilen reduziert — Fallback/Stale/Collect-Logik in Basisklasse.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+      </div>
+      <div class="finding-desc">Docstring-Fehler (<code>STALE_THRESHOLD_HOURS</code> statt <code>_MINUTES</code>) und inkonsistente DB-Defaults bereinigt.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+      </div>
+      <div class="finding-desc">Doppelte <code>pymysql</code>-Verbindung (3x inline) durch zentralen <code>db_utils</code>-Aufruf ersetzt.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+      </div>
+      <div class="finding-desc">Drei nahezu identische Wetter/Event-DB-Verbindungen konsolidiert.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+      </div>
+      <div class="finding-desc">Netto 431 Zeilen Code entfernt (2 147 &rarr; 1 716).</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">venues.json (NEU)</span>
+      </div>
+      <div class="finding-desc">Venue-URLs, Parkhaus-IDs, <code>VENUE_CITY_MAP</code> und <code>CATEGORY_BONUS</code> aus <code>fetch_events.py</code> in <code>venues.json</code> externalisiert.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">cities.json</span>
+      </div>
+      <div class="finding-desc">Bern <code>OFFICIAL_PARKINGS</code> als <code>parking_map</code> in <code>cities.json</code> verschoben — <code>bern.py</code> liest von dort.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">cities.json</span>
+      </div>
+      <div class="finding-desc">Stadt-Koordinaten (lat/lon) in <code>cities.json</code> ergaenzt — <code>get_event_and_weather_data.py</code> liest von dort statt hardcodiert.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">fetch_events.py</span>
+      </div>
+      <div class="finding-desc">User-Agent auf <code>constants.USER_AGENT</code> vereinheitlicht.</div>
+    </div>
+
+    <div class="finding resolved">
+      <div class="finding-header">
+        <span class="badge ok">Behoben</span>
+        <span class="file-ref">base.py</span>
+      </div>
+      <div class="finding-desc"><code>import db_utils</code> und <code>import mysql.connector</code> von innerhalb <code>save_data()</code> auf Modulebene verschoben. Redundantes <code>(mysql.connector.Error, Exception)</code> zu <code>Exception</code> vereinfacht.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Alle Warnungen behoben -->
+
+<!-- ============ Code Smells ============ -->
+<div class="category">
+  <div class="cat-header" onclick="toggle(this)">
+    <span class="arrow">&#9654;</span>
+    <span class="cat-title">Code Smells</span>
+    <span class="cat-count info">8 Findings</span>
+  </div>
+  <div class="findings">
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge info">Hinweis</span>
+        <span class="file-ref">~15 Stellen</span>
+      </div>
+      <div class="finding-desc"><strong>Bare <code>except Exception</code></strong> an ~15 Stellen — verschluckt Fehlerdetails.</div>
+      <div class="finding-detail">base.py (3x), zurich.py (2x), fetch_events.py (7x), get_event_and_weather_data.py (1x), scheduler.py (2x)</div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge info">Hinweis</span>
+        <span class="file-ref">3 Funktionen</span>
+      </div>
+      <div class="finding-desc"><strong>Ueberlange Funktionen</strong> (&gt;50 Zeilen): <code>base.py:fetch_raw_data</code> (55), <code>base.py:save_data</code> (65), <code>collect_data.py:main</code> (90).</div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge info">Hinweis</span>
+        <span class="file-ref">base.py:48</span>
+      </div>
+      <div class="finding-desc"><strong>Tiefe Verschachtelung</strong> (4 Ebenen) in der Retry-Loop von <code>fetch_raw_data()</code>.</div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge info">Hinweis</span>
+        <span class="file-ref">fetch_events.py:47</span>
+      </div>
+      <div class="finding-desc">MD5-Hash fuer Event-IDs — funktional ok, aber <code>hashlib.sha256</code> waere moderner.</div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge info">Hinweis</span>
+        <span class="file-ref">stgallen.py:70</span>
+      </div>
+      <div class="finding-desc">Extrem lange einzeilige Ternary-Expression fuer Timestamp-Extraktion — schwer lesbar.</div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge info">Hinweis</span>
+        <span class="file-ref">fetch_events.py:346</span>
+      </div>
+      <div class="finding-desc"><code>ALL_SCRAPERS</code> instanziert alle Scraper-Objekte beim Modul-Import.</div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge info">Hinweis</span>
+        <span class="file-ref">zurich.py:36</span>
+      </div>
+      <div class="finding-desc"><code>global RSS_PARKING_MAP</code> — globaler mutabler State in <code>_post_fetch_hook</code>.</div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge info">Hinweis</span>
+        <span class="file-ref">collect_data.py:19</span>
+      </div>
+      <div class="finding-desc"><code>sys.path.insert(0, ...)</code> — Path-Manipulation statt Package-Structure.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ Datei-Uebersicht ============ -->
+<div class="category">
+  <div class="cat-header" onclick="toggle(this)">
+    <span class="arrow">&#9654;</span>
+    <span class="cat-title">Datei-Uebersicht</span>
+    <span class="cat-count info">14 Dateien</span>
+  </div>
+  <div class="findings">
+    <div style="overflow-x:auto">
+    <table class="file-table">
+      <thead><tr><th>Datei</th><th>Zeilen</th><th>Vorher</th></tr></thead>
+      <tbody>
+        <tr><td><code>fetch_events.py</code></td><td>429</td><td>427</td></tr>
+        <tr><td><code>base.py</code></td><td>278</td><td>314</td></tr>
+        <tr><td><code>collect_data.py</code></td><td>233</td><td>241</td></tr>
+        <tr><td><code>db_utils.py</code></td><td>172</td><td>173</td></tr>
+        <tr><td><code>zurich.py</code></td><td>130</td><td>215</td></tr>
+        <tr><td><code>bern.py</code></td><td>114</td><td>117</td></tr>
+        <tr><td><code>get_event_and_weather_data.py</code></td><td>97</td><td>252</td></tr>
+        <tr><td><code>stgallen.py</code></td><td>71</td><td>74</td></tr>
+        <tr><td><code>scheduler.py</code></td><td>60</td><td>120</td></tr>
+        <tr><td><code>basel.py</code></td><td>55</td><td>145</td></tr>
+        <tr><td><code>luzern.py</code></td><td>42</td><td>45</td></tr>
+        <tr><td><code>__init__.py</code></td><td>19</td><td>19</td></tr>
+        <tr><td><code>constants.py</code> <small>(NEU)</small></td><td>11</td><td>—</td></tr>
+        <tr><td><code>version.py</code></td><td>5</td><td>5</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>1 716</strong></td><td><strong>2 147</strong></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Naechste Schritte ============ -->
+<div class="category">
+  <div class="cat-header open" onclick="toggle(this)">
+    <span class="arrow">&#9654;</span>
+    <span class="cat-title">Empfohlene naechste Schritte</span>
+    <span class="cat-count info">Optional</span>
+  </div>
+  <div class="findings open">
+
+    <div class="finding" style="border-left: 3px solid var(--blue);">
+      <div class="finding-header"><span class="badge info">1</span></div>
+      <div class="finding-desc"><strong><code>stgallen.py:70</code> Ternary aufloesen</strong></div>
+      <div class="finding-detail">Die einzeilige Timestamp-Extraktion in 3–4 lesbare Zeilen umschreiben.</div>
+    </div>
+
+    <div class="finding" style="border-left: 3px solid var(--blue);">
+      <div class="finding-header"><span class="badge info">2</span></div>
+      <div class="finding-desc"><strong>Bare <code>except Exception</code> durch spezifischere Exceptions ersetzen</strong></div>
+      <div class="finding-detail">~15 Stellen — niedrige Prioritaet, aber verbessert Debugging bei unerwarteten Fehlern.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggle(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+</script>
+</body>
+</html>
