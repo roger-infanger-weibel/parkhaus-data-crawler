@@ -790,6 +790,57 @@ class KKLLuzernScraper(VenueScraper):
         return events
 
 
+class ObrassoKKLScraper(VenueScraper):
+    """KKL Luzern: Obrasso Concerts Quelle (Ergänzung zu JamBase)."""
+    _cfg = _venue_config("KKLLuzernScraper")  # Nutze gleiche Config
+    name = _cfg.get("name", "KKL Luzern")
+    city = _cfg.get("city", "luzern")
+    parkhaus_ids = _cfg.get("parkhaus_ids", [])
+
+    def fetch(self) -> list[dict]:
+        events = []
+        try:
+            url = "https://www.obrassoconcerts.ch/programm/kkl-luzern"
+            _time.sleep(2)
+            resp = self._get(url, retries=2)
+            soup = BeautifulSoup(resp.text, "html.parser")
+            text = soup.get_text(" ", strip=True)
+
+            # Pattern: [WOCHENTAG] [TAG] [MONAT] [JAHR] [ZEIT] [TITEL]
+            # z.B: "SA 19 SEP 2026 19:30 BRASS-GALA"
+            pattern = r'(MO|DI|MI|DO|FR|SA|SO)\s+(\d{1,2})\s+(JAN|FEB|MÄR|MAR|APR|MAI|JUN|JUL|AUG|SEP|OKT|OCT|NOV|DEZ|DEC)\s+(\d{4})\s+(\d{1,2}):(\d{2})\s+([^I]+?)(?=(?:MO|DI|MI|DO|FR|SA|SO)\s+\d{1,2}\s+(?:JAN|FEB|MÄR|MAR|APR|MAI|JUN|JUL|AUG|SEP|OKT|OCT|NOV|DEZ|DEC)|$)'
+
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                day = int(match.group(2))
+                mon_str = match.group(3).lower()[:3]
+                year = int(match.group(4))
+                hour = int(match.group(5))
+                minute = int(match.group(6))
+                title = match.group(7).strip()
+
+                if len(title) < 5:
+                    continue
+
+                mon = MONATE_DE.get(mon_str)
+                if not mon:
+                    continue
+
+                try:
+                    dt = datetime(year, mon, day, hour, minute)
+                except ValueError:
+                    continue
+
+                events.append({
+                    "title": title, "venue": self.name,
+                    "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
+                    "category": _guess_category(title),
+                })
+        except Exception as e:
+            logger.warning("KKL Luzern (Obrasso): %s", e)
+        logger.info("KKL Luzern (Obrasso): %d Events gefunden", len(events))
+        return events
+
+
 class MesseLuzernScraper(VenueScraper):
     _cfg = _venue_config("MesseLuzernScraper")
     name = _cfg.get("name", "Messe Luzern")
@@ -954,7 +1005,8 @@ ALL_SCRAPERS = [
     StJakobshalleScraper(),
     TheaterStGallenScraper(),
     BernExpoScraper(),
-    KKLLuzernScraper(),
+    KKLLuzernScraper(),  # JamBase
+    ObrassoKKLScraper(),  # Obrasso (Ergänzung)
     MesseLuzernScraper(),
     StadtkellerLuzernScraper(),
     LuzernTopEventsScraper(),
