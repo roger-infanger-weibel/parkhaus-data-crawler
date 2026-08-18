@@ -751,23 +751,30 @@ class KKLLuzernScraper(VenueScraper):
             _time.sleep(2)
             resp = self._get(url, retries=2)
             soup = BeautifulSoup(resp.text, "html.parser")
-            text = soup.get_text(" ", strip=True)
 
-            # Pattern: [WOCHENTAG] [MONAT_EN] [TAG], [JAHR] [TITLE]
-            # z.B: "Fri Oct 9, 2026 Stefanie Heinzmann"
+            # Suche Event-Blöcke direkt im HTML
             MONATE_EN = {
                 "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
                 "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
             }
-            pattern = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})\s+([^M][^o][^n|T|u|e|W|e|d|T|h|u|F|r|i|S|a|t|S|u|n][^A-Z]*?)(?=(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[A-Za-z]{3}|$)'
 
-            for match in re.finditer(pattern, text):
-                mon_str = match.group(2).lower()
-                day = int(match.group(3))
-                year = int(match.group(4))
-                title = match.group(5).strip()
+            # Finde alle Zeilen mit Datum-Pattern
+            for line in soup.get_text("\n").split("\n"):
+                line = line.strip()
+                # Pattern: "Mon Oct 19, 2026" oder "Fri Oct 9, 2026"
+                m = re.search(r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})', line)
+                if not m:
+                    continue
 
-                if len(title) < 3:
+                mon_str = m.group(2).lower()
+                day = int(m.group(3))
+                year = int(m.group(4))
+
+                # Title ist nach dem Datum
+                title_start = m.end()
+                title = line[title_start:].strip()
+
+                if len(title) < 3 or title.startswith("KKL"):
                     continue
 
                 mon = MONATE_EN.get(mon_str[:3])
@@ -804,21 +811,26 @@ class ObrassoKKLScraper(VenueScraper):
             _time.sleep(2)
             resp = self._get(url, retries=2)
             soup = BeautifulSoup(resp.text, "html.parser")
-            text = soup.get_text(" ", strip=True)
 
-            # Pattern: [WOCHENTAG] [TAG] [MONAT] [JAHR] [ZEIT] [TITEL]
-            # z.B: "SA 19 SEP 2026 19:30 BRASS-GALA"
-            pattern = r'(MO|DI|MI|DO|FR|SA|SO)\s+(\d{1,2})\s+(JAN|FEB|MÄR|MAR|APR|MAI|JUN|JUL|AUG|SEP|OKT|OCT|NOV|DEZ|DEC)\s+(\d{4})\s+(\d{1,2}):(\d{2})\s+([^I]+?)(?=(?:MO|DI|MI|DO|FR|SA|SO)\s+\d{1,2}\s+(?:JAN|FEB|MÄR|MAR|APR|MAI|JUN|JUL|AUG|SEP|OKT|OCT|NOV|DEZ|DEC)|$)'
+            # Suche Event-Zeilen: "SA 19 SEP 2026 19:30 BRASS-GALA"
+            for line in soup.get_text("\n").split("\n"):
+                line = line.strip()
+                # Pattern: [WOCHENTAG] [TAG] [MONAT] [JAHR] [STUNDE:MINUTE]
+                m = re.search(r'(MO|DI|MI|DO|FR|SA|SO)\s+(\d{1,2})\s+(JAN|FEB|MÄR|MAR|APR|MAI|JUN|JUL|AUG|SEP|OKT|OCT|NOV|DEZ|DEC)\s+(\d{4})\s+(\d{1,2}):(\d{2})', line, re.IGNORECASE)
+                if not m:
+                    continue
 
-            for match in re.finditer(pattern, text, re.IGNORECASE):
-                day = int(match.group(2))
-                mon_str = match.group(3).lower()[:3]
-                year = int(match.group(4))
-                hour = int(match.group(5))
-                minute = int(match.group(6))
-                title = match.group(7).strip()
+                day = int(m.group(2))
+                mon_str = m.group(3).lower()[:3]
+                year = int(m.group(4))
+                hour = int(m.group(5))
+                minute = int(m.group(6))
 
-                if len(title) < 5:
+                # Title ist nach der Zeit
+                title_start = m.end()
+                title = line[title_start:].strip()
+
+                if len(title) < 3:
                     continue
 
                 mon = MONATE_DE.get(mon_str)
