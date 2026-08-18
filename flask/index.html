@@ -1035,38 +1035,36 @@
                 }
             }
 
-            // Load events - prevent concurrent requests
-            let _loadingEvents = false;
+            // Load events - version tracking to ignore stale responses
+            let _eventVersion = 0;
             function loadEvents() {
-                if (_loadingEvents) {
-                    console.log('loadEvents already running, skipping...');
-                    return;
-                }
-
                 const env = document.getElementById('env-select').value;
                 const city = document.getElementById('city-select').value;
                 const tbody = document.getElementById('events-table-body');
-
-                console.log('loadEvents called: env=' + env + ', city=' + city);
 
                 if (!city || city === 'Loading cities...') {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Wähle eine Stadt aus</td></tr>';
                     return;
                 }
 
-                _loadingEvents = true;
+                // Increment version to invalidate any pending older requests
+                _eventVersion++;
+                const thisVersion = _eventVersion;
                 const url = `/api/events/upcoming/${city}?env=${env}`;
-                console.log('Fetching: ' + url);
-                tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Loading...</td></tr>';
+
+                console.log(`loadEvents v${thisVersion}: city=${city}, env=${env}`);
 
                 fetch(url)
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
-                        console.log('Data received:', data);
-                        tbody.innerHTML = '';
+                        // Ignore response if a newer request was started
+                        if (thisVersion !== _eventVersion) {
+                            console.log(`loadEvents v${thisVersion}: ignoring stale response, v${_eventVersion} is current`);
+                            return;
+                        }
+
+                        console.log(`loadEvents v${thisVersion}: rendering ${data.length || 0} events`);
+
                         if (data.error) {
                             tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${data.error}</td></tr>`;
                             return;
@@ -1075,27 +1073,29 @@
                             tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Keine Events in den nächsten 30 Tagen</td></tr>';
                             return;
                         }
-                        let rowCount = 0;
+
+                        // Build all rows first, then set innerHTML once
+                        let html = '';
                         data.forEach(ev => {
                             try {
                                 const startTime = new Date(ev.start_time.replace('T', ' '));
                                 const dateStr = startTime.toLocaleDateString('de-CH');
                                 const timeStr = startTime.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'});
                                 const category = (ev.category || 'default').toUpperCase();
-                                const row = `<tr><td>${dateStr} ${timeStr}</td><td><strong>${ev.title}</strong></td><td>${ev.venue}</td><td><span class="badge bg-info">${ev.city}</span></td><td><span class="badge bg-secondary">${category}</span></td></tr>`;
-                                tbody.innerHTML += row;
-                                rowCount++;
+                                html += `<tr><td>${dateStr} ${timeStr}</td><td><strong>${ev.title}</strong></td><td>${ev.venue}</td><td><span class="badge bg-info">${ev.city}</span></td><td><span class="badge bg-secondary">${category}</span></td></tr>`;
                             } catch (e) {
                                 console.error('Error rendering event:', ev, e);
                             }
                         });
-                        console.log('Rendered ' + rowCount + ' events');
-                        _loadingEvents = false;
+                        tbody.innerHTML = html;
+                        console.log(`loadEvents v${thisVersion}: DOM updated`);
                     })
                     .catch(err => {
-                        console.error('Fetch error:', err);
-                        tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Error: ${err.message}</td></tr>`;
-                        _loadingEvents = false;
+                        // Ignore error if a newer request was started
+                        if (thisVersion === _eventVersion) {
+                            console.error(`loadEvents v${thisVersion}: fetch error`, err);
+                            tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Error: ${err.message}</td></tr>`;
+                        }
                     });
             }
 
@@ -1105,23 +1105,33 @@
             checkCookieConsent();
         </script>
 
-        <!-- Events Section -->
-        <div class="mt-5 mb-4">
-            <h3 class="mb-3">📅 Events (Next 30 Days)</h3>
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Date / Time</th>
-                        <th>Title</th>
-                        <th>Venue</th>
-                        <th>City</th>
-                        <th>Category</th>
-                    </tr>
-                </thead>
-                <tbody id="events-table-body">
-                    <tr><td colspan="5" class="text-center text-muted">Loading events...</td></tr>
-                </tbody>
-            </table>
+        <!-- Upcoming Events Section (Next 30 Days) -->
+        <div class="row mt-4 mb-4" id="upcoming-events-section">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">🔮 Upcoming Events (Next 30 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="upcoming-events-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date / Time</th>
+                                        <th>Title</th>
+                                        <th>Venue</th>
+                                        <th>City</th>
+                                        <th>Category</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="events-table-body">
+                                    <tr><td colspan="5" class="text-center text-muted">Loading events...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Cookie Consent Banner -->
