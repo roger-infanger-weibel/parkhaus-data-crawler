@@ -296,19 +296,20 @@ def get_stuck_parking():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/events/upcoming')
-def get_upcoming_events():
+@app.route('/api/events/upcoming/<city>')
+def get_upcoming_events(city):
     try:
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
             SELECT id, title, venue, city, start_time, end_time, category
             FROM local_events
-            WHERE start_time >= CURDATE()
+            WHERE city = %s
+              AND start_time >= CURDATE()
               AND start_time < DATE_ADD(CURDATE(), INTERVAL 30 DAY)
             ORDER BY start_time
             LIMIT 100
-        """)
+        """, (city,))
         rows = cursor.fetchall()
         conn.close()
 
