@@ -523,26 +523,37 @@ class TheaterBaselScraper(VenueScraper):
         try:
             resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
-            for item in soup.select("a[href*='/kalender/'], a[href*='/stueck/'], .calendar-item, .event-item"):
-                title_el = item.select_one("h2, h3, h4, strong, .title")
-                if not title_el:
+            seen = set()
+            for article in soup.select("article.activity-teaser-calendar"):
+                atc_start = article.select_one("var.atc_date_start")
+                atc_title = article.select_one("var.atc_title")
+                if not atc_start or not atc_title:
                     continue
-                title = title_el.get_text(strip=True)
+                title = atc_title.get_text(strip=True)
                 if len(title) < 3:
                     continue
-                text = item.get_text(" ", strip=True)
-                dt = _parse_de_date(text)
-                if not dt:
+                try:
+                    dt = datetime.strptime(atc_start.get_text(strip=True), "%Y-%m-%d %H:%M:%S")
+                except ValueError:
                     continue
-                time = _parse_time(text)
-                if time:
-                    dt = dt.replace(hour=time[0], minute=time[1])
+                key = f"{title}-{dt.date()}"
+                if key in seen:
+                    continue
+                seen.add(key)
+                atc_end = article.select_one("var.atc_date_end")
+                if atc_end:
+                    try:
+                        end = datetime.strptime(atc_end.get_text(strip=True), "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        end = dt + timedelta(hours=2, minutes=30)
                 else:
-                    dt = dt.replace(hour=19, minute=30)
-                cat = "oper" if "oper" in title.lower() else "theater"
+                    end = dt + timedelta(hours=2, minutes=30)
+                genre_el = article.select_one("a.production-link span.red-title")
+                genre = genre_el.get_text(strip=True).lower() if genre_el else ""
+                cat = "oper" if "oper" in genre or "oper" in title.lower() else "theater"
                 events.append({
                     "title": title, "venue": self.name,
-                    "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
+                    "start_time": dt, "end_time": end,
                     "category": cat,
                 })
         except Exception as e:
@@ -561,33 +572,39 @@ class StJakobshalleScraper(VenueScraper):
         try:
             resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
-            for card in soup.select(".desc_trig_outter, a[href*='/events/'], .event-card"):
-                title_el = card.select_one("h2, h3, h4, .title, strong")
+            for card in soup.select("div.eventon_list_event"):
+                title_el = card.select_one("span.evcal_event_title")
                 if not title_el:
                     continue
                 title = title_el.get_text(strip=True)
                 if len(title) < 3:
                     continue
-                meta = card.select_one("meta[content]")
-                if meta and meta.get("content"):
-                    try:
-                        dt = datetime.fromisoformat(meta["content"].replace("Z", "+00:00"))
-                        dt = dt.replace(tzinfo=None)
-                    except ValueError:
-                        dt = _parse_de_date(card.get_text(" ", strip=True))
-                else:
-                    dt = _parse_de_date(card.get_text(" ", strip=True))
-                if not dt:
+                start_meta = card.select_one("meta[itemprop='startDate']")
+                if not start_meta or not start_meta.get("content"):
                     continue
-                if dt.hour == 0:
-                    time = _parse_time(card.get_text(" ", strip=True))
-                    if time:
-                        dt = dt.replace(hour=time[0], minute=time[1])
-                    else:
-                        dt = dt.replace(hour=20)
+                date_str = start_meta["content"]
+                try:
+                    parts = date_str.split("-")
+                    dt = datetime(int(parts[0]), int(parts[1]), int(parts[2]))
+                except (ValueError, IndexError):
+                    continue
+                time = _parse_time(card.get_text(" ", strip=True))
+                if time:
+                    dt = dt.replace(hour=time[0], minute=time[1])
+                else:
+                    dt = dt.replace(hour=20)
+                end_meta = card.select_one("meta[itemprop='endDate']")
+                if end_meta and end_meta.get("content"):
+                    try:
+                        ep = end_meta["content"].split("-")
+                        end = datetime(int(ep[0]), int(ep[1]), int(ep[2]), 22)
+                    except (ValueError, IndexError):
+                        end = dt + timedelta(hours=3)
+                else:
+                    end = dt + timedelta(hours=3)
                 events.append({
                     "title": title, "venue": self.name,
-                    "start_time": dt, "end_time": dt + timedelta(hours=3),
+                    "start_time": dt, "end_time": end,
                     "category": _guess_category(title),
                 })
         except Exception as e:
@@ -606,23 +623,35 @@ class TheaterStGallenScraper(VenueScraper):
         try:
             resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
-            for item in soup.select("a[href*='/programm/'], a[href*='/produktion/'], .event-item, .calendar-entry"):
-                title_el = item.select_one("h2, h3, h4, strong, .title")
+            for card in soup.select("div.performance"):
+                title_el = card.select_one("span[itemprop='name']")
                 if not title_el:
                     continue
                 title = title_el.get_text(strip=True)
                 if len(title) < 3:
                     continue
-                text = item.get_text(" ", strip=True)
-                dt = _parse_de_date(text)
-                if not dt:
-                    continue
-                time = _parse_time(text)
-                if time:
-                    dt = dt.replace(hour=time[0], minute=time[1])
+                start_meta = card.select_one("meta[itemprop='startDate']")
+                if start_meta and start_meta.get("content"):
+                    try:
+                        dt = datetime.fromisoformat(start_meta["content"])
+                    except ValueError:
+                        continue
                 else:
-                    dt = dt.replace(hour=19, minute=30)
-                cat = "oper" if "oper" in title.lower() else "theater"
+                    day_token = card.get("data-day-token")
+                    if not day_token:
+                        continue
+                    try:
+                        dt = datetime.strptime(day_token, "%Y-%m-%d")
+                    except ValueError:
+                        continue
+                    time = _parse_time(card.get_text(" ", strip=True))
+                    if time:
+                        dt = dt.replace(hour=time[0], minute=time[1])
+                    else:
+                        dt = dt.replace(hour=19, minute=30)
+                cat_el = card.select_one("div.performance__category")
+                cat_text = cat_el.get_text(strip=True).lower() if cat_el else ""
+                cat = "oper" if "oper" in cat_text or "oper" in title.lower() else "theater"
                 events.append({
                     "title": title, "venue": self.name,
                     "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),

@@ -103,7 +103,7 @@
             "scraper": "TheaterBaselScraper",
             "name": "Theater Basel",
             "city": "basel",
-            "url": "https://www.theater-basel.ch/kalender",
+            "url": "https://www.theater-basel.ch/de/kalender",
             "parkhaus_ids": ["baselparkhaussteinen"]
         },
         {
@@ -125,7 +125,7 @@
             "name": "BernExpo",
             "city": "bern",
             "url": "https://www.bernexpo.ch/veranstaltungen",
-            "parkhaus_ids": ["p08"],
+            "parkhaus_ids": ["bernparkhausbahnhof"],
             "default_category": "messe"
         },
         {
