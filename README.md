@@ -53,7 +53,7 @@ parkhaus-data-crawler/
 | **bern.py** | Collector Bern (XML); überschreibt auch `fetch_raw_data()` | `collect_data.py` |
 | **db_utils.py** | DB-Zugriff (`mysql.connector`), UPSERT, Mock-Modus für die Simulation | `base.py`, `collect_data.py` |
 | **get_event_and_weather_data.py** | Lädt Wetter von Open-Meteo (Koordinaten aus `cities.json`) | `scheduler.py` |
-| **fetch_events.py** | Scraper für echte Veranstaltungsdaten (Konfiguration aus `venues.json`) | `scheduler.py` (2× täglich) |
+| **fetch_events.py** | 18 Scraper für echte Veranstaltungsdaten aus Venue-Websites (Konfiguration aus `venues.json`) | `scheduler.py` (2× täglich) |
 | **cities.json** | Stadt-Konfiguration: IDs, API-Adressen, Koordinaten, Bern-Parkhaus-Mapping | `collect_data.py`, `bern.py`, `get_event_and_weather_data.py` |
 | **venues.json** | Venue-Konfiguration: URLs, Parkhaus-IDs, Category-Bonuses, Venue→City-Zuordnungen | `fetch_events.py` |
 | **zurich_parking_map.json** | Zuordnung und Kapazitäten der Zürcher Parkhäuser; wird vom Collector aktualisiert | `zurich.py` |
@@ -203,7 +203,7 @@ scheduler.py  (Dauerprozess)
 │   └── Open-Meteo API ──→ weather_forecasts
 │
 └── fetch_events.py  (06:30 + 18:30)
-    └── Venue-Websites ──→ local_events, event_parkhaus
+    └── 18 Venue-Scraper (venues.json) ──→ local_events, event_parkhaus
 
 web_server.py  (Port 80)
 └── db_utils.py ──→ MariaDB (nur lesend) ──→ index.html / logs.html
