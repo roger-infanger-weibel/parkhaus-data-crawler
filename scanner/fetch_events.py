@@ -984,10 +984,33 @@ def fetch_and_store(venue_filter: Optional[str] = None) -> dict:
 
         n_events = 0
         n_mappings = 0
+        n_filtered = 0
         for ev in raw_events:
             city = ev.pop("_city", scraper.city)
             pids = ev.pop("_parkhaus_ids", scraper.parkhaus_ids)
             if not city:
+                continue
+
+            # Filter: nur Events mit sinnvollem Titel
+            title = ev.get("title", "").strip()
+            venue = ev.get("venue", "").strip()
+
+            # Filtere Events wo Title == Venue (nur generischer Venue-Name)
+            if title.lower() == venue.lower():
+                logger.debug("  Gefiltert (Title==Venue): %s", title)
+                n_filtered += 1
+                continue
+
+            # Filtere Events mit zu kurzem Titel (< 5 Zeichen)
+            if len(title) < 5:
+                logger.debug("  Gefiltert (zu kurz): %s", title)
+                n_filtered += 1
+                continue
+
+            # Filtere Events mit nur Whitespace/Zahlen
+            if not any(c.isalpha() for c in title):
+                logger.debug("  Gefiltert (keine Buchstaben): %s", title)
+                n_filtered += 1
                 continue
 
             eid = _event_id(ev["venue"], ev["title"], ev["start_time"])
@@ -1022,8 +1045,11 @@ def fetch_and_store(venue_filter: Optional[str] = None) -> dict:
                 n_mappings += 1
 
         conn.commit()
-        stats[scraper.name] = {"events": n_events, "mappings": n_mappings}
-        logger.info("  %s: %d Events, %d Zuordnungen", scraper.name, n_events, n_mappings)
+        stats[scraper.name] = {"events": n_events, "mappings": n_mappings, "filtered": n_filtered}
+        if n_filtered > 0:
+            logger.info("  %s: %d Events, %d Zuordnungen, %d gefiltert", scraper.name, n_events, n_mappings, n_filtered)
+        else:
+            logger.info("  %s: %d Events, %d Zuordnungen", scraper.name, n_events, n_mappings)
 
     cursor.close()
     conn.close()

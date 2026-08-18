@@ -1074,6 +1074,11 @@
                             return;
                         }
 
+                        if (data.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Keine Events in den nächsten 30 Tagen</td></tr>';
+                            return;
+                        }
+
                         // Build all rows first, then set innerHTML once
                         let html = '';
                         data.forEach(ev => {
@@ -1088,7 +1093,7 @@
                             }
                         });
                         tbody.innerHTML = html;
-                        console.log(`loadEvents v${thisVersion}: DOM updated`);
+                        console.log(`loadEvents v${thisVersion}: ${data.length} Events angezeigt`);
                     })
                     .catch(err => {
                         // Ignore error if a newer request was started
