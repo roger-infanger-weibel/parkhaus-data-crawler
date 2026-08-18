@@ -13,6 +13,7 @@ import hashlib
 import json
 import logging
 import re
+import time as _time
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -59,6 +60,19 @@ MONATE_DE = {
 def _event_id(venue: str, title: str, start: datetime) -> str:
     raw = f"{venue}-{title}-{start.isoformat()}"
     return hashlib.md5(raw.encode()).hexdigest()[:16]
+
+
+def _existing_event_ids(venue: str) -> set[str]:
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM local_events WHERE venue = %s", (venue,))
+        ids = {row[0] for row in cursor.fetchall()}
+        cursor.close()
+        conn.close()
+        return ids
+    except Exception:
+        return set()
 
 
 def _guess_category(title: str) -> str:
@@ -116,8 +130,16 @@ class VenueScraper(ABC):
     def fetch(self) -> list[dict]:
         ...
 
-    def _get(self, url: str, **kwargs) -> requests.Response:
-        resp = requests.get(url, headers=HEADERS, timeout=30, **kwargs)
+    def _get(self, url: str, retries: int = 2, **kwargs) -> requests.Response:
+        for attempt in range(retries + 1):
+            resp = requests.get(url, headers=HEADERS, timeout=30, **kwargs)
+            if resp.status_code == 429 and attempt < retries:
+                wait = 5 * (attempt + 1)
+                logger.info("429 von %s — warte %ds", url, wait)
+                _time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            return resp
         resp.raise_for_status()
         return resp
 
@@ -366,25 +388,31 @@ class OpernhausZurichScraper(VenueScraper):
         try:
             resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
-            for item in soup.select("a[href*='/spielplan/']"):
-                title_el = item.select_one("h2, h3, h4, strong, .title")
-                if not title_el:
+            for script in soup.select('script[type="application/ld+json"]'):
+                try:
+                    data = json.loads(script.string or "")
+                except json.JSONDecodeError:
                     continue
-                title = title_el.get_text(strip=True)
+                if not isinstance(data, dict) or data.get("@type") != "Event":
+                    continue
+                title = data.get("name", "")
                 if len(title) < 3:
                     continue
-                text = item.get_text(" ", strip=True)
-                dt = _parse_de_date(text)
-                if not dt:
+                try:
+                    dt = datetime.fromisoformat(data["startDate"])
+                except (ValueError, KeyError):
                     continue
-                time = _parse_time(text)
-                if time:
-                    dt = dt.replace(hour=time[0], minute=time[1])
+                end_str = data.get("endDate")
+                if end_str:
+                    try:
+                        end = datetime.fromisoformat(end_str)
+                    except ValueError:
+                        end = dt + timedelta(hours=3)
                 else:
-                    dt = dt.replace(hour=19)
+                    end = dt + timedelta(hours=3)
                 events.append({
                     "title": title, "venue": self.name,
-                    "start_time": dt, "end_time": dt + timedelta(hours=3),
+                    "start_time": dt, "end_time": end,
                     "category": "oper",
                 })
         except Exception as e:
@@ -403,27 +431,35 @@ class SchauspielhausZurichScraper(VenueScraper):
         try:
             resp = self._get(self._cfg["url"])
             soup = BeautifulSoup(resp.text, "html.parser")
-            for item in soup.select("a[href*='/spielplan/'], a[href*='/stueck/'], .event-item, .spielplan-item"):
-                title_el = item.select_one("h2, h3, h4, strong, .title, span")
-                if not title_el:
+            for section in soup.select("section.calendar-section[data-date]"):
+                date_str = section.get("data-date", "")
+                try:
+                    base_date = datetime.strptime(date_str, "%Y-%m-%d")
+                except ValueError:
                     continue
-                title = title_el.get_text(strip=True)
-                if len(title) < 3:
-                    continue
-                text = item.get_text(" ", strip=True)
-                dt = _parse_de_date(text)
-                if not dt:
-                    continue
-                time = _parse_time(text)
-                if time:
-                    dt = dt.replace(hour=time[0], minute=time[1])
-                else:
-                    dt = dt.replace(hour=20)
-                events.append({
-                    "title": title, "venue": self.name,
-                    "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
-                    "category": "theater",
-                })
+                for article in section.select("article.calendar-item"):
+                    title_el = article.select_one("a.calendar-item__title")
+                    if not title_el:
+                        continue
+                    title = title_el.get_text(strip=True)
+                    if len(title) < 3:
+                        continue
+                    time_span = article.select_one("div.calendar-item__date span[aria-label]")
+                    if time_span:
+                        t = _parse_time(time_span.get("aria-label", ""))
+                        if t:
+                            dt = base_date.replace(hour=t[0], minute=t[1])
+                        else:
+                            dt = base_date.replace(hour=20)
+                    else:
+                        text = article.get_text(" ", strip=True)
+                        t = _parse_time(text)
+                        dt = base_date.replace(hour=t[0], minute=t[1]) if t else base_date.replace(hour=20)
+                    events.append({
+                        "title": title.title(), "venue": self.name,
+                        "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
+                        "category": "theater",
+                    })
         except Exception as e:
             logger.warning("Schauspielhaus Zürich: %s", e)
         return events
@@ -707,9 +743,11 @@ class KKLLuzernScraper(VenueScraper):
     parkhaus_ids = _cfg.get("parkhaus_ids", [])
 
     def fetch(self) -> list[dict]:
+        existing = _existing_event_ids(self.name)
         events = []
         try:
-            resp = self._get(self._cfg["url"])
+            _time.sleep(2)
+            resp = self._get(self._cfg["url"], retries=3)
             soup = BeautifulSoup(resp.text, "html.parser")
             for article in soup.select("a[href^='/events/'] article, article"):
                 parent = article.find_parent("a")
@@ -740,6 +778,9 @@ class KKLLuzernScraper(VenueScraper):
                         dt = dt.replace(hour=time[0], minute=time[1])
                     else:
                         dt = dt.replace(hour=19, minute=30)
+                eid = _event_id(self.name, title, dt)
+                if eid in existing:
+                    continue
                 events.append({
                     "title": title, "venue": self.name,
                     "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
@@ -747,6 +788,7 @@ class KKLLuzernScraper(VenueScraper):
                 })
         except Exception as e:
             logger.warning("KKL Luzern: %s", e)
+        logger.info("KKL: %d neu, %d bereits in DB", len(events), len(existing))
         return events
 
 
