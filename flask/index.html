@@ -1035,8 +1035,14 @@
                 }
             }
 
-            // Load events
+            // Load events - prevent concurrent requests
+            let _loadingEvents = false;
             function loadEvents() {
+                if (_loadingEvents) {
+                    console.log('loadEvents already running, skipping...');
+                    return;
+                }
+
                 const env = document.getElementById('env-select').value;
                 const city = document.getElementById('city-select').value;
                 const tbody = document.getElementById('events-table-body');
@@ -1048,6 +1054,7 @@
                     return;
                 }
 
+                _loadingEvents = true;
                 const url = `/api/events/upcoming/${city}?env=${env}`;
                 console.log('Fetching: ' + url);
                 tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Loading...</td></tr>';
@@ -1083,10 +1090,12 @@
                             }
                         });
                         console.log('Rendered ' + rowCount + ' events');
+                        _loadingEvents = false;
                     })
                     .catch(err => {
                         console.error('Fetch error:', err);
                         tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Error: ${err.message}</td></tr>`;
+                        _loadingEvents = false;
                     });
             }
 
