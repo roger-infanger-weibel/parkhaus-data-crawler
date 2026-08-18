@@ -296,6 +296,32 @@ def get_stuck_parking():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/events')
+def get_events():
+    try:
+        conn = get_conn()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT id, title, venue, city, start_time, end_time, category
+            FROM local_events
+            WHERE start_time >= CURDATE()
+              AND start_time < DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            ORDER BY start_time
+            LIMIT 100
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+
+        for row in rows:
+            if isinstance(row.get('start_time'), datetime):
+                row['start_time'] = row['start_time'].isoformat()
+            if isinstance(row.get('end_time'), datetime):
+                row['end_time'] = row['end_time'].isoformat()
+
+        return jsonify(rows)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @app.route('/')

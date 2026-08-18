@@ -209,6 +209,7 @@
 
             function onEnvChange() {
                 loadCities();
+                loadEvents();
             }
 
             let CITY_CONFIG = {}; // Will be populated dynamically
@@ -1026,10 +1027,67 @@
                 }
             }
 
+            // Load events
+            function loadEvents() {
+                const env = document.getElementById('env-select').value;
+                fetch(`/api/events?env=${env}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const tbody = document.getElementById('events-table-body');
+                        tbody.innerHTML = '';
+                        if (data.error) {
+                            tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${data.error}</td></tr>`;
+                            return;
+                        }
+                        if (data.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No events in the next 30 days</td></tr>';
+                            return;
+                        }
+                        data.forEach(ev => {
+                            const startTime = new Date(ev.start_time);
+                            const dateStr = startTime.toLocaleDateString('de-CH');
+                            const timeStr = startTime.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'});
+                            const category = (ev.category || 'default').toUpperCase();
+                            const row = `<tr>
+                                <td>${dateStr} ${timeStr}</td>
+                                <td><strong>${ev.title}</strong></td>
+                                <td>${ev.venue}</td>
+                                <td><span class="badge bg-info">${ev.city}</span></td>
+                                <td><span class="badge bg-secondary">${category}</span></td>
+                            </tr>`;
+                            tbody.innerHTML += row;
+                        });
+                    })
+                    .catch(err => {
+                        document.getElementById('events-table-body').innerHTML =
+                            `<tr><td colspan="5" class="text-danger">Error loading events: ${err.message}</td></tr>`;
+                    });
+            }
+
             // Initial load
             loadCities();
+            loadEvents();
             checkCookieConsent();
         </script>
+
+        <!-- Events Section -->
+        <div class="mt-5 mb-4">
+            <h3 class="mb-3">📅 Events (Next 30 Days)</h3>
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date / Time</th>
+                        <th>Title</th>
+                        <th>Venue</th>
+                        <th>City</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+                <tbody id="events-table-body">
+                    <tr><td colspan="5" class="text-center text-muted">Loading events...</td></tr>
+                </tbody>
+            </table>
+        </div>
 
         <!-- Cookie Consent Banner -->
         <div id="cookie-banner" class="fixed-bottom p-4 bg-dark text-white" style="display: none; z-index: 9999;">
