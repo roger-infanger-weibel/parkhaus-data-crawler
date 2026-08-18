@@ -132,7 +132,7 @@ class VenueScraper(ABC):
 
     def _get(self, url: str, retries: int = 2, **kwargs) -> requests.Response:
         for attempt in range(retries + 1):
-            resp = requests.get(url, headers=HEADERS, timeout=30, **kwargs)
+            resp = requests.get(url, headers=HEADERS, timeout=60, **kwargs)
             if resp.status_code == 429 and attempt < retries:
                 wait = 5 * (attempt + 1)
                 logger.info("429 von %s — warte %ds", url, wait)
@@ -748,7 +748,8 @@ class KKLLuzernScraper(VenueScraper):
         try:
             # TicketCorner: https://www.ticketcorner.ch/city/luzern-19/venue/kkl-luzern-13752/
             url = "https://www.ticketcorner.ch/city/luzern-19/venue/kkl-luzern-13752/"
-            resp = self._get(url, retries=2)
+            _time.sleep(3)  # Beachte Rate-Limits
+            resp = self._get(url, retries=3)
             soup = BeautifulSoup(resp.text, "html.parser")
 
             # Events sind in Text-Struktur: Datum Wochentag Zeit - Titel
