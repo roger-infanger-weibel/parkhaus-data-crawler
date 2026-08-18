@@ -1039,46 +1039,54 @@
             function loadEvents() {
                 const env = document.getElementById('env-select').value;
                 const city = document.getElementById('city-select').value;
+                const tbody = document.getElementById('events-table-body');
+
+                console.log('loadEvents called: env=' + env + ', city=' + city);
+
                 if (!city || city === 'Loading cities...') {
-                    document.getElementById('events-table-body').innerHTML =
-                        '<tr><td colspan="5" class="text-muted">Wähle eine Stadt aus</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Wähle eine Stadt aus</td></tr>';
                     return;
                 }
-                fetch(`/api/events/upcoming/${city}?env=${env}`)
-                    .then(response => response.json())
+
+                const url = `/api/events/upcoming/${city}?env=${env}`;
+                console.log('Fetching: ' + url);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Loading...</td></tr>';
+
+                fetch(url)
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
-                        const tbody = document.getElementById('events-table-body');
+                        console.log('Data received:', data);
                         tbody.innerHTML = '';
                         if (data.error) {
                             tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${data.error}</td></tr>`;
                             return;
                         }
-                        if (data.length === 0) {
-                            tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No events in the next 30 days</td></tr>';
+                        if (!data || data.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Keine Events in den nächsten 30 Tagen</td></tr>';
                             return;
                         }
+                        let rowCount = 0;
                         data.forEach(ev => {
                             try {
                                 const startTime = new Date(ev.start_time.replace('T', ' '));
                                 const dateStr = startTime.toLocaleDateString('de-CH');
                                 const timeStr = startTime.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'});
                                 const category = (ev.category || 'default').toUpperCase();
-                                const row = `<tr>
-                                    <td>${dateStr} ${timeStr}</td>
-                                    <td><strong>${ev.title}</strong></td>
-                                    <td>${ev.venue}</td>
-                                    <td><span class="badge bg-info">${ev.city}</span></td>
-                                    <td><span class="badge bg-secondary">${category}</span></td>
-                                </tr>`;
+                                const row = `<tr><td>${dateStr} ${timeStr}</td><td><strong>${ev.title}</strong></td><td>${ev.venue}</td><td><span class="badge bg-info">${ev.city}</span></td><td><span class="badge bg-secondary">${category}</span></td></tr>`;
                                 tbody.innerHTML += row;
+                                rowCount++;
                             } catch (e) {
                                 console.error('Error rendering event:', ev, e);
                             }
                         });
+                        console.log('Rendered ' + rowCount + ' events');
                     })
                     .catch(err => {
-                        document.getElementById('events-table-body').innerHTML =
-                            `<tr><td colspan="5" class="text-danger">Error loading events: ${err.message}</td></tr>`;
+                        console.error('Fetch error:', err);
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Error: ${err.message}</td></tr>`;
                     });
             }
 
