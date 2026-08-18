@@ -746,36 +746,36 @@ class KKLLuzernScraper(VenueScraper):
     def fetch(self) -> list[dict]:
         events = []
         try:
-            # TicketCorner: https://www.ticketcorner.ch/city/luzern-19/venue/kkl-luzern-13752/
-            url = "https://www.ticketcorner.ch/city/luzern-19/venue/kkl-luzern-13752/"
-            _time.sleep(3)  # Beachte Rate-Limits
-            resp = self._get(url, retries=3)
+            # JamBase: englische Event-Liste (funktioniert zuverlässig)
+            url = "https://www.jambase.com/venue/kkl-luzern"
+            _time.sleep(2)
+            resp = self._get(url, retries=2)
             soup = BeautifulSoup(resp.text, "html.parser")
-
-            # Events sind in Text-Struktur: Datum Wochentag Zeit - Titel
-            # z.B: "14 Sept. 2026 Mo. 19:30 Music Night mit Heimweh"
             text = soup.get_text(" ", strip=True)
 
-            # Pattern: [TAG] [MONAT.] [JAHR] [WOCHENTAG.] [STUNDE:MINUTE] [TITEL]
-            pattern = r'(\d{1,2})\s+(Jan\.|Feb\.|Mär\.|Apr\.|Mai|Juni|Juli|Aug\.|Sept\.|Okt\.|Nov\.|Dez\.)\s+(\d{4})\s+(Mo\.|Di\.|Mi\.|Do\.|Fr\.|Sa\.|So\.)\s+(\d{1,2}):(\d{2})\s+([^0-9]+?)(?=\d{1,2}\s+(?:Jan\.|Feb\.|Mär\.|Apr\.|Mai|Juni|Juli|Aug\.|Sept\.|Okt\.|Nov\.|Dez\.)|$)'
+            # Pattern: [WOCHENTAG] [MONAT_EN] [TAG], [JAHR] [TITLE]
+            # z.B: "Fri Oct 9, 2026 Stefanie Heinzmann"
+            MONATE_EN = {
+                "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            }
+            pattern = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})\s+([^M][^o][^n|T|u|e|W|e|d|T|h|u|F|r|i|S|a|t|S|u|n][^A-Z]*?)(?=(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[A-Za-z]{3}|$)'
 
             for match in re.finditer(pattern, text):
-                day = int(match.group(1))
-                mon_str = match.group(2).lower().rstrip(".")
-                year = int(match.group(3))
-                hour = int(match.group(5))
-                minute = int(match.group(6))
-                title = match.group(7).strip()
+                mon_str = match.group(2).lower()
+                day = int(match.group(3))
+                year = int(match.group(4))
+                title = match.group(5).strip()
 
-                if len(title) < 5:
+                if len(title) < 3:
                     continue
 
-                mon = MONATE_DE.get(mon_str[:3])
+                mon = MONATE_EN.get(mon_str[:3])
                 if not mon:
                     continue
 
                 try:
-                    dt = datetime(year, mon, day, hour, minute)
+                    dt = datetime(year, mon, day, 19, 30)  # Default 19:30
                 except ValueError:
                     continue
 
@@ -785,7 +785,7 @@ class KKLLuzernScraper(VenueScraper):
                     "category": _guess_category(title),
                 })
         except Exception as e:
-            logger.warning("KKL Luzern (TicketCorner): %s", e)
+            logger.warning("KKL Luzern (JamBase): %s", e)
         logger.info("KKL Luzern: %d Events gefunden", len(events))
         return events
 
