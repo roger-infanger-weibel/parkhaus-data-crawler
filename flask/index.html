@@ -1051,18 +1051,22 @@
                             return;
                         }
                         data.forEach(ev => {
-                            const startTime = new Date(ev.start_time);
-                            const dateStr = startTime.toLocaleDateString('de-CH');
-                            const timeStr = startTime.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'});
-                            const category = (ev.category || 'default').toUpperCase();
-                            const row = `<tr>
-                                <td>${dateStr} ${timeStr}</td>
-                                <td><strong>${ev.title}</strong></td>
-                                <td>${ev.venue}</td>
-                                <td><span class="badge bg-info">${ev.city}</span></td>
-                                <td><span class="badge bg-secondary">${category}</span></td>
-                            </tr>`;
-                            tbody.innerHTML += row;
+                            try {
+                                const startTime = new Date(ev.start_time.replace('T', ' '));
+                                const dateStr = startTime.toLocaleDateString('de-CH');
+                                const timeStr = startTime.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'});
+                                const category = (ev.category || 'default').toUpperCase();
+                                const row = `<tr>
+                                    <td>${dateStr} ${timeStr}</td>
+                                    <td><strong>${ev.title}</strong></td>
+                                    <td>${ev.venue}</td>
+                                    <td><span class="badge bg-info">${ev.city}</span></td>
+                                    <td><span class="badge bg-secondary">${category}</span></td>
+                                </tr>`;
+                                tbody.innerHTML += row;
+                            } catch (e) {
+                                console.error('Error rendering event:', ev, e);
+                            }
                         });
                     })
                     .catch(err => {
