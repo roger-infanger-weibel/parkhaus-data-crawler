@@ -758,9 +758,19 @@ class KKLLuzernScraper(VenueScraper):
                 "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
             }
 
+            text = soup.get_text("\n")
+            logger.info("JamBase HTML-Länge: %d Zeichen", len(text))
+
+            # Debug: Zeige erste Event-Zeilen
+            sample_lines = [l.strip() for l in text.split("\n") if any(d in l for d in ["Oct", "Sep", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"])][:5]
+            if sample_lines:
+                logger.info("JamBase Sample-Zeilen: %s", sample_lines)
+
             # Finde alle Zeilen mit Datum-Pattern
-            for line in soup.get_text("\n").split("\n"):
+            for line in text.split("\n"):
                 line = line.strip()
+                if not line:
+                    continue
                 # Pattern: "Mon Oct 19, 2026" oder "Fri Oct 9, 2026"
                 m = re.search(r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})', line)
                 if not m:
