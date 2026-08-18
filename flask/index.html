@@ -1030,7 +1030,7 @@
             // Load events
             function loadEvents() {
                 const env = document.getElementById('env-select').value;
-                fetch(`/api/events?env=${env}`)
+                fetch(`/api/events/upcoming?env=${env}`)
                     .then(response => response.json())
                     .then(data => {
                         const tbody = document.getElementById('events-table-body');

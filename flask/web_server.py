@@ -296,8 +296,8 @@ def get_stuck_parking():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/events')
-def get_events():
+@app.route('/api/events/upcoming')
+def get_upcoming_events():
     try:
         conn = get_conn()
         cursor = conn.cursor(dictionary=True)
