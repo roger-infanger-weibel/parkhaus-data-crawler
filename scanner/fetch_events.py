@@ -763,17 +763,27 @@ class KKLLuzernScraper(VenueScraper):
                 logger.info("KKL: Öffne %s mit Playwright", url)
                 page.goto(url, wait_until="networkidle", timeout=30000)
 
-                # Warte bis Events geladen sind (verschiedene Selektoren möglich)
+                # Warte auf Event-Selektoren
                 try:
                     page.wait_for_selector("[data-event], .event, .program-item, .performance", timeout=10000)
                 except:
-                    pass  # Kein Fehler wenn Selector nicht existiert
+                    logger.info("KKL: Kein Event-Selector gefunden, versuche längeres Warten...")
+                    page.wait_for_timeout(5000)
 
                 content = page.content()
+
+                # DEBUG: Speichere HTML für Debugging
+                with open("/tmp/kkl_debug.html", "w") as f:
+                    f.write(content)
+                logger.info("KKL: HTML gespeichert in /tmp/kkl_debug.html")
+
                 browser.close()
 
                 soup = BeautifulSoup(content, "html.parser")
                 text = soup.get_text("\n")
+
+                # DEBUG: Zeige erste 2000 Zeichen
+                logger.info("KKL: HTML-Text (erste 2000 chars):\n%s", text[:2000])
                 lines = [l.strip() for l in text.split("\n") if l.strip()]
 
                 # Suche nach Datum-Pattern und Title
