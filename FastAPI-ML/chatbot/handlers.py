@@ -22,20 +22,37 @@ def help_(env, entities, now):
     return R.HELP_TEXT, None
 
 
+def _enrich(snap, mapping):
+    m = mapping.get(snap["pls_id"], {})
+    extras = []
+    if m.get("price_category"):
+        extras.append(f"Preis: {m['price_category']}")
+    if m.get("url"):
+        extras.append(f"Info: {m['url']}")
+    if m.get("latitude") and m.get("longitude"):
+        lat, lon = float(m["latitude"]), float(m["longitude"])
+        extras.append(f"Route: https://www.google.com/maps/dir/?api=1&destination={lat},{lon}")
+    return extras, m
+
+
 def current(env, entities, now):
     city = entities.get("city")
     parkhaus = entities.get("parkhaus")
     snaps = da.latest_snapshots(env=env, city=city)
+    mapping = {m["pls_id"]: m for m in da.get_mapping(env=env, city=city)}
     if parkhaus:
         snap = next((s for s in snaps if s["pls_id"] == parkhaus["pls_id"]), None)
         if snap is None:
             return (f"Für das Parkhaus {parkhaus['name']} habe ich gerade "
                     f"keine aktuellen Daten."), None
         occ_pct = round(100 * (snap["total"] - snap["free"]) / snap["total"]) if snap["total"] else None
+        extras, m = _enrich(snap, mapping)
         text = (f"Im {snap['name']} ({R.city_name(snap['city'])}) sind aktuell "
                 f"{snap['free']} von {snap['total']} Plätzen frei"
                 + (f" (Belegung {occ_pct} %)" if occ_pct is not None else "") + ".")
-        return text, {"type": "current", "houses": [_snap_payload(snap)]}
+        if extras:
+            text += "\n" + " · ".join(extras)
+        return text, {"type": "current", "houses": [_snap_payload(snap, mapping)]}
 
     if not snaps:
         return f"Für {R.city_name(city)} habe ich gerade keine aktuellen Daten.", None
@@ -45,9 +62,10 @@ def current(env, entities, now):
             f"({len(snaps)} Parkhäuser). Am meisten Platz gibt es hier:\n")
     text += "\n".join(
         f"• {s['name']}: {s['free']} von {s['total']} frei"
+        + (f" ({mapping.get(s['pls_id'], {}).get('price_category', '')})" if mapping.get(s['pls_id'], {}).get('price_category') else "")
         for s in snaps[:MAX_LIST]
     )
-    return text, {"type": "current", "houses": [_snap_payload(s) for s in snaps[:MAX_LIST]]}
+    return text, {"type": "current", "houses": [_snap_payload(s, mapping) for s in snaps[:MAX_LIST]]}
 
 
 def forecast(env, entities, now):
@@ -114,15 +132,25 @@ def best_parking(env, entities, now):
         return (f"Für {R.city_name(city)} habe ich zu diesem Zeitpunkt "
                 f"keine Prognosen. Versuche es mit einem Zeitpunkt innerhalb "
                 f"der nächsten 8 Stunden."), None
+    mapping = {m["pls_id"]: m for m in da.get_mapping(env=env, city=city)}
     when = R.fmt_time(at, now) if at > now else "jetzt"
     caveat = (" (saisonale Schätzung, ausserhalb des 8h-Prognosefensters)"
               if result["method"] == "baseline_seasonal" else "")
     text = f"Empfehlung für {R.city_name(city)} {when}{caveat}:\n"
-    text += "\n".join(
-        f"• {r['name']}: voraussichtlich {r['predicted_free']} von {r['total']} frei"
-        + (f" (±{r['recent_mae_free']:.0f})" if r.get("recent_mae_free") else "")
-        for r in recs[:3]
-    )
+    lines = []
+    for r in recs[:3]:
+        m = mapping.get(r.get("pls_id", ""), {})
+        line = f"• {r['name']}: voraussichtlich {r['predicted_free']} von {r['total']} frei"
+        if r.get("recent_mae_free"):
+            line += f" (±{r['recent_mae_free']:.0f})"
+        if m.get("price_category"):
+            line += f" · {m['price_category']}"
+        if m.get("url"):
+            line += f"\n  Info: {m['url']}"
+        if m.get("latitude") and m.get("longitude"):
+            line += f"\n  Route: https://www.google.com/maps/dir/?api=1&destination={float(m['latitude'])},{float(m['longitude'])}"
+        lines.append(line)
+    text += "\n".join(lines)
     return text, {"type": "best_parking", **result}
 
 
@@ -210,9 +238,16 @@ def fallback(env, entities, now):
     return R.FALLBACK, None
 
 
-def _snap_payload(s) -> dict:
-    return {"pls_id": s["pls_id"], "name": s["name"], "free": s["free"],
-            "total": s["total"], "city": s["city"]}
+def _snap_payload(s, mapping=None) -> dict:
+    d = {"pls_id": s["pls_id"], "name": s["name"], "free": s["free"],
+         "total": s["total"], "city": s["city"]}
+    if mapping:
+        m = mapping.get(s["pls_id"], {})
+        d["price_category"] = m.get("price_category")
+        d["url"] = m.get("url")
+        d["lat"] = float(m["latitude"]) if m.get("latitude") else None
+        d["lon"] = float(m["longitude"]) if m.get("longitude") else None
+    return d
 
 
 HANDLERS = {
