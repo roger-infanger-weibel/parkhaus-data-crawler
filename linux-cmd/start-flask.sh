@@ -9,9 +9,7 @@ else
 fi
 sleep 1
 
-anzahl=$(ls -1 latest-github/flask/ 2>/dev/null | wc -l)
-cp -rf latest-github/flask/* flask
-echo "[Flask] $anzahl Dateien aus latest-github/flask kopiert"
+rsync -av --delete latest-github/flask/ flask/
 
 cd flask/ || exit 1
 nohup python3 web_server.py >web_server.log 2>&1 &
