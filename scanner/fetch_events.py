@@ -22,6 +22,11 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError:
+    sync_playwright = None
+
 from db_utils import get_connection
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -737,7 +742,7 @@ class BernExpoScraper(VenueScraper):
 
 
 class KKLLuzernScraper(VenueScraper):
-    """KKL Luzern: nutzt TicketCorner als Datenquelle (76+ Events)."""
+    """KKL Luzern: Playwright-Scraper (ALLE Events von kkl-luzern.ch)."""
     _cfg = _venue_config("KKLLuzernScraper")
     name = _cfg.get("name", "KKL Luzern")
     city = _cfg.get("city", "luzern")
@@ -745,44 +750,56 @@ class KKLLuzernScraper(VenueScraper):
 
     def fetch(self) -> list[dict]:
         events = []
+        if not sync_playwright:
+            logger.warning("KKL Luzern: Playwright nicht installiert (pip install playwright)")
+            return events
+
         try:
-            # JamBase: englische Event-Liste
-            url = "https://www.jambase.com/venue/kkl-luzern"
-            _time.sleep(2)
-            resp = self._get(url, retries=2)
-            soup = BeautifulSoup(resp.text, "html.parser")
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
 
-            MONATE_EN = {
-                "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
-                "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
-            }
+                url = "https://www.kkl-luzern.ch/en/events"
+                logger.info("KKL: Öffne %s mit Playwright", url)
+                page.goto(url, wait_until="networkidle", timeout=30000)
 
-            lines = [l.strip() for l in soup.get_text("\n").split("\n") if l.strip()]
+                # Warte bis Events geladen sind (verschiedene Selektoren möglich)
+                try:
+                    page.wait_for_selector("[data-event], .event, .program-item, .performance", timeout=10000)
+                except:
+                    pass  # Kein Fehler wenn Selector nicht existiert
 
-            # Struktur: Wochentag, Datum, Title auf separaten Zeilen
-            i = 0
-            while i < len(lines):
-                # Suche Datum-Zeile: "Oct 9, 2026" oder "Nov 2, 2026"
-                m = re.search(r'([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})', lines[i])
-                if not m:
-                    i += 1
-                    continue
+                content = page.content()
+                browser.close()
 
-                mon_str = m.group(1).lower()
-                day = int(m.group(2))
-                year = int(m.group(3))
+                soup = BeautifulSoup(content, "html.parser")
+                text = soup.get_text("\n")
+                lines = [l.strip() for l in text.split("\n") if l.strip()]
 
-                mon = MONATE_EN.get(mon_str[:3])
-                if not mon:
-                    i += 1
-                    continue
+                # Suche nach Datum-Pattern und Title
+                i = 0
+                while i < len(lines):
+                    # Pattern: "9 Aug 2026" oder "Fri, 9 Aug 2026"
+                    m = re.search(r'(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})', lines[i])
+                    if not m:
+                        i += 1
+                        continue
 
-                # Title ist die nächste Zeile (nach Datum)
-                if i + 1 < len(lines):
-                    title = lines[i + 1].strip()
+                    day = int(m.group(1))
+                    mon_str = m.group(2).lower()[:3]
+                    year = int(m.group(3))
 
-                    # Ignoriere KKL-Meta-Zeilen
-                    if len(title) >= 3 and not title.startswith("KKL") and not title in ["Tickets", "Info", "Calendar", "Infos anzeigen"]:
+                    mon = MONATE_DE.get(mon_str)
+                    if not mon:
+                        i += 1
+                        continue
+
+                    # Title ist entweder auf gleicher Zeile nach Datum oder nächste Zeile
+                    title = lines[i][m.end():].strip()
+                    if not title and i + 1 < len(lines):
+                        title = lines[i + 1].strip()
+
+                    if len(title) >= 3:
                         try:
                             dt = datetime(year, mon, day, 19, 30)
                             events.append({
@@ -793,10 +810,11 @@ class KKLLuzernScraper(VenueScraper):
                         except ValueError:
                             pass
 
-                i += 1
+                    i += 1
 
         except Exception as e:
-            logger.warning("KKL Luzern (JamBase): %s", e)
+            logger.warning("KKL Luzern (Playwright): %s", e)
+
         logger.info("KKL Luzern: %d Events gefunden", len(events))
         return events
 
