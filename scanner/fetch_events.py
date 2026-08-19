@@ -752,7 +752,7 @@ class KKLLuzernScraper(VenueScraper):
         events = []
         try:
             json_file = "kkl_events_manual.json"
-            with open(json_file, "r") as f:
+            with open(json_file, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
 
             for item in data:
