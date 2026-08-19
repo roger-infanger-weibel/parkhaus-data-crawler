@@ -761,7 +761,12 @@ class KKLLuzernScraper(VenueScraper):
 
                 url = "https://www.kkl-luzern.ch/en/events"
                 logger.info("KKL: Öffne %s mit Playwright", url)
-                page.goto(url, wait_until="networkidle", timeout=30000)
+                try:
+                    page.goto(url, wait_until="networkidle", timeout=30000)
+                    logger.info("KKL: Website geladen erfolgreich")
+                except Exception as e:
+                    logger.warning("KKL: page.goto fehlgeschlagen: %s", e)
+                    return events
 
                 # Warte auf Event-Selektoren
                 try:
