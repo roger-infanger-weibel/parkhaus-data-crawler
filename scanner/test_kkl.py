@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env python3
-"""Test KKL Scraper ohne DB-Zugriff. VERSION: 2026-08-19 MANUAL-v2"""
+"""Test KKL Scraper ohne DB-Zugriff. VERSION: 2026-08-19 MANUAL-v4"""
 
 import json
 import sys
 from fetch_events import KKLLuzernScraper
 
-__version__ = "2026-08-19-MANUAL-v3"
+__version__ = "2026-08-19-MANUAL-v4"
 
 def main():
     print("=" * 60)

@@ -1,75 +1,1549 @@
-﻿[
-  {"title": "Solist*innen und Brass Ensemble des Lucerne Festival Orchestra", "start_date": "2026-08-19", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Luzerner Sinfonieorchester | Michael Sanderling | Alexander Malofeev", "start_date": "2026-08-20", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 1", "start_date": "2026-08-21", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Budapest Festival Orchestra | Eva Duda Dance Company | Iván Fischer | Elisabeth Leonskaja", "start_date": "2026-08-21", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Budapest Festival Orchestra | Iván Fischer", "start_date": "2026-08-22", "start_time": "11:00", "end_time": "12:30", "category": "concert"},
-  {"title": "Lucerne Festival Contemporary Orchestra (LFCO) | Baldur Brönnimann | Miah Persson", "start_date": "2026-08-22", "start_time": "16:00", "end_time": "17:30", "category": "concert"},
-  {"title": "Lucerne Festival Orchestra | Jakub Hrůša | Ray Chen", "start_date": "2026-08-22", "start_time": "18:30", "end_time": "20:30", "category": "concert"},
-  {"title": "LFCO | Teilnehmer*innen des Contemporary-Conducting Program", "start_date": "2026-08-22", "start_time": "21:00", "end_time": "22:30", "category": "concert"},
-  {"title": "Les Musiciens du Prince – Monaco | Vocal ensemble Il canto di Orfeo | Gianluca Capuano | Cecilia Bartoli", "start_date": "2026-08-23", "start_time": "17:00", "end_time": "18:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 2", "start_date": "2026-08-24", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Augustin Hadelich | Seong-Jin Cho", "start_date": "2026-08-24", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Lucerne Festival Orchestra | Anne-Sophie Mutter", "start_date": "2026-08-25", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Berliner Philharmoniker | Kirill Petrenko", "start_date": "2026-08-26", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Berliner Philharmoniker | Kirill Petrenko | Augustin Hadelich", "start_date": "2026-08-27", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Royal Concertgebouw Orchestra | Santtu-Matias Rouvali | Víkingur Ólafsson", "start_date": "2026-08-28", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Lucerne Festival Contemporary Orchestra (LFCO) | Elim Chan | Jörg Widmann | Marco Blaauw | SWR Experimentalstudio", "start_date": "2026-08-29", "start_time": "18:30", "end_time": "20:30", "category": "concert"},
-  {"title": "LFCO| Teilnehmer*innen des Contemporary-Conducting Program | Doreen Ketchens", "start_date": "2026-08-30", "start_time": "16:00", "end_time": "17:30", "category": "concert"},
-  {"title": "The Met Orchestra | Yannick Nézet-Séguin | Joyce DiDonato", "start_date": "2026-08-30", "start_time": "18:30", "end_time": "20:30", "category": "concert"},
-  {"title": "Münchner Philharmoniker | Lahav Shani | Martha Argerich", "start_date": "2026-08-31", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Rezital Hayato Sumino", "start_date": "2026-09-01", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Freiburger Barockorchester | Sir Simon Rattle | Isabelle Faust", "start_date": "2026-09-02", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 3", "start_date": "2026-09-03", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Pittsburgh Symphony Orchestra | Manfred Honeck | Alexandre Kantorow", "start_date": "2026-09-03", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Pittsburgh Symphony Orchestra | Manfred Honeck | Anne-Sophie Mutter", "start_date": "2026-09-04", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Wiener Philharmoniker | Tugan Sokhiev", "start_date": "2026-09-05", "start_time": "18:30", "end_time": "20:30", "category": "concert"},
-  {"title": "Augustin Hadelich | Mark O'Connor | Maggie O'Connor", "start_date": "2026-09-05", "start_time": "22:00", "end_time": "23:30", "category": "concert"},
-  {"title": "Festival Strings Lucerne | Daniel Dodds | Karl-Heinz Schütz", "start_date": "2026-09-06", "start_time": "14:30", "end_time": "16:00", "category": "concert"},
-  {"title": "Wiener Philharmoniker | Tugan Sokhiev | Hilary Hahn", "start_date": "2026-09-06", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 4", "start_date": "2026-09-07", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Konzerthausorchester Berlin | Rundfunkchor Berlin | Joana Mallwitz", "start_date": "2026-09-07", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Icelandic Philharmonic | Víkingur Ólafsson", "start_date": "2026-09-08", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Lucerne Festival Strings | Salonen", "start_date": "2026-09-09", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Orchestre de la Suisse Romande | Pappano", "start_date": "2026-09-10", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Kleiber Festiva | Pina Bausch Tanztheater", "start_date": "2026-09-11", "start_time": "20:00", "end_time": "22:00", "category": "theater"},
-  {"title": "Mahler Festival Orchestra | Rizzi", "start_date": "2026-09-12", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "London Symphony Orchestra | Gianandrea Noseda", "start_date": "2026-09-13", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 5", "start_date": "2026-09-14", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Bavarian Radio Orchestra | Salonen", "start_date": "2026-09-15", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Philharmonia Orchestra | Eschenbach", "start_date": "2026-09-16", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Chicago Symphony Orchestra | Muti", "start_date": "2026-09-17", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Berlin Philharmonic | Petrenko", "start_date": "2026-09-18", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Lucerne Festival Contemporary Orchestra | Chan", "start_date": "2026-09-19", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "World of Warcraft: 20 Years of Music", "start_date": "2026-10-03", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Luzerner Sinfonie-Orchester | Giancarlo Guerrero", "start_date": "2026-10-08", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Festival Strings Lucerne | Hagen", "start_date": "2026-10-15", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 6", "start_date": "2026-10-20", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Zurich Tonhalle Orchestra | Paavo Järvi", "start_date": "2026-10-22", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Gewandhaus Orchestra Leipzig | Andris Nelsons", "start_date": "2026-11-05", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 7", "start_date": "2026-11-10", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Lucerne Festival Strings | Conlon", "start_date": "2026-11-12", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Dresden Philharmonic | Thielemann", "start_date": "2026-11-19", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Swiss Romandie Orchestra | Noseda", "start_date": "2026-11-26", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Keep Cool - Comedy Musical", "start_date": "2026-12-18", "start_time": "20:00", "end_time": "21:30", "category": "musical"},
-  {"title": "New Years Concert | Lucerne Festival Orchestra", "start_date": "2026-12-31", "start_time": "20:00", "end_time": "22:00", "category": "concert"},
-  {"title": "Silvesterkonzert Gala", "start_date": "2027-01-01", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Lucerne Festival Strings | Hengelbrock", "start_date": "2027-01-14", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 8", "start_date": "2027-01-20", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Vienna Philharmonic | Gianandrea Noseda", "start_date": "2027-02-04", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "London Symphony Orchestra | Gianandrea Noseda", "start_date": "2027-02-11", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 9", "start_date": "2027-02-16", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Chamber Orchestra of Europe | Pappano", "start_date": "2027-02-18", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Luzerner Sinfonieorchester | Ticciati", "start_date": "2027-03-04", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 10", "start_date": "2027-03-09", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Festival Strings Lucerne | Conlon", "start_date": "2027-03-11", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Berlin Philharmonic | Barenboim", "start_date": "2027-03-18", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Bavarian Radio Orchestra | Jansons", "start_date": "2027-04-01", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Grieg | Strawinsky", "start_date": "2027-04-11", "start_time": "17:00", "end_time": "18:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 11", "start_date": "2027-04-13", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "London Philharmonic | Eschenbach", "start_date": "2027-04-15", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Lucerne Festival Strings | Salonen", "start_date": "2027-04-22", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Wiener Symphoniker | Metzmacher", "start_date": "2027-05-06", "start_time": "19:30", "end_time": "21:30", "category": "concert"},
-  {"title": "Klassik für alle: 40min 12", "start_date": "2027-05-11", "start_time": "18:20", "end_time": "19:20", "category": "concert"},
-  {"title": "Czech Philharmonic | Petrenko", "start_date": "2027-05-13", "start_time": "19:30", "end_time": "21:30", "category": "concert"}
+[
+  {
+    "title": "Solist*innen und Brass Ensemble des Lucerne Festival Orchestra",
+    "start_date": "2026-08-19",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Luzerner Sinfonieorchester | Michael Sanderling | Alexander Malofeev",
+    "start_date": "2026-08-20",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Klassik für alle: 40min 1",
+    "start_date": "2026-08-21",
+    "start_time": "18:20",
+    "end_time": "19:20",
+    "category": "concert"
+  },
+  {
+    "title": "Budapest Festival Orchestra | Eva Duda Dance Company | Iván Fischer | Elisabeth Leonskaja",
+    "start_date": "2026-08-21",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Budapest Festival Orchestra | Iván Fischer",
+    "start_date": "2026-08-22",
+    "start_time": "11:00",
+    "end_time": "12:30",
+    "category": "concert"
+  },
+  {
+    "title": "Lucerne Festival Contemporary Orchestra (LFCO) | Baldur Brönnimann | Miah Persson",
+    "start_date": "2026-08-22",
+    "start_time": "16:00",
+    "end_time": "17:30",
+    "category": "concert"
+  },
+  {
+    "title": "Lucerne Festival Orchestra | Jakub Hrůša | Ray Chen",
+    "start_date": "2026-08-22",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "LFCO | Teilnehmer*innen des Contemporary-Conducting Program",
+    "start_date": "2026-08-22",
+    "start_time": "21:00",
+    "end_time": "22:30",
+    "category": "concert"
+  },
+  {
+    "title": "Les Musiciens du Prince – Monaco | Vocal ensemble Il canto di Orfeo | Gianluca Capuano | Cecilia Bartoli",
+    "start_date": "2026-08-23",
+    "start_time": "17:00",
+    "end_time": "18:30",
+    "category": "concert"
+  },
+  {
+    "title": "Klassik für alle: 40min 2",
+    "start_date": "2026-08-24",
+    "start_time": "18:20",
+    "end_time": "19:20",
+    "category": "concert"
+  },
+  {
+    "title": "Augustin Hadelich | Seong-Jin Cho",
+    "start_date": "2026-08-24",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Lucerne Festival Orchestra | Anne-Sophie Mutter",
+    "start_date": "2026-08-25",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Berliner Philharmoniker | Kirill Petrenko",
+    "start_date": "2026-08-26",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Berliner Philharmoniker | Kirill Petrenko | Augustin Hadelich",
+    "start_date": "2026-08-27",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Royal Concertgebouw Orchestra | Santtu-Matias Rouvali | Víkingur Ólafsson",
+    "start_date": "2026-08-28",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Lucerne Festival Contemporary Orchestra (LFCO) | Elim Chan | Jörg Widmann | Marco Blaauw | SWR Experimentalstudio",
+    "start_date": "2026-08-29",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "LFCO| Teilnehmer*innen des Contemporary-Conducting Program | Doreen Ketchens",
+    "start_date": "2026-08-30",
+    "start_time": "16:00",
+    "end_time": "17:30",
+    "category": "concert"
+  },
+  {
+    "title": "The Met Orchestra | Yannick Nézet-Séguin | Joyce DiDonato",
+    "start_date": "2026-08-30",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Münchner Philharmoniker | Lahav Shani | Martha Argerich",
+    "start_date": "2026-08-31",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Rezital Hayato Sumino",
+    "start_date": "2026-09-01",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Freiburger Barockorchester | Sir Simon Rattle | Isabelle Faust",
+    "start_date": "2026-09-02",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Klassik für alle: 40min 3",
+    "start_date": "2026-09-03",
+    "start_time": "18:20",
+    "end_time": "19:20",
+    "category": "concert"
+  },
+  {
+    "title": "Pittsburgh Symphony Orchestra | Manfred Honeck | Alexandre Kantorow",
+    "start_date": "2026-09-03",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Pittsburgh Symphony Orchestra | Manfred Honeck | Anne-Sophie Mutter",
+    "start_date": "2026-09-04",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Wiener Philharmoniker | Tugan Sokhiev",
+    "start_date": "2026-09-05",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Augustin Hadelich | Mark O'Connor | Maggie O'Connor",
+    "start_date": "2026-09-05",
+    "start_time": "22:00",
+    "end_time": "23:30",
+    "category": "concert"
+  },
+  {
+    "title": "Festival Strings Lucerne | Daniel Dodds | Karl-Heinz Schütz",
+    "start_date": "2026-09-06",
+    "start_time": "14:30",
+    "end_time": "16:00",
+    "category": "concert"
+  },
+  {
+    "title": "Wiener Philharmoniker | Tugan Sokhiev | Hilary Hahn",
+    "start_date": "2026-09-06",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Klassik für alle: 40min 4",
+    "start_date": "2026-09-07",
+    "start_time": "18:20",
+    "end_time": "19:20",
+    "category": "concert"
+  },
+  {
+    "title": "Konzerthausorchester Berlin | Rundfunkchor Berlin | Joana Mallwitz",
+    "start_date": "2026-09-07",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Icelandic Philharmonic | Víkingur Ólafsson",
+    "start_date": "2026-09-08",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Lucerne Festival Strings | Salonen",
+    "start_date": "2026-09-09",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Orchestre de la Suisse Romande | Pappano",
+    "start_date": "2026-09-10",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Kleiber Festiva | Pina Bausch Tanztheater",
+    "start_date": "2026-09-11",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "theater"
+  },
+  {
+    "title": "Mahler Festival Orchestra | Rizzi",
+    "start_date": "2026-09-12",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "London Symphony Orchestra | Gianandrea Noseda",
+    "start_date": "2026-09-13",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Klassik für alle: 40min 5",
+    "start_date": "2026-09-14",
+    "start_time": "18:20",
+    "end_time": "19:20",
+    "category": "concert"
+  },
+  {
+    "title": "Bavarian Radio Orchestra | Salonen",
+    "start_date": "2026-09-15",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Philharmonia Orchestra | Eschenbach",
+    "start_date": "2026-09-16",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Chicago Symphony Orchestra | Muti",
+    "start_date": "2026-09-17",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Berlin Philharmonic | Petrenko",
+    "start_date": "2026-09-18",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Lucerne Festival Contemporary Orchestra | Chan",
+    "start_date": "2026-09-19",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "World of Warcraft®: 20 Years of Music",
+    "start_date": "2026-10-02",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Bliss Kater",
+    "start_date": "2026-10-03",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "musical"
+  },
+  {
+    "title": "World of Warcraft®: 20 Years of Music",
+    "start_date": "2026-10-03",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "PANTA RHEI",
+    "start_date": "2026-10-04",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Bliss Kater",
+    "start_date": "2026-10-04",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "musical"
+  },
+  {
+    "title": "Stefanie Heinzmann",
+    "start_date": "2026-10-09",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Bülent Ceylan - DIKTATÜRK",
+    "start_date": "2026-10-10",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "comedy"
+  },
+  {
+    "title": "Saisoneröffnung mit Mahlers Auferstehungssinfonie",
+    "start_date": "2026-10-14",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Saisoneröffnung mit Mahlers Auferstehungssinfonie",
+    "start_date": "2026-10-15",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Top Gun: Maverick – in Concert",
+    "start_date": "2026-10-16",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Top Gun: Maverick – in Concert",
+    "start_date": "2026-10-17",
+    "start_time": "15:00",
+    "end_time": "17:00",
+    "category": "concert"
+  },
+  {
+    "title": "Top Gun: Maverick – in Concert",
+    "start_date": "2026-10-17",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Top Gun: Maverick – in Concert",
+    "start_date": "2026-10-18",
+    "start_time": "14:00",
+    "end_time": "16:00",
+    "category": "concert"
+  },
+  {
+    "title": "Top Gun: Maverick – in Concert",
+    "start_date": "2026-10-18",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Avishai Cohen Quintet",
+    "start_date": "2026-10-19",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "jazz"
+  },
+  {
+    "title": "Abel Selaocoe: Cello grenzenlos",
+    "start_date": "2026-10-23",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "WE CLASSIC THE KING OF POP",
+    "start_date": "2026-10-24",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "WE CLASSIC THE KING OF POP",
+    "start_date": "2026-10-25",
+    "start_time": "18:00",
+    "end_time": "20:00",
+    "category": "concert"
+  },
+  {
+    "title": "Irish Folk Festival 2026",
+    "start_date": "2026-10-30",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "James Bond 007: Spectre – in Concert",
+    "start_date": "2026-10-30",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Verdi Requiem",
+    "start_date": "2026-10-31",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Verdi Requiem",
+    "start_date": "2026-11-01",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Hiromi Trio feat. James Genus & Simon Phillips",
+    "start_date": "2026-11-02",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "jazz"
+  },
+  {
+    "title": "«Drama, Tanz & Aufbruch» – Emanuel Ax spielt Mozart",
+    "start_date": "2026-11-03",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Andreas Gabalier",
+    "start_date": "2026-11-04",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "concert"
+  },
+  {
+    "title": "Andreas Gabalier",
+    "start_date": "2026-11-05",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "concert"
+  },
+  {
+    "title": "How to Train Your Dragon 2 – in Concert",
+    "start_date": "2026-11-06",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "How to Train Your Dragon 2 – in Concert",
+    "start_date": "2026-11-07",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "How to Train Your Dragon 2 – in Concert",
+    "start_date": "2026-11-08",
+    "start_time": "11:00",
+    "end_time": "13:00",
+    "category": "concert"
+  },
+  {
+    "title": "Lied der Nacht - Mahler 7",
+    "start_date": "2026-11-11",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Lied der Nacht - Mahler 7",
+    "start_date": "2026-11-12",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Epic Rock Symphonies",
+    "start_date": "2026-11-13",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Epic Rock Symphonies",
+    "start_date": "2026-11-14",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Noah Veraguth",
+    "start_date": "2026-11-14",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "concert"
+  },
+  {
+    "title": "Konzertchor Luzern",
+    "start_date": "2026-11-15",
+    "start_time": "11:00",
+    "end_time": "13:00",
+    "category": "concert"
+  },
+  {
+    "title": "Pene Pati: Serenata Napoletana",
+    "start_date": "2026-11-15",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Benjamin Brittens «War Requiem»",
+    "start_date": "2026-11-17",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Mnozil Brass",
+    "start_date": "2026-11-19",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "CSS Benefiz-Konzert mit Alice Sara Ott",
+    "start_date": "2026-11-20",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Ensemble des Lucerne Festival Contemporary Orchestra (LFCO) | Christian Jost | Jörg Widmann | Fatma Said",
+    "start_date": "2026-11-21",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Fabio Landert",
+    "start_date": "2026-11-21",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "concert"
+  },
+  {
+    "title": "Johanna Summer",
+    "start_date": "2026-11-21",
+    "start_time": "21:00",
+    "end_time": "23:00",
+    "category": "jazz"
+  },
+  {
+    "title": "Jörg Widmann | Solist*innen des Lucerne Festival Contemporary Orchestra (LFCO)",
+    "start_date": "2026-11-22",
+    "start_time": "16:30",
+    "end_time": "18:30",
+    "category": "concert"
+  },
+  {
+    "title": "Lucerne Festival Contemporary Orchestra (LFCO) | SWR Vokalensemble | Heinz Holliger",
+    "start_date": "2026-11-22",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Bach in Space",
+    "start_date": "2026-11-25",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Joe Hisaishi's World Dream Tour",
+    "start_date": "2026-11-26",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "The Four Seasons By Candlelight",
+    "start_date": "2026-11-27",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "The Sound of James Bond",
+    "start_date": "2026-11-28",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Merry Blissmas",
+    "start_date": "2026-11-28",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "musical"
+  },
+  {
+    "title": "The Sound of James Bond",
+    "start_date": "2026-11-29",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Merry Blissmas",
+    "start_date": "2026-11-29",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "musical"
+  },
+  {
+    "title": "Ode an die Freude - Beethoven 9",
+    "start_date": "2026-12-02",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Beethoven Pur - Klavier & Chor",
+    "start_date": "2026-12-03",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "«Modern Times» – von und mit Charlie Chaplin",
+    "start_date": "2026-12-04",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Ode an die Freude - Beethoven 9",
+    "start_date": "2026-12-05",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Swinging Christmas",
+    "start_date": "2026-12-06",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "HELGE SCHNEIDER",
+    "start_date": "2026-12-06",
+    "start_time": "18:00",
+    "end_time": "20:00",
+    "category": "comedy"
+  },
+  {
+    "title": "Stefan Büsser - ÜBER-LEBT",
+    "start_date": "2026-12-10",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "comedy"
+  },
+  {
+    "title": "Drei Haselnüsse für Aschenbrödel",
+    "start_date": "2026-12-11",
+    "start_time": "16:00",
+    "end_time": "18:00",
+    "category": "concert"
+  },
+  {
+    "title": "Drei Haselnüsse für Aschenbrödel",
+    "start_date": "2026-12-11",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "DER NUSSKNACKER",
+    "start_date": "2026-12-12",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Adventsmatinee mit Kian Soltani & Tschaikowskys Nussknacker",
+    "start_date": "2026-12-13",
+    "start_time": "11:00",
+    "end_time": "13:00",
+    "category": "concert"
+  },
+  {
+    "title": "«Home Alone» – In Concert",
+    "start_date": "2026-12-13",
+    "start_time": "17:30",
+    "end_time": "19:30",
+    "category": "concert"
+  },
+  {
+    "title": "Pippo Pollina & Quartett",
+    "start_date": "2026-12-13",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Volkstümliche Weihnacht",
+    "start_date": "2026-12-15",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "An die Freude - Weihnachtssingen für Kinder & Familien",
+    "start_date": "2026-12-16",
+    "start_time": "18:00",
+    "end_time": "20:00",
+    "category": "concert"
+  },
+  {
+    "title": "«Freude, schöner Götterfunken» Weihnachtliches Sinfoniekonzert",
+    "start_date": "2026-12-16",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Solomon's Knot: Weihnachtsoratorium",
+    "start_date": "2026-12-18",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2026-12-18",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "musical"
+  },
+  {
+    "title": "Christmas in Lucerne",
+    "start_date": "2026-12-19",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2026-12-19",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "musical"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2026-12-20",
+    "start_time": "14:30",
+    "end_time": "16:30",
+    "category": "musical"
+  },
+  {
+    "title": "Christmas in Lucerne",
+    "start_date": "2026-12-20",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Die grosse Weihnachtsgala",
+    "start_date": "2026-12-21",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Home Alone 2: Lost in New York",
+    "start_date": "2026-12-22",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Home Alone 2: Lost in New York",
+    "start_date": "2026-12-23",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Drei Haselnüsse für Aschenbrödel",
+    "start_date": "2026-12-26",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2026-12-26",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "musical"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2026-12-27",
+    "start_time": "14:30",
+    "end_time": "16:30",
+    "category": "musical"
+  },
+  {
+    "title": "Drei Haselnüsse für Aschenbrödel",
+    "start_date": "2026-12-27",
+    "start_time": "15:00",
+    "end_time": "17:00",
+    "category": "concert"
+  },
+  {
+    "title": "Drei Haselnüsse für Aschenbrödel",
+    "start_date": "2026-12-27",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Drei Haselnüsse für Aschenbrödel",
+    "start_date": "2026-12-28",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Extrakonzert: Massimo Rocchi - Rossini al Dente",
+    "start_date": "2026-12-30",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Silvesterkonzert",
+    "start_date": "2026-12-31",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2026-12-31",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "musical"
+  },
+  {
+    "title": "Festliches Neujahrskonzert «About last night»",
+    "start_date": "2027-01-01",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2027-01-01",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "musical"
+  },
+  {
+    "title": "Neujahrskonzert mit der Familie «About last night»",
+    "start_date": "2027-01-02",
+    "start_time": "11:00",
+    "end_time": "13:00",
+    "category": "concert"
+  },
+  {
+    "title": "Beethoven – Die Neunte",
+    "start_date": "2027-01-02",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2027-01-02",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "musical"
+  },
+  {
+    "title": "Salzburger Neujahrskonzert: Sonne im Herzen",
+    "start_date": "2027-01-03",
+    "start_time": "11:00",
+    "end_time": "13:00",
+    "category": "concert"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2027-01-03",
+    "start_time": "14:30",
+    "end_time": "16:30",
+    "category": "musical"
+  },
+  {
+    "title": "EJV Neujahrskonzert 2027",
+    "start_date": "2027-01-03",
+    "start_time": "16:00",
+    "end_time": "18:00",
+    "category": "concert"
+  },
+  {
+    "title": "Monika Gruber",
+    "start_date": "2027-01-04",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "comedy"
+  },
+  {
+    "title": "Monika Gruber",
+    "start_date": "2027-01-05",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "comedy"
+  },
+  {
+    "title": "Wiener Johann Strauss Konzert-Gala, Das Original",
+    "start_date": "2027-01-06",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Mission: Impossible – Fallout – in Concert",
+    "start_date": "2027-01-07",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2027-01-07",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "musical"
+  },
+  {
+    "title": "Keep Cool - Comedy Musical",
+    "start_date": "2027-01-08",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "musical"
+  },
+  {
+    "title": "Der Nussknacker",
+    "start_date": "2027-01-10",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Festivaleröffnung mit Martha Argerich",
+    "start_date": "2027-01-11",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Hayato Sumino & Chopin",
+    "start_date": "2027-01-12",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Yunchan Lim, Martha Argerich & Mikhail Pletnev",
+    "start_date": "2027-01-13",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Martha Argerich & Friends",
+    "start_date": "2027-01-14",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Brad Mehldau - Reveries, Song Books & Weltpremiere",
+    "start_date": "2027-01-15",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "jazz"
+  },
+  {
+    "title": "Martha Argerich & Charles Dutoit",
+    "start_date": "2027-01-16",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Mischa Maisky & Junge Talente",
+    "start_date": "2027-01-17",
+    "start_time": "11:00",
+    "end_time": "13:00",
+    "category": "concert"
+  },
+  {
+    "title": "Baschi",
+    "start_date": "2027-01-23",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "concert"
+  },
+  {
+    "title": "Galakonzert zum Neujahr",
+    "start_date": "2027-01-24",
+    "start_time": "18:00",
+    "end_time": "20:00",
+    "category": "concert"
+  },
+  {
+    "title": "«Reflections» – Midori spielt Tschaikowsky",
+    "start_date": "2027-01-27",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "EPIC – Legendäre Soundtracks",
+    "start_date": "2027-01-29",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "EPIC – Legendäre Soundtracks",
+    "start_date": "2027-01-30",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Stress",
+    "start_date": "2027-01-30",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "concert"
+  },
+  {
+    "title": "EPIC – Legendäre Soundtracks",
+    "start_date": "2027-01-31",
+    "start_time": "14:00",
+    "end_time": "16:00",
+    "category": "concert"
+  },
+  {
+    "title": "Nussknacker - Ballett",
+    "start_date": "2027-01-31",
+    "start_time": "15:00",
+    "end_time": "17:00",
+    "category": "concert"
+  },
+  {
+    "title": "Schwanensee - Ballett",
+    "start_date": "2027-01-31",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Patent Ochsner",
+    "start_date": "2027-02-11",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Patent Ochsner",
+    "start_date": "2027-02-12",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Patent Ochsner",
+    "start_date": "2027-02-13",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Herr Schröder",
+    "start_date": "2027-02-14",
+    "start_time": "18:00",
+    "end_time": "20:00",
+    "category": "comedy"
+  },
+  {
+    "title": "Sebastião Salgado: Amazônia",
+    "start_date": "2027-02-14",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Von Gotham zur Ausstellung - Elfman & Mussorgsky",
+    "start_date": "2027-02-17",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Von Gotham zur Ausstellung - Elfman & Mussorgsky",
+    "start_date": "2027-02-18",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "CAFÉ DEL MUNDO Guitarmania",
+    "start_date": "2027-02-20",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "concert"
+  },
+  {
+    "title": "Janine Jansen: Soirée Beethoven",
+    "start_date": "2027-02-25",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Harry Potter and the Deathly Hallows – Part 2",
+    "start_date": "2027-02-26",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Harry Potter and the Deathly Hallows – Part 2",
+    "start_date": "2027-02-27",
+    "start_time": "15:00",
+    "end_time": "17:00",
+    "category": "concert"
+  },
+  {
+    "title": "Harry Potter and the Deathly Hallows – Part 2",
+    "start_date": "2027-02-27",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Harry Potter and the Deathly Hallows – Part 2",
+    "start_date": "2027-02-28",
+    "start_time": "14:00",
+    "end_time": "16:00",
+    "category": "concert"
+  },
+  {
+    "title": "TRUE CRIME – Den Täter:innen auf der Spur",
+    "start_date": "2027-03-04",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "MUMMENSCHANZ",
+    "start_date": "2027-03-05",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "theater"
+  },
+  {
+    "title": "MUMMENSCHANZ",
+    "start_date": "2027-03-06",
+    "start_time": "15:00",
+    "end_time": "17:00",
+    "category": "theater"
+  },
+  {
+    "title": "MUMMENSCHANZ",
+    "start_date": "2027-03-06",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "theater"
+  },
+  {
+    "title": "MUMMENSCHANZ",
+    "start_date": "2027-03-07",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "theater"
+  },
+  {
+    "title": "Emils Dankeskonzert",
+    "start_date": "2027-03-07",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Patent Ochsner - Zusatzshow",
+    "start_date": "2027-03-09",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Patent Ochsner - Zusatzshow",
+    "start_date": "2027-03-10",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "«Chopin in Wien» - Kevin Chen",
+    "start_date": "2027-03-11",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Wiener Sängerknaben",
+    "start_date": "2027-03-13",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Leidenschaft - Rachmaninow & Tschaikowsky",
+    "start_date": "2027-03-17",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Leidenschaft - Rachmaninow & Tschaikowsky",
+    "start_date": "2027-03-18",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "J.S. Bach-Stiftung St. Gallen: Messe in h-Moll",
+    "start_date": "2027-03-25",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Rudolf Buchbinder spielt Beethoven",
+    "start_date": "2027-03-26",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Natur & Glaube - Beethovens Pastorale und C-Dur-Messe",
+    "start_date": "2027-03-28",
+    "start_time": "11:00",
+    "end_time": "13:00",
+    "category": "concert"
+  },
+  {
+    "title": "POP MEETS CLASSIC",
+    "start_date": "2027-03-28",
+    "start_time": "19:00",
+    "end_time": "21:00",
+    "category": "concert"
+  },
+  {
+    "title": "Grieg | Strawinsky",
+    "start_date": "2027-04-11",
+    "start_time": "17:00",
+    "end_time": "19:00",
+    "category": "concert"
+  },
+  {
+    "title": "Ludwig van Beethovens 9. Sinfonie",
+    "start_date": "2027-04-12",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Arthur Waser Preisträger Konzert",
+    "start_date": "2027-04-14",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Arthur Waser Preisträger Konzert",
+    "start_date": "2027-04-15",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Eric Lu: Winner's Debut",
+    "start_date": "2027-04-16",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Chopin – Poet des Klaviers",
+    "start_date": "2027-04-17",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Disneys «Der König der Löwen»",
+    "start_date": "2027-04-23",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Disneys «Der König der Löwen»",
+    "start_date": "2027-04-24",
+    "start_time": "15:00",
+    "end_time": "17:00",
+    "category": "concert"
+  },
+  {
+    "title": "Disneys «Der König der Löwen»",
+    "start_date": "2027-04-24",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Disneys «Der König der Löwen»",
+    "start_date": "2027-04-25",
+    "start_time": "14:00",
+    "end_time": "16:00",
+    "category": "concert"
+  },
+  {
+    "title": "«Innocence & Love – Von himmlischer Reinheit zur menschlichen Sehnsucht»",
+    "start_date": "2027-04-29",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Alexander Wurz & Die Egerländer Musikanten",
+    "start_date": "2027-04-30",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Schweizer Referenzen - Wagner, Britten & Brahms",
+    "start_date": "2027-05-12",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Schweizer Referenzen - Wagner, Britten & Brahms",
+    "start_date": "2027-05-13",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Bach in Space - Voices",
+    "start_date": "2027-05-14",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "MEGAWATT",
+    "start_date": "2027-05-15",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "concert"
+  },
+  {
+    "title": "Urbanski & Radulović: Dvořák im Originalklang",
+    "start_date": "2027-05-16",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Poème de L'extase - Rachmaninov 3 & James Gaffigan",
+    "start_date": "2027-05-21",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "PAUL PANZER",
+    "start_date": "2027-05-21",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "comedy"
+  },
+  {
+    "title": "Poème de L'extase - Rachmaninov 3 & James Gaffigan",
+    "start_date": "2027-05-22",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "PAUL PANZER",
+    "start_date": "2027-05-22",
+    "start_time": "20:00",
+    "end_time": "22:00",
+    "category": "comedy"
+  },
+  {
+    "title": "«Beethovens Vision einer Erleuchtung»",
+    "start_date": "2027-06-02",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Maestro of the Movies",
+    "start_date": "2027-06-04",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Maestro of the Movies",
+    "start_date": "2027-06-05",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Hélène Grimaud - Das letzte Testament",
+    "start_date": "2027-06-11",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Janine Jansen & Timothy Ridout spielen Mozart",
+    "start_date": "2027-06-16",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Janine Jansen & Timothy Ridout spielen Mozart",
+    "start_date": "2027-06-17",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Sašo Avsenik und seine Oberkrainer",
+    "start_date": "2027-10-22",
+    "start_time": "18:30",
+    "end_time": "20:30",
+    "category": "concert"
+  },
+  {
+    "title": "Gladiator in Concert",
+    "start_date": "2027-11-26",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Gladiator in Concert",
+    "start_date": "2027-11-27",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "Gladiator in Concert",
+    "start_date": "2027-11-28",
+    "start_time": "14:00",
+    "end_time": "16:00",
+    "category": "concert"
+  },
+  {
+    "title": "The Sound of Hans Zimmer & John Williams - 2028",
+    "start_date": "2028-01-28",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "The Sound of Hans Zimmer & John Williams - 2028",
+    "start_date": "2028-01-29",
+    "start_time": "19:30",
+    "end_time": "21:30",
+    "category": "concert"
+  },
+  {
+    "title": "The Sound of Hans Zimmer & John Williams - 2028",
+    "start_date": "2028-01-30",
+    "start_time": "14:00",
+    "end_time": "16:00",
+    "category": "concert"
+  }
 ]
