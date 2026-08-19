@@ -512,6 +512,22 @@ FastAPI-ML (Port 80)
               color: #888; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; margin: 1.2rem 0 0.5rem; }
   </style>
 
+  <div class="ch-day">19. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Persona-basierte Ansichten (Einfach/Detail/Experte) für verschiedene Usergruppen</div>
+            <div class="ch-react">Drei Modi via Toggle in der Navbar: <strong>Einfach</strong> = Ampel-Kacheln mit Gruppen, 8h-Trend, Empfehlung pro Gruppe (⭐). <strong>Detail</strong> = Tabelle volle Breite (ohne rechte Panels). <strong>Experte</strong> = Tabelle + Chart, Wetter, Events, Konfidenz-Tabelle (Q20, P(voll)), Modellvergleich KI vs. Basis, Methodik. Persona wird via localStorage gemerkt.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">Farbenblind-freundliche Ampelkarten und Parkhaus-Tipps</div>
+            <div class="ch-react">Icons ✓/⚠/✗ zusätzlich zu Farben auf Ampel-Kacheln. Warnhinweise für problematische Parkhäuser (Flora, Hirzenmatt, am Gütsch, City-Parking). Toggle «Fast volle ausblenden» blendet Parkhäuser mit ≤10% Auslastung aus.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
+        <td><div class="ch-req">DB-Felder price_category, url, lat/lon und Datenquellen-Links</div>
+            <div class="ch-react">parkhaeuser-Tabelle (prod+test) um price_category (VARCHAR 10), url (VARCHAR 512), latitude/longitude (DECIMAL 9,6) erweitert. Alle ~70 Parkhäuser in 5 Städten abgefüllt. Ampel-Kacheln zeigen Preiskategorie ($, $$, $$$) als Badge oben rechts, 🔗 Webseite-Link, 📍 Google-Maps-Route. Detail-/Experten-Tabelle zeigt dieselben Infos. Datenquellen-Link pro Stadt (PLS Luzern, Parkleitsystem Basel, etc.).</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Berner Parkhäuser ergänzt und gemappt</div>
+            <div class="ch-react">7 neue Berner Parkhäuser in DB angelegt (Expo, Kursaal, Mobiliar, City West, Zentrum, Neufeld, SBB Kurzparking) und in ai_parkhaus_map verknüpft. Alle mit Preis, URL und Koordinaten.</div></td></tr>
+  </tbody></table>
+
   <div class="ch-day">18. August 2026</div>
   <table class="table table-sm"><tbody>
     <tr><td style="width:100px"><span class="ch-tag ch-feat">Erweiterung</span></td>
