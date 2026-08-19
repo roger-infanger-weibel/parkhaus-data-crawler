@@ -218,23 +218,6 @@ const DATENQUELLEN = {
   bern:     { label: 'Parking Bern', url: 'https://www.parking-bern.ch/' },
 };
 
-const PARKHAUS_URLS = {
-  'SP02': 'https://www.pls-luzern.ch/de/parkhaus/altstadt',
-  'SP05': 'https://www.pls-luzern.ch/de/parkhaus/bahnhofparking',
-  'SP06': 'https://www.pls-luzern.ch/de/parkhaus/bahnhofparking',
-  'NP08': 'https://www.pls-luzern.ch/de/parkhaus/casino-palace',
-  'NP11': 'https://www.pls-luzern.ch/de/parkhaus/city-parking',
-  'SP09': 'https://www.pls-luzern.ch/de/parkhaus/hirzenmatt',
-  'SP04': 'https://www.pls-luzern.ch/de/parkhaus/kantonalbank',
-  'SP03': 'https://www.pls-luzern.ch/de/parkhaus/kesselturm',
-  'NP12': 'https://www.pls-luzern.ch/de/parkhaus/loewencenter',
-  'NP13': 'https://www.pls-luzern.ch/de/parkhaus/nationalhof',
-  'PKF':  'https://www.pls-luzern.ch/de/parkhaus/flora',
-  'AP01': 'https://www.pls-luzern.ch/de/parkhaus/sportgebaeude',
-  'AP02': 'https://www.pls-luzern.ch/de/parkhaus/sportgebaeude',
-  'NP07': 'https://www.pls-luzern.ch/de/parkhaus/schweizerhof',
-  'SP01': 'https://www.pls-luzern.ch/de/parkhaus/am-guetsch',
-};
 
 const PARKHAUS_TIPPS = {
   'parkhaus flora': '🚫 Eng & schwierig zum Parkieren',
@@ -326,15 +309,18 @@ function zeichneAmpeln() {
     html += mitglieder.map(h => {
       const isBest = h.pls_id === best.pls_id && mitglieder.length > 1 && h.free_now > 0;
       const tipp = parkhausTipp(h.name);
-      const phUrl = PARKHAUS_URLS[h.pls_id];
-      const linkIcon = phUrl ? ` <a href="${phUrl}" target="_blank" class="ampel-link" title="Parkhaus-Webseite" onclick="event.stopPropagation()">🔗</a>` : '';
+      const links = [];
+      if (h.url) links.push(`<a href="${h.url}" target="_blank" class="ampel-link" title="Parkhaus-Webseite" onclick="event.stopPropagation()">🔗</a>`);
+      if (h.lat && h.lon) links.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" class="ampel-link" title="Route planen" onclick="event.stopPropagation()">📍</a>`);
+      const linkHtml = links.length ? ' ' + links.join(' ') : '';
+      const preis = h.price_category ? ` · ${h.price_category}` : '';
       return `
       <div class="col-6 col-md-4 col-lg-3">
         <div class="ampel-card ${ampelKlasse(h.free_now, h.total)}${isBest ? ' ampel-best' : ''}" data-pls="${h.pls_id}">
-          <div class="ampel-name">${isBest ? '⭐ ' : ''}${h.name.replace(/^[^:]+:\s*/, '')}${linkIcon}</div>
+          <div class="ampel-name">${isBest ? '⭐ ' : ''}${h.name.replace(/^[^:]+:\s*/, '')}${linkHtml}</div>
           <div>
             <div class="ampel-status"><span class="ampel-icon">${ampelIcon(h.free_now, h.total)}</span> ${h.free_now} <small style="font-size:.55em">frei</small></div>
-            <div class="ampel-sub">${ampelText(h.free_now, h.total)} · ${h.total} Plätze</div>
+            <div class="ampel-sub">${ampelText(h.free_now, h.total)} · ${h.total} Plätze${preis}</div>
             ${tipp ? `<div class="ampel-tipp">${tipp}</div>` : ''}
             ${ampelTrend(h)}
           </div>

@@ -21,7 +21,8 @@ def get_mapping(env: Optional[str] = None, city: Optional[str] = None) -> list[d
     """ai_parkhaus_map inkl. Gruppenname aus parkhaeuser."""
     sql = """
         SELECT m.city, m.pls_id, m.pls_name, m.parkhaus_id, m.match_method,
-               p.parking_group
+               p.parking_group, p.price_category, p.url,
+               p.latitude, p.longitude
         FROM ai_parkhaus_map m
         LEFT JOIN parkhaeuser p ON p.id = m.parkhaus_id
     """
