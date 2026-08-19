@@ -768,27 +768,37 @@ class KKLLuzernScraper(VenueScraper):
                     logger.warning("KKL: page.goto fehlgeschlagen: %s", e)
                     return events
 
-                # Warte auf Event-Selektoren
-                try:
-                    page.wait_for_selector("[data-event], .event, .program-item, .performance", timeout=10000)
-                except:
-                    logger.info("KKL: Kein Event-Selector gefunden, versuche längeres Warten...")
-                    page.wait_for_timeout(5000)
+                # Warte extra lange auf JS-Laden
+                page.wait_for_timeout(5000)
 
                 content = page.content()
+                soup = BeautifulSoup(content, "html.parser")
 
-                # DEBUG: Speichere HTML für Debugging
+                # DEBUG: Speichere HTML
                 with open("/tmp/kkl_debug.html", "w") as f:
                     f.write(content)
-                logger.info("KKL: HTML gespeichert in /tmp/kkl_debug.html")
+                logger.info("KKL: HTML gespeichert in /tmp/kkl_debug.html (%d Bytes)", len(content))
 
                 browser.close()
 
-                soup = BeautifulSoup(content, "html.parser")
-                text = soup.get_text("\n")
+                # Suche Events direkt im HTML nach verschiedenen Patterns
+                # Pattern 1: data-event Attribute
+                event_elements = soup.find_all(attrs={"data-event": True})
+                logger.info("KKL: Found %d elements mit data-event", len(event_elements))
 
-                # DEBUG: Zeige erste 2000 Zeichen
-                logger.info("KKL: HTML-Text (erste 2000 chars):\n%s", text[:2000])
+                # Pattern 2: article Tags (möglich Event-Container)
+                articles = soup.find_all("article")
+                logger.info("KKL: Found %d <article> Tags", len(articles))
+
+                # Pattern 3: Suche nach Links zu Events
+                event_links = soup.find_all("a", href=re.compile(r"/event|/events|/programm"))
+                logger.info("KKL: Found %d Event-Links", len(event_links))
+
+                # Zeige HTML-Größe und erste 3000 Zeichen
+                text = soup.get_text("\n")
+                logger.info("KKL: HTML-Größe: %d, Text-Länge: %d", len(content), len(text))
+                if text:
+                    logger.info("KKL: HTML-Text (erste 3000 chars):\n%s", text[:3000])
                 lines = [l.strip() for l in text.split("\n") if l.strip()]
 
                 # Suche nach Datum-Pattern und Title
