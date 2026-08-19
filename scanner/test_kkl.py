@@ -5,7 +5,7 @@ import json
 import sys
 from fetch_events import KKLLuzernScraper
 
-__version__ = "2026-08-19-MANUAL-v2"
+__version__ = "2026-08-19-MANUAL-v3"
 
 def main():
     print("=" * 60)
