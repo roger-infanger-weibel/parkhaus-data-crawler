@@ -9,7 +9,11 @@ else
 fi
 sleep 1
 
+echo "Synch Codefiles"
 rsync -av --delete latest-github/scanner/ scanner-prod/
+
+echo "Copy Env File"^S
+cp myenv/.prodenv scanner-prod/.env
 
 cd scanner-prod/ || exit 1
 cp scheduler.py scheduler-prod.py

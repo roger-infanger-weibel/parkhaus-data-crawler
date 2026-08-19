@@ -1,23 +1,30 @@
 #!/bin/bash
-# Startet das Flask-Dashboard (Port 80) neu.
+# Startet den Scanner der test-Umgebung neu (schreibt nach ph_fetch_test).
 
-echo "[Flask] alten Prozess beenden ..."
+echo "[test] alten Prozess beenden ..."
 if pkill -f web_server.py; then
-    echo "[Flask]   beendet"
+    echo "[test]   beendet"
 else
-    echo "[Flask]   lief nicht"
+    echo "[test]   lief nicht"
 fi
 sleep 1
 
+echo "Synch Codefiles"
 rsync -av --delete latest-github/flask/ flask/
 
-cd flask/ || exit 1
+echo "Copy Env File"^S
+cp myenv/.flaskenv flask/.env
+
+cd flask/
+
 nohup python3 web_server.py >web_server.log 2>&1 &
 pid=$!
 sleep 2
 if kill -0 "$pid" 2>/dev/null; then
-    echo "[Flask] gestartet (PID $pid), Log: flask/web_server.log"
+    echo "[Flask] gestartet (PID $pid), Log: web_server.log"
 else
     echo "[Flask] FEHLGESCHLAGEN - letzte Zeilen aus web_server.log:"
-    tail -5 web_server.log | sed 's/^/[Flask]   /'
+    tail -5 web_server.log 
 fi
+
+
