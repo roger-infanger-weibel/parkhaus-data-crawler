@@ -742,7 +742,7 @@ class BernExpoScraper(VenueScraper):
 
 
 class KKLLuzernScraper(VenueScraper):
-    """KKL Luzern: Playwright-Scraper (ALLE Events von kkl-luzern.ch)."""
+    """KKL Luzern: Liest von kkl_events_manual.json (manuell gepflegt). VERSION: 2026-08-19 MANUAL"""
     _cfg = _venue_config("KKLLuzernScraper")
     name = _cfg.get("name", "KKL Luzern")
     city = _cfg.get("city", "luzern")
@@ -750,97 +750,41 @@ class KKLLuzernScraper(VenueScraper):
 
     def fetch(self) -> list[dict]:
         events = []
-        if not sync_playwright:
-            logger.warning("KKL Luzern: Playwright nicht installiert (pip install playwright)")
-            return events
-
         try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page()
+            json_file = "kkl_events_manual.json"
+            with open(json_file, "r") as f:
+                data = json.load(f)
 
-                url = "https://www.kkl-luzern.ch/en/events"
-                logger.info("KKL: Öffne %s mit Playwright", url)
+            for item in data:
+                title = item.get("title", "").strip()
+                if not title or len(title) < 3:
+                    continue
+
+                date_str = item.get("start_date", "")
+                time_str = item.get("start_time", "19:30")
+                end_time_str = item.get("end_time", "21:30")
+
                 try:
-                    page.goto(url, wait_until="networkidle", timeout=30000)
-                    logger.info("KKL: Website geladen erfolgreich")
-                except Exception as e:
-                    logger.warning("KKL: page.goto fehlgeschlagen: %s", e)
-                    return events
+                    dt = datetime.strptime(date_str, "%Y-%m-%d")
+                    h, m = map(int, time_str.split(":"))
+                    dt = dt.replace(hour=h, minute=m)
 
-                # Warte extra lange auf JS-Laden
-                page.wait_for_timeout(5000)
+                    eh, em = map(int, end_time_str.split(":"))
+                    dt_end = datetime.strptime(date_str, "%Y-%m-%d").replace(hour=eh, minute=em)
+                except (ValueError, AttributeError):
+                    continue
 
-                content = page.content()
-                soup = BeautifulSoup(content, "html.parser")
-
-                # DEBUG: Speichere HTML
-                with open("/tmp/kkl_debug.html", "w") as f:
-                    f.write(content)
-                logger.info("KKL: HTML gespeichert in /tmp/kkl_debug.html (%d Bytes)", len(content))
-
-                browser.close()
-
-                # Suche Events direkt im HTML nach verschiedenen Patterns
-                # Pattern 1: data-event Attribute
-                event_elements = soup.find_all(attrs={"data-event": True})
-                logger.info("KKL: Found %d elements mit data-event", len(event_elements))
-
-                # Pattern 2: article Tags (möglich Event-Container)
-                articles = soup.find_all("article")
-                logger.info("KKL: Found %d <article> Tags", len(articles))
-
-                # Pattern 3: Suche nach Links zu Events
-                event_links = soup.find_all("a", href=re.compile(r"/event|/events|/programm"))
-                logger.info("KKL: Found %d Event-Links", len(event_links))
-
-                # Zeige HTML-Größe und erste 3000 Zeichen
-                text = soup.get_text("\n")
-                logger.info("KKL: HTML-Größe: %d, Text-Länge: %d", len(content), len(text))
-                if text:
-                    logger.info("KKL: HTML-Text (erste 3000 chars):\n%s", text[:3000])
-                lines = [l.strip() for l in text.split("\n") if l.strip()]
-
-                # Suche nach Datum-Pattern und Title
-                i = 0
-                while i < len(lines):
-                    # Pattern: "9 Aug 2026" oder "Fri, 9 Aug 2026"
-                    m = re.search(r'(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})', lines[i])
-                    if not m:
-                        i += 1
-                        continue
-
-                    day = int(m.group(1))
-                    mon_str = m.group(2).lower()[:3]
-                    year = int(m.group(3))
-
-                    mon = MONATE_DE.get(mon_str)
-                    if not mon:
-                        i += 1
-                        continue
-
-                    # Title ist entweder auf gleicher Zeile nach Datum oder nächste Zeile
-                    title = lines[i][m.end():].strip()
-                    if not title and i + 1 < len(lines):
-                        title = lines[i + 1].strip()
-
-                    if len(title) >= 3:
-                        try:
-                            dt = datetime(year, mon, day, 19, 30)
-                            events.append({
-                                "title": title, "venue": self.name,
-                                "start_time": dt, "end_time": dt + timedelta(hours=2, minutes=30),
-                                "category": _guess_category(title),
-                            })
-                        except ValueError:
-                            pass
-
-                    i += 1
-
+                events.append({
+                    "title": title, "venue": self.name,
+                    "start_time": dt, "end_time": dt_end,
+                    "category": item.get("category", _guess_category(title)),
+                })
+        except FileNotFoundError:
+            logger.warning("KKL Luzern: %s nicht gefunden", "kkl_events_manual.json")
         except Exception as e:
-            logger.warning("KKL Luzern (Playwright): %s", e)
+            logger.warning("KKL Luzern (Manual): %s", e)
 
-        logger.info("KKL Luzern: %d Events gefunden", len(events))
+        logger.info("KKL Luzern: %d Events gefunden aus kkl_events_manual.json", len(events))
         return events
 
 
