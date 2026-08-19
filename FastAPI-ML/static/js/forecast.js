@@ -2,6 +2,19 @@ let current = null;
 let detailChart = null;
 let selectedPls = null;
 
+function persona() {
+  return document.querySelector('input[name="persona"]:checked')?.value || 'detail';
+}
+
+function applyPersona(mode) {
+  document.body.className = `mode-${mode}`;
+  document.getElementById('view-simple').classList.toggle('d-none', mode !== 'simple');
+  document.getElementById('view-detail').classList.toggle('d-none', mode === 'simple');
+  document.getElementById('view-expert-panels').classList.toggle('d-none', mode !== 'expert');
+  if (mode === 'simple' && current) zeichneAmpeln();
+  if (mode === 'expert' && selectedPls) updateExpertPanels();
+}
+
 function model() {
   return document.querySelector('input[name="model"]:checked').value;
 }
@@ -108,6 +121,7 @@ async function loadForecasts() {
     }
   }
   zeichneTabelle();
+  if (persona() === 'simple') zeichneAmpeln();
   if (selectedPls) loadDetail(selectedPls);
 }
 
@@ -175,9 +189,253 @@ async function loadDetail(plsId) {
     if (!html) html = '<strong class="small">Events heute / morgen</strong><br><span class="small text-muted">keine Veranstaltungen erfasst</span>';
     evBox.innerHTML = html;
   }
+  if (persona() === 'expert') updateExpertPanels();
+}
+
+// ===== Einfach-Modus: Ampel-Kacheln =====
+function ampelKlasse(free, total) {
+  if (!total) return 'ampel-yellow';
+  const ratio = free / total;
+  if (ratio > 0.3) return 'ampel-green';
+  if (ratio > 0.1) return 'ampel-yellow';
+  return 'ampel-red';
+}
+
+function ampelIcon(free, total) {
+  if (!total) return '?';
+  const ratio = free / total;
+  if (ratio > 0.3) return '✓';
+  if (ratio > 0.1) return '⚠';
+  if (free > 0) return '✗';
+  return '✗';
+}
+
+const DATENQUELLEN = {
+  luzern:   { label: 'PLS Luzern',   url: 'https://www.pls-luzern.ch/' },
+  basel:    { label: 'Parkleitsystem Basel', url: 'https://www.parkleitsystem-basel.ch/' },
+  stgallen: { label: 'PLS St. Gallen', url: 'https://www.pls-sg.ch/' },
+  zurich:   { label: 'PLS Zürich',   url: 'https://www.pls-zh.ch/' },
+  bern:     { label: 'Parking Bern', url: 'https://www.parking-bern.ch/' },
+};
+
+const PARKHAUS_URLS = {
+  'SP02': 'https://www.pls-luzern.ch/de/parkhaus/altstadt',
+  'SP05': 'https://www.pls-luzern.ch/de/parkhaus/bahnhofparking',
+  'SP06': 'https://www.pls-luzern.ch/de/parkhaus/bahnhofparking',
+  'NP08': 'https://www.pls-luzern.ch/de/parkhaus/casino-palace',
+  'NP11': 'https://www.pls-luzern.ch/de/parkhaus/city-parking',
+  'SP09': 'https://www.pls-luzern.ch/de/parkhaus/hirzenmatt',
+  'SP04': 'https://www.pls-luzern.ch/de/parkhaus/kantonalbank',
+  'SP03': 'https://www.pls-luzern.ch/de/parkhaus/kesselturm',
+  'NP12': 'https://www.pls-luzern.ch/de/parkhaus/loewencenter',
+  'NP13': 'https://www.pls-luzern.ch/de/parkhaus/nationalhof',
+  'PKF':  'https://www.pls-luzern.ch/de/parkhaus/flora',
+  'AP01': 'https://www.pls-luzern.ch/de/parkhaus/sportgebaeude',
+  'AP02': 'https://www.pls-luzern.ch/de/parkhaus/sportgebaeude',
+  'NP07': 'https://www.pls-luzern.ch/de/parkhaus/schweizerhof',
+  'SP01': 'https://www.pls-luzern.ch/de/parkhaus/am-guetsch',
+};
+
+const PARKHAUS_TIPPS = {
+  'parkhaus flora': '🚫 Eng & schwierig zum Parkieren',
+  'hirzenmatt': '🚫 Sehr eng, schwierig zum Manövrieren',
+  'am gütsch': '🚫 Abgelegen, schlechte Zufahrt',
+  'city-parking': '🚫 Oft Stau bei Ausfahrt',
+};
+
+function parkhausTipp(name) {
+  const key = name.toLowerCase();
+  for (const [k, v] of Object.entries(PARKHAUS_TIPPS)) {
+    if (key.includes(k)) return v;
+  }
+  return null;
+}
+
+function ampelText(free, total) {
+  if (!total) return 'Keine Daten';
+  const ratio = free / total;
+  if (ratio > 0.3) return 'Viele Plätze frei';
+  if (ratio > 0.1) return 'Wird knapp';
+  if (free > 0) return 'Fast voll';
+  return 'Voll';
+}
+
+function ampelTrend(house) {
+  const m = model();
+  const horizonte = [1, 2, 4, 8];
+  let letzteZeit = null;
+  let zusammenfassung = [];
+
+  for (const hz of horizonte) {
+    const entry = house.horizons?.[hz]?.[m];
+    if (!entry) continue;
+    letzteZeit = fmtTs(entry.target_time);
+    const diff = entry.free - house.free_now;
+    if (Math.abs(diff) >= 5) {
+      zusammenfassung.push({ hz, diff, zeit: fmtTs(entry.target_time), free: entry.free });
+    }
+  }
+
+  if (!zusammenfassung.length) {
+    return letzteZeit
+      ? `<span class="ampel-trend">→ stabil bis ${letzteZeit}</span>`
+      : '';
+  }
+
+  const erste = zusammenfassung[0];
+  const letzte = zusammenfassung[zusammenfassung.length - 1];
+
+  if (letzte.diff > 0) {
+    return `<span class="ampel-trend">↗ ab ${erste.zeit} freier (${letzte.free} um ${letzte.zeit})</span>`;
+  }
+  if (letzte.diff < 0) {
+    return `<span class="ampel-trend">↘ ab ${erste.zeit} voller (${letzte.free} um ${letzte.zeit})</span>`;
+  }
+  return `<span class="ampel-trend">→ stabil bis ${letzteZeit}</span>`;
+}
+
+function zeichneAmpeln() {
+  if (!current) return;
+  const hideFull = document.getElementById('simple-show-full')?.checked;
+  let houses = suchFilter(current.houses);
+  if (hideFull) houses = houses.filter(h => h.total > 0 && (h.free_now / h.total) > 0.1);
+  houses.sort((a, b) => (b.free_now / (b.total || 1)) - (a.free_now / (a.total || 1)));
+
+  const grid = document.getElementById('ampel-grid');
+  if (!houses.length) {
+    grid.innerHTML = '<div class="col-12 text-muted">Keine Parkhäuser mit freien Plätzen</div>';
+    return;
+  }
+
+  const gruppen = {};
+  houses.forEach(h => {
+    const g = h.group || 'Weitere';
+    (gruppen[g] = gruppen[g] || []).push(h);
+  });
+
+  const city = document.getElementById('city-select').value;
+  const quelle = DATENQUELLEN[city];
+  let html = '';
+  if (quelle) {
+    html += `<div class="col-12"><small class="text-muted">Datenquelle: <a href="${quelle.url}" target="_blank">${quelle.label}</a></small></div>`;
+  }
+  for (const [gruppe, mitglieder] of Object.entries(gruppen)) {
+    const best = mitglieder.reduce((a, b) =>
+      (a.free_now / (a.total || 1)) >= (b.free_now / (b.total || 1)) ? a : b);
+    html += `<div class="col-12"><h6 class="text-muted mt-2 mb-1">${gruppe}</h6></div>`;
+    html += mitglieder.map(h => {
+      const isBest = h.pls_id === best.pls_id && mitglieder.length > 1 && h.free_now > 0;
+      const tipp = parkhausTipp(h.name);
+      const phUrl = PARKHAUS_URLS[h.pls_id];
+      const linkIcon = phUrl ? ` <a href="${phUrl}" target="_blank" class="ampel-link" title="Parkhaus-Webseite" onclick="event.stopPropagation()">🔗</a>` : '';
+      return `
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="ampel-card ${ampelKlasse(h.free_now, h.total)}${isBest ? ' ampel-best' : ''}" data-pls="${h.pls_id}">
+          <div class="ampel-name">${isBest ? '⭐ ' : ''}${h.name.replace(/^[^:]+:\s*/, '')}${linkIcon}</div>
+          <div>
+            <div class="ampel-status"><span class="ampel-icon">${ampelIcon(h.free_now, h.total)}</span> ${h.free_now} <small style="font-size:.55em">frei</small></div>
+            <div class="ampel-sub">${ampelText(h.free_now, h.total)} · ${h.total} Plätze</div>
+            ${tipp ? `<div class="ampel-tipp">${tipp}</div>` : ''}
+            ${ampelTrend(h)}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.ampel-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const radio = document.getElementById('persona-detail');
+      radio.checked = true;
+      applyPersona('detail');
+      Merker.schreiben('persona', 'detail');
+      loadDetail(card.dataset.pls);
+    });
+  });
+}
+
+
+// ===== Experten-Modus: Zusatzinfos =====
+function updateExpertPanels() {
+  if (!current || !selectedPls) return;
+  const house = current.houses.find(h => h.pls_id === selectedPls);
+  if (!house) return;
+
+  // Konfidenz/Details pro Horizont
+  const confEl = document.getElementById('expert-confidence');
+  const horizons = house.horizons || {};
+  const rows = [1, 2, 4, 8].map(hz => {
+    const ml = horizons[hz]?.ml;
+    const bl = horizons[hz]?.baseline;
+    if (!ml && !bl) return null;
+    const src = ml || bl;
+    let row = `<tr><td>+${hz}h</td><td>${src.free} frei</td><td>${(src.occ * 100).toFixed(0)}%</td>`;
+    row += `<td>${src.free_q20 != null ? src.free_q20 : '–'}</td>`;
+    row += `<td>${src.full_prob != null ? (src.full_prob * 100).toFixed(0) + '%' : '–'}</td>`;
+    row += `<td class="text-muted">${fmtTs(src.target_time)}</td></tr>`;
+    return row;
+  }).filter(Boolean);
+
+  if (rows.length) {
+    confEl.innerHTML = `
+      <table class="table table-sm mb-0">
+        <thead><tr>
+          <th>Horizont</th><th>Prognose</th><th>Auslastung</th>
+          <th title="Pessimistisch (20. Perzentil)">Q20</th>
+          <th title="Wahrscheinlichkeit komplett voll">P(voll)</th>
+          <th>Zielzeit</th>
+        </tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>`;
+  } else {
+    confEl.textContent = 'Keine Prognosedaten für dieses Parkhaus';
+  }
+
+  // Modellvergleich
+  const cmpEl = document.getElementById('expert-model-compare');
+  const cmpRows = [1, 2, 4, 8].map(hz => {
+    const ml = horizons[hz]?.ml;
+    const bl = horizons[hz]?.baseline;
+    if (!ml && !bl) return null;
+    const diff = (ml && bl) ? ml.free - bl.free : null;
+    const diffStr = diff != null ? (diff > 0 ? `+${diff}` : `${diff}`) : '–';
+    const diffCls = diff != null ? (diff > 0 ? 'skill-pos' : (diff < 0 ? 'skill-neg' : '')) : '';
+    return `<tr>
+      <td>+${hz}h</td>
+      <td>${ml ? ml.free : '–'}</td>
+      <td>${bl ? bl.free : '–'}</td>
+      <td class="${diffCls}">${diffStr}</td>
+    </tr>`;
+  }).filter(Boolean);
+
+  if (cmpRows.length) {
+    cmpEl.innerHTML = `
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Horizont</th><th>KI-Modell</th><th>Basis</th><th>Differenz</th></tr></thead>
+        <tbody>${cmpRows.join('')}</tbody>
+      </table>
+      <p class="text-muted mt-1 mb-0" style="font-size:.75rem">Positiv = KI prognostiziert mehr freie Plätze als Basis</p>`;
+  } else {
+    cmpEl.textContent = 'Kein Modellvergleich verfügbar';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Persona wiederherstellen
+  const gemerktePersona = Merker.lesen('persona', 'detail');
+  const personaRadio = document.getElementById('persona-' + gemerktePersona);
+  if (personaRadio) personaRadio.checked = true;
+  applyPersona(gemerktePersona);
+
+  document.querySelectorAll('input[name="persona"]').forEach(r =>
+    r.addEventListener('change', () => {
+      Merker.schreiben('persona', persona());
+      applyPersona(persona());
+    }));
+
+  document.getElementById('simple-show-full')?.addEventListener('change', () => zeichneAmpeln());
+
   // Modellwahl wiederherstellen (KI oder Basis)
   const gemerktesModell = Merker.lesen('model', 'ml');
   const radio = document.getElementById('model-' + gemerktesModell);
@@ -190,11 +448,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     suche.addEventListener('input', () => {
       Merker.schreiben('suche', suche.value);
       zeichneTabelle();
+      if (persona() === 'simple') zeichneAmpeln();
     });
     document.getElementById('such-loeschen')?.addEventListener('click', () => {
       suche.value = '';
       Merker.schreiben('suche', '');
       zeichneTabelle();
+      if (persona() === 'simple') zeichneAmpeln();
     });
   }
 

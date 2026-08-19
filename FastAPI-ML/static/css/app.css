@@ -17,6 +17,54 @@ body { background-color: #f4f6f9; }
 .skill-pos { color: #198754; font-weight: 600; }
 .skill-neg { color: #dc3545; font-weight: 600; }
 
+/* Persona: Einfach-Modus - Modellwahl und Suche ausblenden */
+body.mode-simple .detail-only { display: none !important; }
+body.mode-simple #model-ml,
+body.mode-simple #model-baseline,
+body.mode-simple label[for="model-ml"],
+body.mode-simple label[for="model-baseline"],
+body.mode-simple .col-auto:has(#such-feld) { display: none !important; }
+
+/* Detail-Modus: rechte Spalte ausblenden, Tabelle volle Breite */
+body.mode-detail #detail-col { display: none !important; }
+body.mode-detail #table-col { flex: 0 0 100%; max-width: 100%; }
+
+/* Ampel-Kacheln */
+.ampel-card {
+  border-radius: 12px; padding: 1rem; cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  color: #fff; min-height: 110px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.ampel-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+.ampel-card .ampel-name { font-weight: 600; font-size: .95rem; line-height: 1.2; }
+.ampel-card .ampel-status { font-size: 1.5rem; font-weight: 700; }
+.ampel-card .ampel-sub { font-size: .78rem; opacity: .85; }
+.ampel-green  { background: linear-gradient(135deg, #198754, #20c997); }
+.ampel-yellow { background: linear-gradient(135deg, #e67e22, #fd7e14); }
+.ampel-red    { background: linear-gradient(135deg, #dc3545, #c0392b); }
+.ampel-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; }
+.ampel-legende { font-size: .82rem; color: #6c757d; }
+
+/* Colorblind: Icon neben der Zahl */
+.ampel-icon { font-size: 1.1rem; margin-right: .2rem; }
+
+/* Prognose-Trend-Pfeil in Ampelkarte */
+.ampel-trend { font-size: .82rem; opacity: .9; }
+
+/* Parkhaus-Tipp (Warnung) */
+.ampel-tipp { font-size: .72rem; opacity: .85; font-style: italic; margin-top: 2px; }
+
+/* Parkhaus-Link auf Karte */
+.ampel-link { text-decoration: none; font-size: .75rem; opacity: .8; }
+.ampel-link:hover { opacity: 1; }
+
+/* Beste Empfehlung pro Gruppe */
+.ampel-best { box-shadow: 0 0 0 3px #ffc107, 0 4px 16px rgba(0,0,0,.2); }
+
+/* Best-Parkhaus Empfehlung */
+.best-badge { font-size: 1.1rem; }
+
 /* Chat */
 #chat-window { height: 60vh; overflow-y: auto; background: #fff; border-radius: 8px;
                padding: 1rem; }
