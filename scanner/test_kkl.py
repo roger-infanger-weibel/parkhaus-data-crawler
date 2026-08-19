@@ -1,13 +1,19 @@
-#!/usr/bin/env python3
-"""Test KKL Scraper ohne DB-Zugriff."""
+﻿#!/usr/bin/env python3
+"""Test KKL Scraper ohne DB-Zugriff. VERSION: 2026-08-19 MANUAL-v2"""
 
 import json
 import sys
 from fetch_events import KKLLuzernScraper
 
+__version__ = "2026-08-19-MANUAL-v2"
+
 def main():
+    print("=" * 60)
+    print(f"🎵 KKL Luzern Event Scraper - VERSION: {__version__}")
+    print("=" * 60)
+
     scraper = KKLLuzernScraper()
-    print("🔍 Starte KKL-Scraper (Playwright)...")
+    print("🔍 Starte KKL-Scraper (MANUAL - kkl_events_manual.json)...")
 
     events = scraper.fetch()
 
@@ -33,6 +39,7 @@ def main():
         json.dump(json_output, f, indent=2, ensure_ascii=False)
 
     print(f"💾 Events gespeichert in: kkl_events.json")
+    print("=" * 60)
 
 if __name__ == "__main__":
     main()
