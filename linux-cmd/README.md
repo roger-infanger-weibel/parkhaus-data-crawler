@@ -2,12 +2,21 @@
 
 Betriebsanleitung: Autostart, Deployment, Fehlersuche.
 
+## Verzeichnisstruktur
+
+Die Skripte und Konfigurationen sind nach Servertyp organisiert:
+
+- **`medium-server/`** → 87.106.21.252 (KI-Prognose, FastAPI-ML, Port 80)
+- **`small-server/`** → 87.106.222.137 (Scanner + Flask-Dashboard, Port 80)
+
+Verwende **immer** die Skripte aus dem passenden Verzeichnis für deinen Server.
+
 ## Zwei Server
 
-| Server | Läuft dort | Adresse |
-|---|---|---|
-| **87.106.21.252** | KI-Prognose (FastAPI-ML) | http://87.106.21.252/ |
-| **87.106.222.137** | Scanner (prod + test) und Flask-Dashboard | http://87.106.222.137/ |
+| Server | Typ | Läuft dort | Adresse |
+|---|---|---|---|
+| **87.106.21.252** | medium | KI-Prognose (FastAPI-ML) | http://87.106.21.252/ |
+| **87.106.222.137** | small | Scanner (prod + test) und Flask-Dashboard | http://87.106.222.137/ |
 
 Die KI-Prognose ist seit dem 04.08.2026 auf einen eigenen, grösseren Server
 umgezogen — doppelt so viel RAM und CPU. Dort läuft sie auf **Port 80**
@@ -18,12 +27,19 @@ Die Datenbank liegt auf einem dritten Host (`parkhaus.roil.ch`,
 
 ## Dienste
 
-| Dienst | Ordner | Was | Server |
-|---|---|---|---|
-| `parkhaus-scanner-prod` | `/root/scanner-prod` | Belegungsdaten alle 15 Min → `ph_fetch_prod` | alt |
-| `parkhaus-scanner-test` | `/root/scanner-test` | dasselbe → `ph_fetch_test` | alt |
-| `parkhaus-flask` | `/root/flask` | Bisheriges Dashboard, Port 80 | alt |
-| `parkhaus-fastapi-ml` | `/root/FastAPI-ML` | KI-Prognose, Genauigkeit, Chat, Port 80 | neu |
+### medium-server (87.106.21.252)
+
+| Dienst | Ordner | Was |
+|---|---|---|
+| `parkhaus-fastapi-ml` | `/root/FastAPI-ML` | KI-Prognose, Genauigkeit, Chat, Port 80 |
+
+### small-server (87.106.222.137)
+
+| Dienst | Ordner | Was |
+|---|---|---|
+| `parkhaus-scanner-prod` | `/root/scanner-prod` | Belegungsdaten alle 15 Min → `ph_fetch_prod` |
+| `parkhaus-scanner-test` | `/root/scanner-test` | dasselbe → `ph_fetch_test` |
+| `parkhaus-flask` | `/root/flask` | Bisheriges Dashboard, Port 80 |
 
 Welche Datenbank ein Scanner verwendet, entscheidet die `.env` im jeweiligen
 Arbeitsordner — deshalb ist bei den Diensten `WorkingDirectory` gesetzt. Bei
@@ -54,10 +70,17 @@ An den Daten ändert sich nichts:
 
 ## Autostart – einfache Variante (crontab)
 
-Alle vier Startskripte nach dem Booten ausführen, mehr nicht:
+**Wichtig:** Je nach Server-Typ das richtige Verzeichnis verwenden.
 
+### medium-server (FastAPI-ML)
 ```bash
-cp linux-cmd/start-all.sh /root/ && chmod +x /root/start-all.sh
+cp linux-cmd/medium-server/start-all.sh /root/ && chmod +x /root/start-all.sh
+crontab -e
+```
+
+### small-server (Scanner + Flask)
+```bash
+cp linux-cmd/small-server/start-all.sh /root/ && chmod +x /root/start-all.sh
 crontab -e
 ```
 
@@ -112,20 +135,42 @@ oder in `/root`.
 
 ## Täglicher Betrieb
 
+### medium-server (FastAPI-ML)
 ```bash
 systemctl status parkhaus-fastapi-ml      # Zustand
 systemctl restart parkhaus-fastapi-ml     # neustarten
-systemctl stop parkhaus-scanner-test      # anhalten
 journalctl -u parkhaus-fastapi-ml -f      # Logs mitlesen
-journalctl -u parkhaus-scanner-prod --since "1 hour ago"
+```
+
+### small-server (Scanner + Flask)
+```bash
+systemctl status parkhaus-scanner-prod    # Zustand Scanner Prod
+systemctl status parkhaus-scanner-test    # Zustand Scanner Test
+systemctl status parkhaus-flask           # Zustand Flask
+journalctl -u parkhaus-scanner-prod -f    # Logs Scanner Prod
+journalctl -u parkhaus-scanner-test --since "1 hour ago"  # letzte Stunde Test
 ```
 
 ## Deployment einer neuen Version
 
+Je nach Server-Typ das entsprechende Verzeichnis verwenden:
+
+### medium-server (FastAPI-ML)
 ```bash
 cd /root
-bash copy-github.sh     # holt den aktuellen Stand nach latest-github/
-./start-all.sh          # kopiert ihn in die Zielordner und startet neu
+bash copy-github.sh              # holt den aktuellen Stand nach latest-github/
+./start-all.sh                   # kopiert ihn in die Zielordner und startet neu
+./start-fastapi-ml.sh            # nur FastAPI-ML neustarten
+```
+
+### small-server (Scanner + Flask)
+```bash
+cd /root
+bash copy-github.sh              # holt den aktuellen Stand nach latest-github/
+./start-all.sh                   # kopiert ihn in die Zielordner und startet neu
+./start-prod.sh                  # nur Scanner Prod neustarten
+./start-test.sh                  # nur Scanner Test neustarten
+./start-flask.sh                 # nur Flask neustarten
 ```
 
 Das Kopieren erledigen die Startskripte selbst, jeweils mit `cp -rf` — also
@@ -138,14 +183,11 @@ führt die Ordner zusammen und löscht nichts. Im Repository liegt dort nur
 eine leere Platzhalterdatei, die trainierten Modelle auf dem Server bleiben
 erhalten. Dasselbe gilt für die `.env`, die nicht im Repository ist.
 
-Einzelne Dienste lassen sich mit `./start-flask.sh`, `./start-prod.sh`,
-`./start-test.sh` oder `./start-fastapi-ml.sh` neu starten. Bei Verwendung der
-systemd-Units stattdessen `systemctl restart …`, nicht beides gleichzeitig.
+Bei Verwendung der systemd-Units stattdessen `systemctl restart …`, nicht beides gleichzeitig.
 
 ## Training
 
-Läuft seit dem Serverumzug **direkt auf 87.106.21.252** — die Maschine hat
-genug Arbeitsspeicher dafür.
+**Nur auf medium-server (87.106.21.252).** Die Maschine hat genug Arbeitsspeicher dafür.
 
 ```bash
 cd /root/FastAPI-ML
@@ -226,19 +268,21 @@ und die Modelle kommen von einer anderen Maschine — siehe
 Erst unterscheiden, ob überhaupt Pakete ankommen:
 
 ```bash
-curl -sS -m 5 http://localhost/api/health    # auf dem Server selbst
+curl -sS -m 5 http://localhost/api/health    # auf dem Server selbst (medium-server)
+curl -sS -m 5 http://localhost/               # auf small-server (Flask/Scanner)
 ```
 
 - **Funktioniert lokal, aber nicht von aussen** → Firewall. Beide Stellen
   prüfen (firewalld *und* IONOS Cloud Panel, siehe oben).
 - **Auch lokal keine Antwort** → der Dienst läuft nicht:
-  `systemctl status parkhaus-fastapi-ml` und `journalctl -u parkhaus-fastapi-ml -n 50`.
+  - medium-server: `systemctl status parkhaus-fastapi-ml` und `journalctl -u parkhaus-fastapi-ml -n 50`
+  - small-server: `systemctl status parkhaus-flask` oder `systemctl status parkhaus-scanner-prod`
 
 Von aussen unterscheidet der Fehler die Ursache: *Connection refused* heisst,
 der Server antwortet, aber nichts lauscht auf dem Port. *Timeout* heisst, die
 Pakete werden verworfen — das ist immer die Firewall.
 
-### Läuft die KI-App wirklich?
+### Läuft die KI-App wirklich? (medium-server)
 
 Ohne SSH lässt sich das an der Datenbank ablesen — der Dienst schreibt alle
 15 Minuten Prognosen:
@@ -249,7 +293,7 @@ SELECT MAX(created_at) FROM ph_fetch_prod.ai_predictions;
 
 Ist der Wert älter als ~20 Minuten, läuft der Scheduler nicht.
 
-### Läuft der Scanner?
+### Läuft der Scanner? (small-server)
 
 ```sql
 SELECT MAX(fetch_ts) FROM ph_fetch_prod.pls_fetch_current;
