@@ -14,7 +14,7 @@ INTENTS = [
     ("events", r"\b(event|veranstaltung|konzert|theater|festival|was (laeuft|los))\w*"),
     ("best_parking", r"\b(wo\s+(park|find|stell)|empfehl|bestes parkhaus|am besten park|welches parkhaus)\w*"),
     ("forecast", r"\b(prognose|vorhersage|voraussage|wie (voll|frei) wird|wird .{0,30}(frei|voll))\w*"),
-    ("current", r"\b(frei|verfuegbar|plaetze|platz|belegt|offen|aktuell|status)\w*"),
+    ("current", r"\b(frei|verfuegbar|plaetze|platz|belegt|offen|aktuell|status|preis|kosten|kostet|teuer|guenstig|preiswert|adresse|koordinaten|route|webseite|infos)\w*"),
 ]
 
 # Intents, die zwingend eine Stadt (oder ein Parkhaus) brauchen
