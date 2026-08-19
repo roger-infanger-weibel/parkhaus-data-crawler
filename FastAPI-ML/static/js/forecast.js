@@ -12,6 +12,7 @@ function applyPersona(mode) {
   document.getElementById('view-detail').classList.toggle('d-none', mode === 'simple');
   document.getElementById('view-expert-panels').classList.toggle('d-none', mode !== 'expert');
   if (mode === 'simple' && current) zeichneAmpeln();
+  if (current) zeichneTabelle();
   if (mode === 'expert' && selectedPls) updateExpertPanels();
 }
 
@@ -75,15 +76,24 @@ function historyCell(house, offset) {
 function zeichneTabelle() {
   if (!current) return;
   const gefiltert = suchFilter(current.houses);
-  const rows = gefiltert.map(h => `
+  const rows = gefiltert.map(h => {
+    const extras = [];
+    if (h.group) extras.push(h.group);
+    if (h.price_category) extras.push(h.price_category);
+    const links = [];
+    if (h.url) links.push(`<a href="${h.url}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Webseite">🔗</a>`);
+    if (h.lat && h.lon) links.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Route">📍</a>`);
+    const linkStr = links.length ? ' ' + links.join(' ') : '';
+    return `
     <tr data-pls="${h.pls_id}">
-      <td>${h.name}${h.group ? `<br><small class="text-muted">${h.group}</small>` : ''}</td>
+      <td>${h.name}${linkStr}${extras.length ? `<br><small class="text-muted">${extras.join(' · ')}</small>` : ''}</td>
       ${historyCell(h, 2)}
       ${historyCell(h, 1)}
       <td class="text-end"><strong>${h.free_now}</strong><small class="text-muted">/${h.total}</small></td>
       ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
       <td><small class="text-muted">${fmtTs(h.fetch_ts)}</small></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   document.getElementById('forecast-table').innerHTML = rows ||
     '<tr><td colspan="9" class="text-muted">Kein Parkhaus passt zur Suche</td></tr>';
   document.querySelectorAll('#forecast-table tr[data-pls]').forEach(tr => {
@@ -317,10 +327,13 @@ function zeichneAmpeln() {
       return `
       <div class="col-6 col-md-4 col-lg-3">
         <div class="ampel-card ${ampelKlasse(h.free_now, h.total)}${isBest ? ' ampel-best' : ''}" data-pls="${h.pls_id}">
-          <div class="ampel-name">${isBest ? '⭐ ' : ''}${h.name.replace(/^[^:]+:\s*/, '')}${linkHtml}</div>
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="ampel-name">${isBest ? '⭐ ' : ''}${h.name.replace(/^[^:]+:\s*/, '')}${linkHtml}</div>
+            ${h.price_category ? `<span class="ampel-price">${h.price_category}</span>` : ''}
+          </div>
           <div>
             <div class="ampel-status"><span class="ampel-icon">${ampelIcon(h.free_now, h.total)}</span> ${h.free_now} <small style="font-size:.55em">frei</small></div>
-            <div class="ampel-sub">${ampelText(h.free_now, h.total)} · ${h.total} Plätze${preis}</div>
+            <div class="ampel-sub">${ampelText(h.free_now, h.total)} · ${h.total} Plätze</div>
             ${tipp ? `<div class="ampel-tipp">${tipp}</div>` : ''}
             ${ampelTrend(h)}
           </div>

@@ -55,6 +55,13 @@ body.mode-detail #table-col { flex: 0 0 100%; max-width: 100%; }
 /* Parkhaus-Tipp (Warnung) */
 .ampel-tipp { font-size: .72rem; opacity: .85; font-style: italic; margin-top: 2px; }
 
+/* Preiskategorie oben rechts auf Karte */
+.ampel-price {
+  font-size: 1rem; font-weight: 700; opacity: .9;
+  background: rgba(255,255,255,.2); border-radius: 6px;
+  padding: 1px 6px; white-space: nowrap; flex-shrink: 0;
+}
+
 /* Parkhaus-Link auf Karte */
 .ampel-link { text-decoration: none; font-size: .75rem; opacity: .8; }
 .ampel-link:hover { opacity: 1; }
