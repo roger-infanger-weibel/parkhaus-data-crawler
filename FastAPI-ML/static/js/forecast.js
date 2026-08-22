@@ -457,7 +457,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  await loadCities();
+  const cities = await Api.get('/api/cities');
+  const sel = document.getElementById('city-select');
+  sel.innerHTML = cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+  // Willkommens-Dialog beim allerersten Besuch
+  if (!localStorage.getItem('ai_onboarded')) {
+    const wcSel = document.getElementById('welcome-city');
+    wcSel.innerHTML = sel.innerHTML;
+    let gewaehltePersona = 'detail';
+    document.querySelectorAll('.welcome-persona').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.welcome-persona').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        gewaehltePersona = btn.dataset.value;
+      });
+    });
+    const modal = new bootstrap.Modal(document.getElementById('welcome-modal'));
+    modal.show();
+    await new Promise(resolve => {
+      document.getElementById('welcome-ok').addEventListener('click', () => {
+        Merker.schreiben('persona', gewaehltePersona);
+        Merker.schreiben('city-select', wcSel.value);
+        localStorage.setItem('ai_onboarded', '1');
+        const pr = document.getElementById('persona-' + gewaehltePersona);
+        if (pr) pr.checked = true;
+        applyPersona(gewaehltePersona);
+        sel.value = wcSel.value;
+        modal.hide();
+        resolve();
+      });
+    });
+  }
+
+  Merker.binden('city-select', cities[0]?.id, () => {
+    selectedPls = null;
+    loadForecasts();
+  });
+
   await loadForecasts();
   document.querySelectorAll('input[name="model"]').forEach(r =>
     r.addEventListener('change', () => {
