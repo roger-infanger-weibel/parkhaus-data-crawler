@@ -120,7 +120,7 @@ async function loadForecasts() {
     info.textContent = 'Noch keine Prognosen vorhanden';
   } else {
     const ageMin = Math.round((Date.now() - new Date(data.slot)) / 60000);
-    if (ageMin > 30) {
+    if (ageMin > 35) {
       info.className = 'col-auto ms-auto text-danger small fw-semibold';
       info.textContent = `⚠️ Prognose veraltet: Stand ${fmtTs(data.slot)} Uhr ` +
         `(${ageMin} Min alt). Die Spalten +1 h bis +8 h zählen ab diesem ` +
