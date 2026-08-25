@@ -47,11 +47,11 @@ function horizonCell(house, h) {
   const entry = house.horizons?.[h]?.[model()];
   if (!entry) return '<td class="text-end text-muted">–</td>';
   const cls = freeBadgeClass(entry.free, house.total);
-  // Zielzeit in den Tooltip: die Spalte heisst "+1 h", gemeint ist aber immer
-  // eine Stunde nach dem Prognosestand - nicht nach jetzt.
-  const title = `Prognose für ${fmtTs(entry.target_time)} Uhr`;
+  const pct = house.total ? Math.round((1 - entry.free / house.total) * 100) : '?';
+  const title = `Prognose für ${fmtTs(entry.target_time)} Uhr: ${entry.free} frei von ${house.total}`;
   return `<td class="text-end" title="${title}">` +
-    `<span class="badge ${cls}">${entry.free}</span></td>`;
+    `<span class="badge ${cls}">${pct}%</span>` +
+    `<br><span class="cell-detail">${entry.free} frei</span></td>`;
 }
 
 // Rueckblick: nur die Veraenderung bis jetzt. Der Ist-Wert von damals steht
@@ -59,17 +59,14 @@ function horizonCell(house, h) {
 function historyCell(house, offset) {
   const entry = house.history?.[offset];
   if (!entry) return '<td class="text-end text-muted">–</td>';
-  // delta = frei jetzt minus frei damals:
-  //   positiv  -> Autos sind weggefahren, mehr Platz  -> gruen
-  //   negativ  -> Autos sind dazugekommen, weniger Platz -> rot
+  const pct = house.total ? Math.round((1 - entry.free / house.total) * 100) : '?';
   const d = entry.delta;
   const arrow = d > 0 ? '▲' : (d < 0 ? '▼' : '=');
   const cls = d > 0 ? 'delta-up' : (d < 0 ? 'delta-down' : 'text-muted');
   const title = `vor ${offset} h: ${entry.free} frei (${fmtTs(entry.ts)})`;
-  // Klasse am span, nicht am td: Bootstrap setzt die Textfarbe der Zelle
-  // selbst und wuerde sie sonst ueberschreiben.
   return `<td class="text-end" title="${title}">` +
-    `<span class="${cls}">${arrow}${d === 0 ? '' : Math.abs(d)}</span></td>`;
+    `<span class="text-muted">${pct}%</span>` +
+    `<br><span class="cell-detail ${cls}">${arrow}${d === 0 ? '' : Math.abs(d)}</span></td>`;
 }
 
 /** Tabelle aus den zuletzt geladenen Daten aufbauen, gefiltert nach Suche. */
@@ -89,7 +86,7 @@ function zeichneTabelle() {
       <td>${h.name}${linkStr}${extras.length ? `<br><small class="text-muted">${extras.join(' · ')}</small>` : ''}</td>
       ${historyCell(h, 2)}
       ${historyCell(h, 1)}
-      <td class="text-end"><strong>${h.free_now}</strong><small class="text-muted">/${h.total}</small></td>
+      <td class="text-end"><strong>${h.total ? Math.round((1 - h.free_now / h.total) * 100) : '?'}%</strong><br><span class="cell-detail">${h.free_now}/${h.total}</span></td>
       ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
       <td><small class="text-muted">${fmtTs(h.fetch_ts)}</small></td>
     </tr>`;
@@ -345,11 +342,19 @@ function zeichneAmpeln() {
 
   grid.querySelectorAll('.ampel-card').forEach(card => {
     card.addEventListener('click', () => {
-      const radio = document.getElementById('persona-detail');
+      const plsId = card.dataset.pls;
+      const house = current?.houses.find(h => h.pls_id === plsId);
+      const radio = document.getElementById('persona-expert');
       radio.checked = true;
-      applyPersona('detail');
-      Merker.schreiben('persona', 'detail');
-      loadDetail(card.dataset.pls);
+      applyPersona('expert');
+      Merker.schreiben('persona', 'expert');
+      const suche = document.getElementById('such-feld');
+      if (suche && house) {
+        suche.value = house.name.replace(/^[^:]+:\s*/, '');
+        Merker.schreiben('suche', suche.value);
+        zeichneTabelle();
+      }
+      loadDetail(plsId);
     });
   });
 }

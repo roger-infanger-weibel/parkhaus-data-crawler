@@ -15,15 +15,14 @@ body { background-color: #f4f6f9; }
 .delta-up   { color: #198754; font-weight: 600; }
 .delta-down { color: #dc3545; font-weight: 600; }
 .table-hover tbody tr { cursor: pointer; }
+.cell-detail { font-size: .7rem; color: #6c757d; }
 .skill-pos { color: #198754; font-weight: 600; }
 .skill-neg { color: #dc3545; font-weight: 600; }
 
 /* Persona: Einfach-Modus - Modellwahl und Suche ausblenden */
 body.mode-simple .detail-only { display: none !important; }
-body.mode-simple #model-ml,
-body.mode-simple #model-baseline,
-body.mode-simple label[for="model-ml"],
-body.mode-simple label[for="model-baseline"],
+body.mode-simple .col-auto:has([name="model"]),
+body.mode-simple .col-auto:has(label[for="model-ml"]),
 body.mode-simple .col-auto:has(#such-feld) { display: none !important; }
 
 /* Detail-Modus: rechte Spalte ausblenden, Tabelle volle Breite */
