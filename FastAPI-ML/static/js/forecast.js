@@ -6,8 +6,15 @@ function persona() {
   return document.querySelector('input[name="persona"]:checked')?.value || 'detail';
 }
 
+function syncPersonaRadios(mode) {
+  document.querySelectorAll('input[name="persona"]').forEach(r => {
+    r.checked = (r.value === mode);
+  });
+}
+
 function applyPersona(mode) {
   document.body.className = `mode-${mode}`;
+  syncPersonaRadios(mode);
   document.getElementById('view-simple').classList.toggle('d-none', mode !== 'simple');
   document.getElementById('view-detail').classList.toggle('d-none', mode === 'simple');
   document.getElementById('view-expert-panels').classList.toggle('d-none', mode !== 'expert');
@@ -428,14 +435,13 @@ function updateExpertPanels() {
 document.addEventListener('DOMContentLoaded', async () => {
   // Persona wiederherstellen
   const gemerktePersona = Merker.lesen('persona', 'detail');
-  const personaRadio = document.getElementById('persona-' + gemerktePersona);
-  if (personaRadio) personaRadio.checked = true;
   applyPersona(gemerktePersona);
 
   document.querySelectorAll('input[name="persona"]').forEach(r =>
     r.addEventListener('change', () => {
-      Merker.schreiben('persona', persona());
-      applyPersona(persona());
+      const mode = persona();
+      Merker.schreiben('persona', mode);
+      applyPersona(mode);
     }));
 
   document.getElementById('simple-show-full')?.addEventListener('change', () => zeichneAmpeln());
@@ -485,8 +491,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         Merker.schreiben('persona', gewaehltePersona);
         Merker.schreiben('city-select', wcSel.value);
         localStorage.setItem('ai_onboarded', '1');
-        const pr = document.getElementById('persona-' + gewaehltePersona);
-        if (pr) pr.checked = true;
         applyPersona(gewaehltePersona);
         sel.value = wcSel.value;
         modal.hide();
