@@ -523,6 +523,9 @@ FastAPI-ML (Port 80)
     <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
         <td><div class="ch-req">Tabelle zeigt % Auslastung statt nur absolute Zahlen</div>
             <div class="ch-react">Alle Spalten (Rückblick, Jetzt, Prognose) zeigen primär die prozentuale Auslastung. Absolute Zahlen (frei/total, Veränderung) stehen klein darunter. Spaltenheader «Belegt» statt «Frei jetzt».</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Performance: Connection Pool, Response Cache, DB-Index</div>
+            <div class="ch-react">1) db.py: Connection Pool (Queue-basiert, 4 Verbindungen pro env) statt connect-per-query — spart ~500ms TCP-Handshakes pro Seitenaufruf. 2) services.py: 60s TTL-Cache für current_forecasts — wiederholte Aufrufe innerhalb einer Minute treffen nicht mehr die DB. 3) SQL-Index auf pls_fetch_current(city, fetch_ts) und (city, id, fetch_ts) für schnellere Rückblick- und Inactive-Queries.</div></td></tr>
   </tbody></table>
 
   <div class="ch-day">22. August 2026</div>

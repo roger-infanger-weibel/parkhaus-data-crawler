@@ -1,9 +1,13 @@
-"""Datenbankzugriff via pymysql (wie scanner/get_event_and_weather_data.py).
+"""Datenbankzugriff via pymysql mit Connection Pool.
 
-Eine Verbindung pro Operation - einfach und robust; die Zugriffsmuster der App
-(Batch-Jobs alle 15 Min, wenige UI-Requests) brauchen keinen Pool.
+Bis Aug 2026 oeffnete jede Query eine eigene Verbindung. Bei 5-6 Queries pro
+Seitenaufruf (current_forecasts) kostete das ~500ms nur fuer TCP-Handshakes.
+Jetzt haelt ein Pool pro (env, cursorclass) offene Verbindungen vor.
 """
 import logging
+import threading
+from collections import defaultdict
+from queue import Empty, Queue
 from typing import Optional
 
 import pymysql
@@ -14,14 +18,21 @@ import config
 logger = logging.getLogger(__name__)
 
 CONNECT_TIMEOUT = 20
-# Ohne read_timeout wartet pymysql unbegrenzt, wenn der Server die Verbindung
-# abbricht (z.B. net_write_timeout=60, wenn der Client ein grosses Ergebnis
-# nicht schnell genug abholt) - der Prozess haengt dann fuer immer.
 READ_TIMEOUT = 300
 
+POOL_SIZE = 4
+POOL_MAX_IDLE = 60
 
-def get_conn(env: Optional[str] = None,
-             cursorclass=None) -> pymysql.connections.Connection:
+_pools: dict[tuple, Queue] = defaultdict(lambda: Queue(maxsize=POOL_SIZE))
+_lock = threading.Lock()
+
+
+def _pool_key(env: Optional[str], cursorclass) -> tuple:
+    return (config.db_name(env), cursorclass or pymysql.cursors.DictCursor)
+
+
+def _new_conn(env: Optional[str] = None,
+              cursorclass=None) -> pymysql.connections.Connection:
     return pymysql.connect(
         host=config.DB_HOST,
         port=config.DB_PORT,
@@ -37,16 +48,46 @@ def get_conn(env: Optional[str] = None,
     )
 
 
+def get_conn(env: Optional[str] = None,
+             cursorclass=None) -> pymysql.connections.Connection:
+    key = _pool_key(env, cursorclass)
+    pool = _pools[key]
+    try:
+        conn = pool.get_nowait()
+        try:
+            conn.ping(reconnect=False)
+            return conn
+        except Exception:
+            try:
+                conn.close()
+            except Exception:
+                pass
+    except Empty:
+        pass
+    return _new_conn(env, cursorclass)
+
+
+def _return_conn(conn: pymysql.connections.Connection,
+                 env: Optional[str] = None, cursorclass=None):
+    key = _pool_key(env, cursorclass)
+    pool = _pools[key]
+    try:
+        pool.put_nowait(conn)
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 def query_stream(sql: str, params=None, env: Optional[str] = None,
                  batch_size: int = 20000):
     """Grosse SELECTs streamen: liefert Batches von Tupeln.
 
-    Server-side Cursor (SSCursor) statt alles zu puffern - deutlich weniger
-    Speicher als eine Liste aus einer Million Dicts, und die Zeilen werden
-    fortlaufend abgeholt, sodass der Server die Verbindung nicht wegen
-    net_write_timeout abbricht.
+    SSCursor-Verbindungen gehen nicht zurueck in den Pool, weil der Cursor-
+    State an die Verbindung gebunden ist.
     """
-    conn = get_conn(env, cursorclass=pymysql.cursors.SSCursor)
+    conn = _new_conn(env, cursorclass=pymysql.cursors.SSCursor)
     try:
         with conn.cursor() as cursor:
             cursor.execute(sql, params if params else None)
@@ -65,9 +106,15 @@ def query(sql: str, params=None, env: Optional[str] = None) -> list[dict]:
     try:
         with conn.cursor() as cursor:
             cursor.execute(sql, params if params else None)
-            return cursor.fetchall()
-    finally:
-        conn.close()
+            result = cursor.fetchall()
+        _return_conn(conn, env)
+        return result
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        raise
 
 
 def execute(sql: str, params=None, env: Optional[str] = None) -> int:
@@ -78,9 +125,14 @@ def execute(sql: str, params=None, env: Optional[str] = None) -> int:
             cursor.execute(sql, params if params else None)
             rowcount = cursor.rowcount
         conn.commit()
+        _return_conn(conn, env)
         return rowcount
-    finally:
-        conn.close()
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        raise
 
 
 def executemany(sql: str, seq_params, env: Optional[str] = None) -> int:
@@ -94,6 +146,11 @@ def executemany(sql: str, seq_params, env: Optional[str] = None) -> int:
             cursor.executemany(sql, seq_params)
             rowcount = cursor.rowcount
         conn.commit()
+        _return_conn(conn, env)
         return rowcount
-    finally:
-        conn.close()
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        raise

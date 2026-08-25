@@ -1,4 +1,6 @@
 """Gemeinsame Service-Funktionen fuer API-Router und Chatbot."""
+import threading
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -10,6 +12,22 @@ from core.timeutil import now_local
 from forecast.baseline import BaselineModel
 
 _baseline_cache: dict[str, BaselineModel] = {}
+
+# --- Response Cache (TTL 60s) ---
+_response_cache: dict[str, tuple[float, object]] = {}
+_cache_lock = threading.Lock()
+CACHE_TTL = 60
+
+
+def _cached(key: str, fn):
+    with _cache_lock:
+        hit = _response_cache.get(key)
+        if hit and (time.monotonic() - hit[0]) < CACHE_TTL:
+            return hit[1]
+    result = fn()
+    with _cache_lock:
+        _response_cache[key] = (time.monotonic(), result)
+    return result
 
 
 def load_active_baseline(env: str) -> Optional[BaselineModel]:
@@ -86,6 +104,10 @@ def past_values(env: str, city: str, reference: datetime) -> dict:
 
 def current_forecasts(env: str, city: str) -> dict:
     """Neuste Prognosen aller Haeuser einer Stadt, gruppiert pro Haus."""
+    return _cached(f"forecasts:{env}:{city}", lambda: _current_forecasts_impl(env, city))
+
+
+def _current_forecasts_impl(env: str, city: str) -> dict:
     slot = latest_prediction_slot(env, city)
     mapping = {m["pls_id"]: m for m in da.get_mapping(env=env, city=city)}
     snapshots = {s["pls_id"]: s for s in da.latest_snapshots(env=env, city=city)}
