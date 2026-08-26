@@ -116,16 +116,13 @@
           <thead>
             <tr id="detail-time-row">
               <th>Parkhaus</th>
-              <th class="text-end text-secondary">−2 h</th>
-              <th class="text-end text-secondary">−1 h</th>
-              <th class="text-end">Jetzt</th>
               <th class="text-end">+1 h</th>
               <th class="text-end">+2 h</th>
               <th class="text-end">+4 h</th>
               <th class="text-end">+8 h</th>
             </tr>
           </thead>
-          <tbody id="detail-table"><tr><td colspan="8">Lade …</td></tr></tbody>
+          <tbody id="detail-table"><tr><td colspan="5">Lade …</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -140,10 +137,7 @@
     </div>
     <div class="card mb-4">
       <div class="card-body p-2">
-        <div class="mb-2">
-          <strong class="small">Parkhaus-Karte</strong>
-        </div>
-        <div id="parking-map" style="height:500px; border-radius:8px;"></div>
+        <div id="parking-map" style="height:calc(100vh - 180px); min-height:400px; border-radius:8px;"></div>
       </div>
     </div>
   </div>

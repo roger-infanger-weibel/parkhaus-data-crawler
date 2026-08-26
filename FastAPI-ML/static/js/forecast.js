@@ -107,13 +107,10 @@ function detailRow(h, showGroup) {
   if (h.lat && h.lon) links.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Route">📍</a>`);
   const linkStr = links.length ? ' ' + links.join(' ') : '';
   const groupRow = showGroup && h.group
-    ? `<tr class="table-light"><td colspan="8"><strong class="small text-muted">${h.group}</strong></td></tr>` : '';
+    ? `<tr class="table-light"><td colspan="5"><strong class="small text-muted">${h.group}</strong></td></tr>` : '';
   return groupRow + `
   <tr data-pls="${h.pls_id}">
     <td>${name}${linkStr}</td>
-    ${historyCell(h, 2)}
-    ${historyCell(h, 1)}
-    ${ampelCell(h.free_now, h.total, `Jetzt: ${h.free_now} frei von ${h.total}`)}
     ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
   </tr>`;
 }
@@ -144,27 +141,35 @@ function fillTimeRow(rowId) {
   const fetch = current.houses?.[0]?.fetch_ts ? new Date(current.houses[0].fetch_ts) : new Date();
   const slot = new Date(current.slot);
   const fmt = d => d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
-  const cols = [
-    { label: fmt(new Date(fetch.getTime() - 2 * 3600000)), cls: 'text-secondary' },
-    { label: fmt(new Date(fetch.getTime() - 1 * 3600000)), cls: 'text-secondary' },
-    { label: fmt(fetch), cls: '' },
-    { label: fmt(new Date(slot.getTime() + 1 * 3600000)), cls: '' },
-    { label: fmt(new Date(slot.getTime() + 2 * 3600000)), cls: '' },
-    { label: fmt(new Date(slot.getTime() + 4 * 3600000)), cls: '' },
-    { label: fmt(new Date(slot.getTime() + 8 * 3600000)), cls: '' },
-  ];
+  const isDetail = rowId === 'detail-time-row';
   const thead = row.closest('thead');
   let catRow = thead.querySelector('.time-cat-row');
-  if (!catRow) {
-    catRow = document.createElement('tr');
-    catRow.className = 'time-cat-row';
-    thead.insertBefore(catRow, thead.firstChild);
+  if (isDetail) {
+    if (catRow) catRow.remove();
+    const cols = [1, 2, 4, 8].map(h => fmt(new Date(slot.getTime() + h * 3600000)));
+    row.innerHTML = `<th>Parkhaus</th>` + cols.map(c =>
+      `<th class="text-end">${c}</th>`).join('');
+  } else {
+    const cols = [
+      { label: fmt(new Date(fetch.getTime() - 2 * 3600000)), cls: 'text-secondary' },
+      { label: fmt(new Date(fetch.getTime() - 1 * 3600000)), cls: 'text-secondary' },
+      { label: fmt(fetch), cls: '' },
+      { label: fmt(new Date(slot.getTime() + 1 * 3600000)), cls: '' },
+      { label: fmt(new Date(slot.getTime() + 2 * 3600000)), cls: '' },
+      { label: fmt(new Date(slot.getTime() + 4 * 3600000)), cls: '' },
+      { label: fmt(new Date(slot.getTime() + 8 * 3600000)), cls: '' },
+    ];
+    if (!catRow) {
+      catRow = document.createElement('tr');
+      catRow.className = 'time-cat-row';
+      thead.insertBefore(catRow, thead.firstChild);
+    }
+    catRow.innerHTML = `<th></th>` +
+      `<th colspan="3" class="text-center small text-muted">Ist-Daten</th>` +
+      `<th colspan="4" class="text-center small text-primary">Prognose</th>`;
+    row.innerHTML = `<th>Parkhaus</th>` + cols.map((c, i) =>
+      `<th class="text-end ${i >= 3 ? 'text-primary' : c.cls}">${c.label}</th>`).join('');
   }
-  catRow.innerHTML = `<th></th>` +
-    `<th colspan="3" class="text-center small text-muted">Ist-Daten</th>` +
-    `<th colspan="4" class="text-center small text-primary">Prognose</th>`;
-  row.innerHTML = `<th>Parkhaus</th>` + cols.map((c, i) =>
-    `<th class="text-end ${i >= 3 ? 'text-primary' : c.cls}">${c.label}</th>`).join('');
 }
 
 /** Tabellen aus den zuletzt geladenen Daten aufbauen, gefiltert nach Suche. */
