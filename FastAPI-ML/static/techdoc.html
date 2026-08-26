@@ -515,11 +515,35 @@ FastAPI-ML (Port 80)
   <div class="ch-day">26. August 2026</div>
   <table class="table table-sm"><tbody>
     <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
-        <td><div class="ch-req">Karten-Modus als 4. Persona-Ansicht</div>
-            <div class="ch-react">Parkhäuser als farbige Ampel-Marker auf OpenStreetMap (Leaflet.js). Horizont-Dropdown (Jetzt / +1h / +2h / +4h / +8h) aktualisiert die Marker-Farben und %-Werte live.</div></td></tr>
+        <td><div class="ch-req">Vereinfachte Ampellogik mit Farbenblind-Icons</div>
+            <div class="ch-react">Ampel vereinfacht: 👍 grün = bleibt frei bis +8h (garantiertSet), ⚠ gelb = wird knapp, 👎 rot = voll/fast voll. «Effective Class»: aktuell grün aber nicht in garantiertSet → gelb. Toggle «volle ausblenden» entfernt.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">kurzName() – Prefix-Bereinigung in Einfach- und Karten-Ansicht</div>
+            <div class="ch-react">Neuer Helper kurzName() entfernt Stadt-Prefix und Typ-Prefix (Parkhaus/Parkgarage/Cityparking/Parkplatz) aus Anzeigenamen. Anwendung in Ampel-Kacheln und Karten-Popups.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
+        <td><div class="ch-req">Loading-Indicator beim Stadtwechsel</div>
+            <div class="ch-react">Fullscreen-Overlay mit Spinner und «Daten werden geladen…» während loadForecasts(). CSS-Animation in app.css.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Datenquelle neben Stadt-Dropdown</div>
+            <div class="ch-react">Link zur PLS-Datenquelle (z.B. pls-zh.ch) direkt neben der Stadt-Auswahl statt im Footer.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Detail-Ansicht nur Prognose-Spalten</div>
+            <div class="ch-react">Detail-Tabelle zeigt nur noch +1h/+2h/+4h/+8h Prognose. Ist-Daten (−2h, −1h, Jetzt) nur in Experten-Ansicht. Unnötige Titel entfernt.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Karte fullscreen, Routenplaner-Link</div>
+            <div class="ch-react">Kartenhöhe auf calc(100vh − 180px) erweitert. Popup zeigt neu «📍 Route planen» Link (Google Maps Directions). Titel «Parkhaus-Karte» entfernt.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-fix">Fix</span></td>
+        <td><div class="ch-req">Gruppen-Zuordnung komplett (Zürich + St. Gallen)</div>
+            <div class="ch-react">update_zurich_groups.py: Alle Parkhäuser korrekt gruppiert (Innenstadt/Oerlikon/Zürich-West, St. Gallen: Zentrum West/Klosterviertel/Marktplatz/Zentrum Ost/OLMA). Central → Marktplatz, Raiffeisenzentrum → Klosterviertel. Script läuft auf test + prod DB.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-fix">Fix</span></td>
+        <td><div class="ch-req">Koordinaten aller ~96 Parkhäuser korrigiert</div>
+            <div class="ch-react">fix_coordinates.py: Alle Parkhaus-Koordinaten aus offiziellen Quellen aktualisiert (Basel: data.bs.ch, St. Gallen: daten.stadt.sg.ch, Luzern/Bern/Zürich: Adress-Recherche). Park Hyatt, Puls 5, Central hatten NULL → jetzt korrekt. Beide DBs (test + prod).</div></td></tr>
     <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
         <td><div class="ch-req">Detail- und Experten-Tabelle getrennt</div>
             <div class="ch-react">Eigene tbody-IDs und separate Row-Renderer für Detail- und Experten-Ansicht, damit beide Views unabhängig angepasst werden können.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
+        <td><div class="ch-req">Karten-Modus als 4. Persona-Ansicht</div>
+            <div class="ch-react">Parkhäuser als farbige Ampel-Marker auf OpenStreetMap (Leaflet.js). Horizont-Dropdown (Jetzt / +1h / +2h / +4h / +8h) aktualisiert die Marker-Farben und %-Werte live.</div></td></tr>
   </tbody></table>
 
   <div class="ch-day">25. August 2026</div>
