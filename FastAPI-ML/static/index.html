@@ -60,7 +60,10 @@
   <div class="row g-3 mb-3 align-items-end">
     <div class="col-auto">
       <label class="form-label mb-1" for="city-select">Stadt</label>
-      <select id="city-select" class="form-select"></select>
+      <div class="d-flex align-items-center gap-2">
+        <select id="city-select" class="form-select"></select>
+        <small class="text-muted text-nowrap" id="datenquelle-link"></small>
+      </div>
     </div>
     <div class="col-auto">
       <label class="form-label mb-1 d-block">Modell</label>
@@ -88,7 +91,6 @@
   <div id="view-simple" class="d-none">
     <div class="card mb-3 border-0 bg-transparent shadow-none">
       <div class="card-body p-0">
-        <h5 class="mb-3">Parkplatz-Übersicht</h5>
         <div class="ampel-legende mb-3">
           <span class="ampel-dot ampel-green"></span> 👍 Genug frei (bleibt frei bis +8h)
           <span class="ampel-dot ampel-yellow ms-3"></span> ⚠ Wird knapp

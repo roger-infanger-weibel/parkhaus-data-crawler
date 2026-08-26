@@ -15,7 +15,7 @@ ZURICH_GROUPS = {
     "Oerlikon": [
         "Uni Irchel", "Dorflinde", "Theater 11", "Züri 11 Shopping",
         "Nordhaus", "Messe Zürich", "Jungholz", "Center Eleven",
-        "Cityport", "Parkside", "Accu", "Max-Bill-Platz", "Octavo",
+        "Cityport", "Parkside", "Accu", "Max-Bill-Platz", "Max_Bill", "Octavo",
     ],
     "Zürich-West": [
         "Puls 5", "Pfingstweid", "Hardau II",
@@ -31,7 +31,7 @@ STGALLEN_GROUPS = {
         "Oberer Graben", "Raiffeisenzentrum", "Einstein",
     ],
     "Marktplatz": [
-        "Burggraben", "Spisertor", "Brühltor",
+        "Burggraben", "Spisertor", "Brühltor", "Central",
     ],
     "Zentrum Ost": [
         "Stadtpark", "Spelteriniplatz", "Spelterini",

@@ -29,6 +29,10 @@ function applyPersona(mode) {
   if (mode === 'expert' && selectedPls) updateExpertPanels();
 }
 
+function kurzName(n) {
+  return n.replace(/^[^:]+:\s*/, '').replace(/^(Parkhaus|Parkgarage|Cityparking|Parkplatz)\s+/i, '');
+}
+
 function model() {
   return document.querySelector('input[name="model"]:checked').value;
 }
@@ -97,7 +101,7 @@ function expertRow(h, _showGroup) {
 }
 
 function detailRow(h, showGroup) {
-  const name = h.name.replace(/^[^:]+:\s*/, '');
+  const name = kurzName(h.name);
   const links = [];
   if (h.url) links.push(`<a href="${h.url}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Webseite">🔗</a>`);
   if (h.lat && h.lon) links.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Route">📍</a>`);
@@ -213,6 +217,9 @@ async function loadForecasts() {
       info.textContent = `Prognosestand: ${fmtTs(data.slot)} Uhr`;
     }
   }
+  const dqEl = document.getElementById('datenquelle-link');
+  const dq = DATENQUELLEN[city];
+  if (dqEl) dqEl.innerHTML = dq ? `<a href="${dq.url}" target="_blank">${dq.label}</a>` : '';
   zeichneTabelle();
   if (persona() === 'simple') zeichneAmpeln();
   if (persona() === 'map') zeichneKarte();
@@ -391,9 +398,6 @@ function zeichneAmpeln() {
   });
 
   let html = '';
-  if (quelle) {
-    html += `<div class="col-12"><small class="text-muted">Datenquelle: <a href="${quelle.url}" target="_blank">${quelle.label}</a></small></div>`;
-  }
   for (const [gruppe, mitglieder] of Object.entries(gruppen)) {
     html += `<div class="col-12"><h6 class="text-muted mt-2 mb-1">${gruppe}</h6></div>`;
     html += mitglieder.map(h => {
@@ -419,7 +423,7 @@ function zeichneAmpeln() {
       <div class="col-6 col-md-4 col-lg-3">
         <div class="ampel-card ${effClass}" data-pls="${h.pls_id}">
           <div class="d-flex justify-content-between align-items-start">
-            <div class="ampel-name">${icon} ${h.name.replace(/^[^:]+:\s*/, '')}${linkHtml}</div>
+            <div class="ampel-name">${icon} ${kurzName(h.name)}${linkHtml}</div>
             ${h.price_category ? `<span class="ampel-price">${h.price_category}</span>` : ''}
           </div>
           ${warnSub}
@@ -516,7 +520,7 @@ function zeichneKarte() {
       iconAnchor: [21, 26],
     });
     const marker = L.marker([h.lat, h.lon], { icon }).addTo(parkingMap);
-    const name = h.name.replace(/^[^:]+:\s*/, '');
+    const name = kurzName(h.name);
     const priceInfo = price ? `<br>Preis: ${price}` : '';
     let warnInfo = '';
     if (!isSafe && currentClass === 'ampel-green') {
