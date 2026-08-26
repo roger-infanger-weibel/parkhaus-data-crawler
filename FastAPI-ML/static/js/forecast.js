@@ -537,7 +537,8 @@ function zeichneKarte() {
         if (st === 'ampel-yellow') { warnInfo = `<br>⚠ knapp ab ~${fmtTs(e.target_time)}`; break; }
       }
     }
-    marker.bindPopup(`<strong>${name}</strong><br>${free} frei / ${h.total}<br>${pct}% belegt${priceInfo}${warnInfo}`);
+    const routeLink = `<br><a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" style="font-size:.85rem">📍 Route planen</a>`;
+    marker.bindPopup(`<strong>${name}</strong><br>${free} frei / ${h.total}<br>${pct}% belegt${priceInfo}${warnInfo}${routeLink}`);
     mapMarkers.push(marker);
   });
 
