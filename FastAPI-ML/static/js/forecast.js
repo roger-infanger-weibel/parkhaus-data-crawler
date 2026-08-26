@@ -16,9 +16,15 @@ function applyPersona(mode) {
   document.body.className = `mode-${mode}`;
   syncPersonaRadios(mode);
   document.getElementById('view-simple').classList.toggle('d-none', mode !== 'simple');
-  document.getElementById('view-detail').classList.toggle('d-none', mode === 'simple');
-  document.getElementById('view-expert-panels').classList.toggle('d-none', mode !== 'expert');
+  document.getElementById('view-map').classList.toggle('d-none', mode !== 'map');
+  document.getElementById('view-detail').classList.toggle('d-none', mode !== 'detail');
+  document.getElementById('view-expert').classList.toggle('d-none', mode !== 'expert');
+  if (mode === 'simple' || mode === 'map') {
+    const suche = document.getElementById('such-feld');
+    if (suche && suche.value) { suche.value = ''; Merker.schreiben('suche', ''); }
+  }
   if (mode === 'simple' && current) zeichneAmpeln();
+  if (mode === 'map' && current) zeichneKarte();
   if (current) zeichneTabelle();
   if (mode === 'expert' && selectedPls) updateExpertPanels();
 }
@@ -50,59 +56,121 @@ function suchFilter(haeuser) {
   });
 }
 
+function ampelCell(free, total, tooltip) {
+  if (free == null) return '<td class="text-end text-muted">–</td>';
+  const pct = total ? Math.round((1 - free / total) * 100) : '?';
+  const cls = freeBadgeClass(free, total);
+  const icon = ampelIcon(free, total);
+  return `<td class="text-end" title="${tooltip}">` +
+    `<span class="badge ${cls}">${icon} ${pct}%</span>` +
+    `<br><span class="cell-detail">${free}/${total}</span></td>`;
+}
+
 function horizonCell(house, h) {
   const entry = house.horizons?.[h]?.[model()];
   if (!entry) return '<td class="text-end text-muted">–</td>';
-  const cls = freeBadgeClass(entry.free, house.total);
-  const pct = house.total ? Math.round((1 - entry.free / house.total) * 100) : '?';
-  const title = `Prognose für ${fmtTs(entry.target_time)} Uhr: ${entry.free} frei von ${house.total}`;
-  return `<td class="text-end" title="${title}">` +
-    `<span class="badge ${cls}">${pct}%</span>` +
-    `<br><span class="cell-detail">${entry.free} frei</span></td>`;
+  return ampelCell(entry.free, house.total, `Prognose ${fmtTs(entry.target_time)} Uhr: ${entry.free} frei von ${house.total}`);
 }
 
-// Rueckblick: nur die Veraenderung bis jetzt. Der Ist-Wert von damals steht
-// im Tooltip, damit die Zeile nicht mit Zahlen zugestellt wird.
 function historyCell(house, offset) {
   const entry = house.history?.[offset];
   if (!entry) return '<td class="text-end text-muted">–</td>';
-  const pct = house.total ? Math.round((1 - entry.free / house.total) * 100) : '?';
-  const d = entry.delta;
-  const arrow = d > 0 ? '▲' : (d < 0 ? '▼' : '=');
-  const cls = d > 0 ? 'delta-up' : (d < 0 ? 'delta-down' : 'text-muted');
-  const title = `vor ${offset} h: ${entry.free} frei (${fmtTs(entry.ts)})`;
-  return `<td class="text-end" title="${title}">` +
-    `<span class="text-muted">${pct}%</span>` +
-    `<br><span class="cell-detail ${cls}">${arrow}${d === 0 ? '' : Math.abs(d)}</span></td>`;
+  return ampelCell(entry.free, house.total, `vor ${offset} h: ${entry.free} frei (${fmtTs(entry.ts)})`);
 }
 
-/** Tabelle aus den zuletzt geladenen Daten aufbauen, gefiltert nach Suche. */
-function zeichneTabelle() {
+function expertRow(h, _showGroup) {
+  const extras = [];
+  if (h.group) extras.push(h.group);
+  if (h.price_category) extras.push(h.price_category);
+  const links = [];
+  if (h.url) links.push(`<a href="${h.url}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Webseite">🔗</a>`);
+  if (h.lat && h.lon) links.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Route">📍</a>`);
+  const linkStr = links.length ? ' ' + links.join(' ') : '';
+  return `
+  <tr data-pls="${h.pls_id}">
+    <td>${h.name}${linkStr}${extras.length ? `<br><small class="text-muted">${extras.join(' · ')}</small>` : ''}</td>
+    ${historyCell(h, 2)}
+    ${historyCell(h, 1)}
+    <td class="text-end"><strong>${h.total ? Math.round((1 - h.free_now / h.total) * 100) : '?'}%</strong><br><span class="cell-detail">${h.free_now}/${h.total}</span></td>
+    ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
+  </tr>`;
+}
+
+function detailRow(h, showGroup) {
+  const name = h.name.replace(/^[^:]+:\s*/, '');
+  const links = [];
+  if (h.url) links.push(`<a href="${h.url}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Webseite">🔗</a>`);
+  if (h.lat && h.lon) links.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Route">📍</a>`);
+  const linkStr = links.length ? ' ' + links.join(' ') : '';
+  const groupRow = showGroup && h.group
+    ? `<tr class="table-light"><td colspan="8"><strong class="small text-muted">${h.group}</strong></td></tr>` : '';
+  return groupRow + `
+  <tr data-pls="${h.pls_id}">
+    <td>${name}${linkStr}</td>
+    ${historyCell(h, 2)}
+    ${historyCell(h, 1)}
+    ${ampelCell(h.free_now, h.total, `Jetzt: ${h.free_now} frei von ${h.total}`)}
+    ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
+  </tr>`;
+}
+
+function fillTable(tbodyId, rowFn) {
   if (!current) return;
-  const gefiltert = suchFilter(current.houses);
+  const gefiltert = suchFilter(current.houses)
+    .slice().sort((a, b) => (a.group || '').localeCompare(b.group || ''));
+  let lastGroup = null;
   const rows = gefiltert.map(h => {
-    const extras = [];
-    if (h.group) extras.push(h.group);
-    if (h.price_category) extras.push(h.price_category);
-    const links = [];
-    if (h.url) links.push(`<a href="${h.url}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Webseite">🔗</a>`);
-    if (h.lat && h.lon) links.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" onclick="event.stopPropagation()" class="text-muted" title="Route">📍</a>`);
-    const linkStr = links.length ? ' ' + links.join(' ') : '';
-    return `
-    <tr data-pls="${h.pls_id}">
-      <td>${h.name}${linkStr}${extras.length ? `<br><small class="text-muted">${extras.join(' · ')}</small>` : ''}</td>
-      ${historyCell(h, 2)}
-      ${historyCell(h, 1)}
-      <td class="text-end"><strong>${h.total ? Math.round((1 - h.free_now / h.total) * 100) : '?'}%</strong><br><span class="cell-detail">${h.free_now}/${h.total}</span></td>
-      ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
-      <td><small class="text-muted">${fmtTs(h.fetch_ts)}</small></td>
-    </tr>`;
+    const showGroup = h.group !== lastGroup;
+    lastGroup = h.group;
+    return rowFn(h, showGroup);
   }).join('');
-  document.getElementById('forecast-table').innerHTML = rows ||
-    '<tr><td colspan="9" class="text-muted">Kein Parkhaus passt zur Suche</td></tr>';
-  document.querySelectorAll('#forecast-table tr[data-pls]').forEach(tr => {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const cols = tbody.closest('table')?.querySelectorAll('thead th').length || 10;
+  tbody.innerHTML = rows ||
+    `<tr><td colspan="${cols}" class="text-muted">Kein Parkhaus passt zur Suche</td></tr>`;
+  tbody.querySelectorAll('tr[data-pls]').forEach(tr => {
     tr.addEventListener('click', () => loadDetail(tr.dataset.pls));
   });
+}
+
+function fillTimeRow(rowId) {
+  const row = document.getElementById(rowId);
+  if (!row || !current?.slot) return;
+  const fetch = current.houses?.[0]?.fetch_ts ? new Date(current.houses[0].fetch_ts) : new Date();
+  const slot = new Date(current.slot);
+  const fmt = d => d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+  const cols = [
+    { label: fmt(new Date(fetch.getTime() - 2 * 3600000)), cls: 'text-secondary' },
+    { label: fmt(new Date(fetch.getTime() - 1 * 3600000)), cls: 'text-secondary' },
+    { label: fmt(fetch), cls: '' },
+    { label: fmt(new Date(slot.getTime() + 1 * 3600000)), cls: '' },
+    { label: fmt(new Date(slot.getTime() + 2 * 3600000)), cls: '' },
+    { label: fmt(new Date(slot.getTime() + 4 * 3600000)), cls: '' },
+    { label: fmt(new Date(slot.getTime() + 8 * 3600000)), cls: '' },
+  ];
+  const thead = row.closest('thead');
+  let catRow = thead.querySelector('.time-cat-row');
+  if (!catRow) {
+    catRow = document.createElement('tr');
+    catRow.className = 'time-cat-row';
+    thead.insertBefore(catRow, thead.firstChild);
+  }
+  catRow.innerHTML = `<th></th>` +
+    `<th colspan="3" class="text-center small text-muted">Ist-Daten</th>` +
+    `<th colspan="4" class="text-center small text-primary">Prognose</th>`;
+  row.innerHTML = `<th>Parkhaus</th>` + cols.map((c, i) =>
+    `<th class="text-end ${i >= 3 ? 'text-primary' : c.cls}">${c.label}</th>`).join('');
+}
+
+/** Tabellen aus den zuletzt geladenen Daten aufbauen, gefiltert nach Suche. */
+function zeichneTabelle() {
+  if (!current) return;
+  fillTimeRow('detail-time-row');
+  fillTimeRow('expert-time-row');
+  fillTable('detail-table', detailRow);
+  fillTable('expert-table', expertRow);
+  const gefiltert = suchFilter(current.houses);
   const treffer = document.getElementById('such-treffer');
   if (treffer) {
     treffer.textContent = gefiltert.length < current.houses.length
@@ -110,8 +178,21 @@ function zeichneTabelle() {
   }
 }
 
+function showLoading(on) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">Daten werden geladen…</div>';
+    document.body.appendChild(el);
+  }
+  el.classList.toggle('active', on);
+}
+
 async function loadForecasts() {
+  showLoading(true);
   const city = document.getElementById('city-select').value;
+  try {
   const data = await Api.get(`/api/forecast/current/${city}`);
   current = data;
   // Veraltete Prognosen deutlich kennzeichnen: die Spalten "+1 h" usw. zaehlen
@@ -126,9 +207,7 @@ async function loadForecasts() {
     const ageMin = Math.round((Date.now() - new Date(data.slot)) / 60000);
     if (ageMin > 35) {
       info.className = 'col-auto ms-auto text-danger small fw-semibold';
-      info.textContent = `⚠️ Prognose veraltet: Stand ${fmtTs(data.slot)} Uhr ` +
-        `(${ageMin} Min alt). Die Spalten +1 h bis +8 h zählen ab diesem ` +
-        `Zeitpunkt, nicht ab jetzt.`;
+      info.textContent = `⚠️ Prognose veraltet: Stand ${fmtTs(data.slot)} Uhr (${ageMin} Min alt)`;
     } else {
       info.className = 'col-auto ms-auto text-muted small';
       info.textContent = `Prognosestand: ${fmtTs(data.slot)} Uhr`;
@@ -136,7 +215,9 @@ async function loadForecasts() {
   }
   zeichneTabelle();
   if (persona() === 'simple') zeichneAmpeln();
+  if (persona() === 'map') zeichneKarte();
   if (selectedPls) loadDetail(selectedPls);
+  } finally { showLoading(false); }
 }
 
 async function loadDetail(plsId) {
@@ -210,17 +291,16 @@ async function loadDetail(plsId) {
 function ampelKlasse(free, total) {
   if (!total) return 'ampel-yellow';
   const ratio = free / total;
-  if (ratio > 0.3) return 'ampel-green';
-  if (ratio > 0.1) return 'ampel-yellow';
+  if (ratio > 0.1 && free > 15) return 'ampel-green';
+  if (ratio > 0.05 && free > 15) return 'ampel-yellow';
   return 'ampel-red';
 }
 
 function ampelIcon(free, total) {
   if (!total) return '?';
   const ratio = free / total;
-  if (ratio > 0.3) return '✓';
-  if (ratio > 0.1) return '⚠';
-  if (free > 0) return '✗';
+  if (ratio > 0.1 && free > 15) return '✓';
+  if (ratio > 0.05 && free > 15) return '⚠';
   return '✗';
 }
 
@@ -233,69 +313,53 @@ const DATENQUELLEN = {
 };
 
 
-const PARKHAUS_TIPPS = {
-  'parkhaus flora': '🚫 Eng & schwierig zum Parkieren',
-  'hirzenmatt': '🚫 Sehr eng, schwierig zum Manövrieren',
-  'am gütsch': '🚫 Abgelegen, schlechte Zufahrt',
-  'city-parking': '🚫 Oft Stau bei Ausfahrt',
-};
 
-function parkhausTipp(name) {
-  const key = name.toLowerCase();
-  for (const [k, v] of Object.entries(PARKHAUS_TIPPS)) {
-    if (key.includes(k)) return v;
-  }
-  return null;
-}
-
-function ampelText(free, total) {
+function ampelSub(house) {
+  const free = house.free_now;
+  const total = house.total;
   if (!total) return 'Keine Daten';
-  const ratio = free / total;
-  if (ratio > 0.3) return 'Viele Plätze frei';
-  if (ratio > 0.1) return 'Wird knapp';
-  if (free > 0) return 'Fast voll';
-  return 'Voll';
-}
-
-function ampelTrend(house) {
+  const pct = Math.max(0, Math.round((1 - free / total) * 100));
+  const jetztStatus = ampelKlasse(free, total);
   const m = model();
-  const horizonte = [1, 2, 4, 8];
-  let letzteZeit = null;
-  let zusammenfassung = [];
 
-  for (const hz of horizonte) {
+  let warnZeit = null;
+  let warnTyp = null;
+  for (const hz of [1, 2, 4, 8]) {
     const entry = house.horizons?.[hz]?.[m];
     if (!entry) continue;
-    letzteZeit = fmtTs(entry.target_time);
-    const diff = entry.free - house.free_now;
-    if (Math.abs(diff) >= 5) {
-      zusammenfassung.push({ hz, diff, zeit: fmtTs(entry.target_time), free: entry.free });
+    const status = ampelKlasse(entry.free, total);
+    if (!warnTyp && status === 'ampel-yellow' && jetztStatus === 'ampel-green') {
+      warnZeit = fmtTs(entry.target_time);
+      warnTyp = 'knapp';
+    }
+    if (status === 'ampel-red' && jetztStatus !== 'ampel-red') {
+      warnZeit = fmtTs(entry.target_time);
+      warnTyp = 'voll';
+      break;
     }
   }
 
-  if (!zusammenfassung.length) {
-    return letzteZeit
-      ? `<span class="ampel-trend">→ stabil bis ${letzteZeit}</span>`
-      : '';
+  if (jetztStatus === 'ampel-red') {
+    return `<div class="ampel-sub">${pct}% belegt · ${total} Plätze</div>`;
   }
-
-  const erste = zusammenfassung[0];
-  const letzte = zusammenfassung[zusammenfassung.length - 1];
-
-  if (letzte.diff > 0) {
-    return `<span class="ampel-trend">↗ ab ${erste.zeit} freier (${letzte.free} um ${letzte.zeit})</span>`;
+  if (jetztStatus === 'ampel-yellow') {
+    if (warnTyp === 'voll') {
+      return `<div class="ampel-sub">${pct}% belegt · voll ab ~${warnZeit}</div>`;
+    }
+    return `<div class="ampel-sub">${pct}% belegt · ${total} Plätze</div>`;
   }
-  if (letzte.diff < 0) {
-    return `<span class="ampel-trend">↘ ab ${erste.zeit} voller (${letzte.free} um ${letzte.zeit})</span>`;
+  if (warnTyp === 'voll') {
+    return `<div class="ampel-sub">${pct}% belegt · <strong>voll ab ~${warnZeit}</strong></div>`;
   }
-  return `<span class="ampel-trend">→ stabil bis ${letzteZeit}</span>`;
+  if (warnTyp === 'knapp') {
+    return `<div class="ampel-sub">${pct}% belegt · wird knapp ab ~${warnZeit}</div>`;
+  }
+  return `<div class="ampel-sub">${pct}% belegt · ${total} Plätze</div>`;
 }
 
 function zeichneAmpeln() {
   if (!current) return;
-  const hideFull = document.getElementById('simple-show-full')?.checked;
   let houses = suchFilter(current.houses);
-  if (hideFull) houses = houses.filter(h => h.total > 0 && (h.free_now / h.total) > 0.1);
   houses.sort((a, b) => (b.free_now / (b.total || 1)) - (a.free_now / (a.total || 1)));
 
   const grid = document.getElementById('ampel-grid');
@@ -312,35 +376,53 @@ function zeichneAmpeln() {
 
   const city = document.getElementById('city-select').value;
   const quelle = DATENQUELLEN[city];
+  const slot = current.slot ? new Date(current.slot) : new Date();
+  const bis8h = new Date(slot.getTime() + 8 * 3600000)
+    .toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+  const m8 = model();
+  const garantiertSet = new Set();
+  current.houses.forEach(h => {
+    if (!h.total || ampelKlasse(h.free_now, h.total) !== 'ampel-green') return;
+    for (const hz of [1, 2, 4, 8]) {
+      const e = h.horizons?.[hz]?.[m8];
+      if (!e || ampelKlasse(e.free, h.total) !== 'ampel-green') return;
+    }
+    garantiertSet.add(h.pls_id);
+  });
+
   let html = '';
   if (quelle) {
     html += `<div class="col-12"><small class="text-muted">Datenquelle: <a href="${quelle.url}" target="_blank">${quelle.label}</a></small></div>`;
   }
   for (const [gruppe, mitglieder] of Object.entries(gruppen)) {
-    const best = mitglieder.reduce((a, b) =>
-      (a.free_now / (a.total || 1)) >= (b.free_now / (b.total || 1)) ? a : b);
     html += `<div class="col-12"><h6 class="text-muted mt-2 mb-1">${gruppe}</h6></div>`;
     html += mitglieder.map(h => {
-      const isBest = h.pls_id === best.pls_id && mitglieder.length > 1 && h.free_now > 0;
-      const tipp = parkhausTipp(h.name);
+      const isSafe = garantiertSet.has(h.pls_id);
       const links = [];
       if (h.url) links.push(`<a href="${h.url}" target="_blank" class="ampel-link" title="Parkhaus-Webseite" onclick="event.stopPropagation()">🔗</a>`);
       if (h.lat && h.lon) links.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" class="ampel-link" title="Route planen" onclick="event.stopPropagation()">📍</a>`);
       const linkHtml = links.length ? ' ' + links.join(' ') : '';
-      const preis = h.price_category ? ` · ${h.price_category}` : '';
+      const curClass = ampelKlasse(h.free_now, h.total);
+      const effClass = (curClass === 'ampel-green' && !isSafe) ? 'ampel-yellow' : curClass;
+      const icon = effClass === 'ampel-green' ? '👍' : effClass === 'ampel-yellow' ? '⚠' : '👎';
+      let warnSub = '';
+      if (!isSafe && curClass === 'ampel-green') {
+        for (const hz of [1, 2, 4, 8]) {
+          const e = h.horizons?.[hz]?.[m8];
+          if (!e) continue;
+          const st = ampelKlasse(e.free, h.total);
+          if (st === 'ampel-red') { warnSub = `<div class="ampel-sub">⚠ voll ab ~${fmtTs(e.target_time)}</div>`; break; }
+          if (st === 'ampel-yellow') { warnSub = `<div class="ampel-sub">⚠ knapp ab ~${fmtTs(e.target_time)}</div>`; break; }
+        }
+      }
       return `
       <div class="col-6 col-md-4 col-lg-3">
-        <div class="ampel-card ${ampelKlasse(h.free_now, h.total)}${isBest ? ' ampel-best' : ''}" data-pls="${h.pls_id}">
+        <div class="ampel-card ${effClass}" data-pls="${h.pls_id}">
           <div class="d-flex justify-content-between align-items-start">
-            <div class="ampel-name">${isBest ? '⭐ ' : ''}${h.name.replace(/^[^:]+:\s*/, '')}${linkHtml}</div>
+            <div class="ampel-name">${icon} ${h.name.replace(/^[^:]+:\s*/, '')}${linkHtml}</div>
             ${h.price_category ? `<span class="ampel-price">${h.price_category}</span>` : ''}
           </div>
-          <div>
-            <div class="ampel-status"><span class="ampel-icon">${ampelIcon(h.free_now, h.total)}</span> ${h.free_now} <small style="font-size:.55em">frei</small></div>
-            <div class="ampel-sub">${ampelText(h.free_now, h.total)} · ${h.total} Plätze</div>
-            ${tipp ? `<div class="ampel-tipp">${tipp}</div>` : ''}
-            ${ampelTrend(h)}
-          </div>
+          ${warnSub}
         </div>
       </div>`;
     }).join('');
@@ -364,6 +446,93 @@ function zeichneAmpeln() {
       loadDetail(plsId);
     });
   });
+}
+
+
+// ===== Karten-Modus: Leaflet-Karte =====
+let parkingMap = null;
+let mapMarkers = [];
+
+const CITY_CENTER = {
+  basel: [47.5596, 7.5886], bern: [46.9480, 7.4474], luzern: [47.0502, 8.3093],
+  stgallen: [47.4245, 9.3767], zurich: [47.3769, 8.5417],
+};
+
+function markerColor(free, total) {
+  if (!total) return '#6c757d';
+  const ratio = free / total;
+  if (ratio > 0.1 && free > 15) return '#198754';
+  if (ratio > 0.05 && free > 15) return '#fd7e14';
+  return '#dc3545';
+}
+
+function zeichneKarte() {
+  if (!current) return;
+  const city = document.getElementById('city-select').value;
+  const center = CITY_CENTER[city] || [47.37, 8.54];
+  const m = model();
+
+  if (!parkingMap) {
+    parkingMap = L.map('parking-map').setView(center, 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 18,
+    }).addTo(parkingMap);
+  } else {
+    parkingMap.setView(center, 14);
+  }
+
+  mapMarkers.forEach(mk => parkingMap.removeLayer(mk));
+  mapMarkers = [];
+
+  const m8 = model();
+  const safeSet = new Set();
+  current.houses.forEach(h => {
+    if (!h.total || ampelKlasse(h.free_now, h.total) !== 'ampel-green') return;
+    for (const hzz of [1, 2, 4, 8]) {
+      const e = h.horizons?.[hzz]?.[m8];
+      if (!e || ampelKlasse(e.free, h.total) !== 'ampel-green') return;
+    }
+    safeSet.add(h.pls_id);
+  });
+
+  const houses = suchFilter(current.houses);
+  houses.forEach(h => {
+    if (!h.lat || !h.lon) return;
+    const free = h.free_now;
+    const pct = h.total ? Math.round((1 - free / h.total) * 100) : '?';
+    const isSafe = safeSet.has(h.pls_id);
+    const currentClass = ampelKlasse(free, h.total);
+    const effectiveClass = (currentClass === 'ampel-green' && !isSafe) ? 'ampel-yellow' : currentClass;
+    const color = effectiveClass === 'ampel-green' ? '#198754'
+                : effectiveClass === 'ampel-yellow' ? '#fd7e14' : '#dc3545';
+    const ai = effectiveClass === 'ampel-green' ? '👍' : effectiveClass === 'ampel-yellow' ? '⚠' : '👎';
+    const price = h.price_category || '';
+    const badge = price ? `<div style="text-align:center;font-size:.6rem;font-weight:700;white-space:nowrap;margin-top:-2px">${price}</div>` : '';
+    const icon = L.divIcon({
+      className: 'map-marker',
+      html: `<div style="background:${color};color:#fff;border-radius:50%;width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:.7rem;line-height:1.1;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)">${ai}<span>${pct}%</span></div>${badge}`,
+      iconSize: [42, 52],
+      iconAnchor: [21, 26],
+    });
+    const marker = L.marker([h.lat, h.lon], { icon }).addTo(parkingMap);
+    const name = h.name.replace(/^[^:]+:\s*/, '');
+    const priceInfo = price ? `<br>Preis: ${price}` : '';
+    let warnInfo = '';
+    if (!isSafe && currentClass === 'ampel-green') {
+      for (const hzz of [1, 2, 4, 8]) {
+        const e = h.horizons?.[hzz]?.[m8];
+        if (!e) continue;
+        const st = ampelKlasse(e.free, h.total);
+        if (st === 'ampel-red') { warnInfo = `<br>⚠ voll ab ~${fmtTs(e.target_time)}`; break; }
+        if (st === 'ampel-yellow') { warnInfo = `<br>⚠ knapp ab ~${fmtTs(e.target_time)}`; break; }
+      }
+    }
+    marker.bindPopup(`<strong>${name}</strong><br>${free} frei / ${h.total}<br>${pct}% belegt${priceInfo}${warnInfo}`);
+    mapMarkers.push(marker);
+  });
+
+  setTimeout(() => parkingMap.invalidateSize(), 100);
 }
 
 
@@ -444,7 +613,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       applyPersona(mode);
     }));
 
-  document.getElementById('simple-show-full')?.addEventListener('change', () => zeichneAmpeln());
+  document.getElementById('map-horizon')?.addEventListener('change', () => zeichneKarte());
 
   // Modellwahl wiederherstellen (KI oder Basis)
   const gemerktesModell = Merker.lesen('model', 'ml');

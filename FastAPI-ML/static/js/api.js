@@ -136,8 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function freeBadgeClass(free, total) {
   if (!total) return 'bg-secondary';
   const ratio = free / total;
-  if (ratio > 0.3) return 'badge-free-high';
-  if (ratio > 0.1) return 'badge-free-mid';
+  if (ratio > 0.1 && free > 15) return 'badge-free-high';
+  if (ratio > 0.05 && free > 15) return 'badge-free-mid';
   return 'badge-free-low';
 }
 

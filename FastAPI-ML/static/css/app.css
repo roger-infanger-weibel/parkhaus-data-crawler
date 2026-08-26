@@ -19,22 +19,22 @@ body { background-color: #f4f6f9; }
 .skill-pos { color: #198754; font-weight: 600; }
 .skill-neg { color: #dc3545; font-weight: 600; }
 
-/* Persona: Einfach-Modus - Modellwahl und Suche ausblenden */
-body.mode-simple .detail-only { display: none !important; }
+/* Persona: Einfach/Karten-Modus - Modellwahl und Suche ausblenden */
+body.mode-simple .detail-only, body.mode-map .detail-only { display: none !important; }
 body.mode-simple .col-auto:has([name="model"]),
 body.mode-simple .col-auto:has(label[for="model-ml"]),
-body.mode-simple .col-auto:has(#such-feld) { display: none !important; }
+body.mode-simple .col-auto:has(#such-feld),
+body.mode-map .col-auto:has([name="model"]),
+body.mode-map .col-auto:has(label[for="model-ml"]),
+body.mode-map .col-auto:has(#such-feld) { display: none !important; }
 
-/* Detail-Modus: rechte Spalte ausblenden, Tabelle volle Breite */
-body.mode-detail #detail-col { display: none !important; }
-body.mode-detail #table-col { flex: 0 0 100%; max-width: 100%; }
 
 /* Ampel-Kacheln */
 .ampel-card {
-  border-radius: 12px; padding: 1rem; cursor: pointer;
+  border-radius: 10px; padding: .5rem .75rem; cursor: pointer;
   transition: transform .15s, box-shadow .15s;
-  color: #fff; min-height: 110px;
-  display: flex; flex-direction: column; justify-content: space-between;
+  color: #fff;
+  display: flex; flex-direction: column; justify-content: center;
 }
 .ampel-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.18); }
 .ampel-card .ampel-name { font-weight: 600; font-size: .95rem; line-height: 1.2; }
@@ -83,3 +83,19 @@ body.mode-detail #table-col { flex: 0 0 100%; max-width: 100%; }
              border-bottom-left-radius: .2rem; }
 .chat-chip { cursor: pointer; }
 .payload-card { font-size: .85rem; }
+
+/* Loading overlay */
+#loading-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(244,246,249,.85);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: .75rem;
+}
+#loading-overlay.active { display: flex; }
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 4px solid #dee2e6; border-top-color: #0d6efd;
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+.loading-text { font-size: .9rem; color: #6c757d; font-weight: 500; }
+@keyframes spin { to { transform: rotate(360deg); } }

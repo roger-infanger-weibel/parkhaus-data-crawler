@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Parkhaus KI-Prognose</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="css/app.css?v=13" rel="stylesheet">
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+  <link href="css/app.css?v=29" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3 mb-4">
@@ -13,6 +14,8 @@
   <div class="btn-group ms-auto me-2 d-lg-none" role="group" id="persona-toggle-mobile">
     <input type="radio" class="btn-check" name="persona" id="persona-simple-m" value="simple">
     <label class="btn btn-sm btn-outline-warning" for="persona-simple-m">🚗</label>
+    <input type="radio" class="btn-check" name="persona" id="persona-map-m" value="map">
+    <label class="btn btn-sm btn-outline-warning" for="persona-map-m">🗺️</label>
     <input type="radio" class="btn-check" name="persona" id="persona-detail-m" value="detail" checked>
     <label class="btn btn-sm btn-outline-warning" for="persona-detail-m">📊</label>
     <input type="radio" class="btn-check" name="persona" id="persona-expert-m" value="expert">
@@ -32,6 +35,8 @@
     <div class="btn-group me-3 d-none d-lg-flex" role="group" id="persona-toggle">
       <input type="radio" class="btn-check" name="persona" id="persona-simple" value="simple">
       <label class="btn btn-sm btn-outline-warning" for="persona-simple" title="Ampelansicht für schnelle Übersicht">🚗 Einfach</label>
+      <input type="radio" class="btn-check" name="persona" id="persona-map" value="map">
+      <label class="btn btn-sm btn-outline-warning" for="persona-map" title="Parkhäuser auf der Karte">🗺️ Karte</label>
       <input type="radio" class="btn-check" name="persona" id="persona-detail" value="detail" checked>
       <label class="btn btn-sm btn-outline-warning" for="persona-detail" title="Tabelle mit Zahlen und Grafiken">📊 Detail</label>
       <input type="radio" class="btn-check" name="persona" id="persona-expert" value="expert">
@@ -83,18 +88,11 @@
   <div id="view-simple" class="d-none">
     <div class="card mb-3 border-0 bg-transparent shadow-none">
       <div class="card-body p-0">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <h5 class="mb-0">Parkplatz-Übersicht</h5>
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="simple-show-full" checked>
-            <label class="form-check-label small" for="simple-show-full">Fast volle ausblenden</label>
-          </div>
-        </div>
+        <h5 class="mb-3">Parkplatz-Übersicht</h5>
         <div class="ampel-legende mb-3">
-          <span class="ampel-dot ampel-green"></span> ✓ Viele Plätze frei
+          <span class="ampel-dot ampel-green"></span> 👍 Genug frei (bleibt frei bis +8h)
           <span class="ampel-dot ampel-yellow ms-3"></span> ⚠ Wird knapp
-          <span class="ampel-dot ampel-red ms-3"></span> ✗ Voll / fast voll
-          <span class="ms-3">⭐ = Empfehlung in der Gruppe</span>
+          <span class="ampel-dot ampel-red ms-3"></span> 👎 Voll / fast voll
         </div>
         <div id="ampel-grid" class="row g-3">
           <div class="col-12 text-muted">Lade …</div>
@@ -103,8 +101,58 @@
     </div>
   </div>
 
-  <!-- ===== DETAIL: Tabelle (bestehend) ===== -->
-  <div id="view-detail">
+  <!-- ===== DETAIL: Tabelle ===== -->
+  <div id="view-detail" class="d-none">
+    <div class="ampel-legende mb-2">
+      <span class="ampel-dot ampel-green"></span> ✓ Genug frei (&gt;10% und &gt;15 Plätze)
+      <span class="ampel-dot ampel-yellow ms-3"></span> ⚠ Wird knapp (5–10% und &gt;15 Plätze)
+      <span class="ampel-dot ampel-red ms-3"></span> ✗ Voll / fast voll
+    </div>
+    <div class="card mb-4">
+      <div class="card-body p-2">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead>
+            <tr id="detail-time-row">
+              <th>Parkhaus</th>
+              <th class="text-end text-secondary">−2 h</th>
+              <th class="text-end text-secondary">−1 h</th>
+              <th class="text-end">Jetzt</th>
+              <th class="text-end">+1 h</th>
+              <th class="text-end">+2 h</th>
+              <th class="text-end">+4 h</th>
+              <th class="text-end">+8 h</th>
+            </tr>
+          </thead>
+          <tbody id="detail-table"><tr><td colspan="8">Lade …</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== KARTE: Ampel-Marker auf OSM ===== -->
+  <div id="view-map" class="d-none">
+    <div class="ampel-legende mb-2">
+      <span class="ampel-dot ampel-green"></span> 👍 Genug frei (bleibt frei bis +8h)
+      <span class="ampel-dot ampel-yellow ms-3"></span> ⚠ Wird knapp
+      <span class="ampel-dot ampel-red ms-3"></span> 👎 Voll / fast voll
+    </div>
+    <div class="card mb-4">
+      <div class="card-body p-2">
+        <div class="mb-2">
+          <strong class="small">Parkhaus-Karte</strong>
+        </div>
+        <div id="parking-map" style="height:500px; border-radius:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EXPERTE: Tabelle + Panels ===== -->
+  <div id="view-expert" class="d-none">
+    <div class="ampel-legende mb-2">
+      <span class="ampel-dot ampel-green"></span> ✓ Genug frei (&gt;10% und &gt;15 Plätze)
+      <span class="ampel-dot ampel-yellow ms-3"></span> ⚠ Wird knapp (5–10% und &gt;15 Plätze)
+      <span class="ampel-dot ampel-red ms-3"></span> ✗ Voll / fast voll
+    </div>
     <div class="row">
       <div class="col-lg-7" id="table-col">
         <div class="card mb-4">
@@ -120,10 +168,11 @@
                   <th class="text-end">+2 h</th>
                   <th class="text-end">+4 h</th>
                   <th class="text-end">+8 h</th>
-                  <th></th>
+                </tr>
+                <tr id="expert-time-row">
                 </tr>
               </thead>
-              <tbody id="forecast-table"><tr><td colspan="9">Lade …</td></tr></tbody>
+              <tbody id="expert-table"><tr><td colspan="8">Lade …</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -141,8 +190,7 @@
         <div class="card mb-3">
           <div class="card-body py-2" id="detail-events"></div>
         </div>
-        <!-- ===== EXPERTE: Zusatzpanels ===== -->
-        <div id="view-expert-panels" class="d-none">
+        <div id="view-expert-panels">
           <div class="card mb-3">
             <div class="card-body py-2">
               <h6 class="card-title">🔬 Prognose-Details</h6>
@@ -187,6 +235,9 @@
             <button type="button" class="btn btn-outline-warning flex-fill welcome-persona" data-value="simple">
               🚗 Einfach<br><small class="text-muted">Ampel-Übersicht</small>
             </button>
+            <button type="button" class="btn btn-outline-warning flex-fill welcome-persona" data-value="map">
+              🗺️ Karte<br><small class="text-muted">Karten-Ansicht</small>
+            </button>
             <button type="button" class="btn btn-outline-warning flex-fill welcome-persona active" data-value="detail">
               📊 Detail<br><small class="text-muted">Tabelle mit Zahlen</small>
             </button>
@@ -207,10 +258,11 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/api.js?v=10"></script>
-<script src="js/forecast.js?v=13"></script>
+<script src="js/api.js?v=27"></script>
+<script src="js/forecast.js?v=29"></script>
 </body>
 </html>

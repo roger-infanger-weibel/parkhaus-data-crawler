@@ -11,11 +11,11 @@
     "globus": {"id": "zuerichparkhausglobus", "name": "Globus", "total": 178},
     "hardau": {"id": "zuerichparkhaushardauii", "name": "Hardau II", "total": 982},
     "hb": {"id": "zuerichparkhaushauptbahnhof", "name": "Hauptbahnhof", "total": 176},
-    "helvetia": {"id": "zuerichparkhaushelvetiaplatz", "name": "Helvetiaplatz", "total": 0},
+    "helvetia": {"id": "zuerichparkhaushelvetiaplatz", "name": "Helvetiaplatz", "total": 66},
     "promenade": {"id": "zuerichparkhaushohepromenade", "name": "Hohe Promenade", "total": 556},
     "jelmoli": {"id": "zuerichparkhausjelmoli", "name": "Jelmoli", "total": 222},
-    "jungholz": {"id": "zuerichparkhausjungholz", "name": "Jungholz", "total": 124},
-    "max_bill_platz": {"id": "zuerichparkplatzmax_bill_platz", "name": "Max-Bill-Platz", "total": 59},
+    "jungholz": {"id": "zuerichparkhausjungholz", "name": "Jungholz", "total": 139},
+    "max_bill_platz": {"id": "zuerichparkplatzmax_bill_platz", "name": "Max-Bill-Platz", "total": 123},
     "messe": {"id": "zuerichparkhausmessezuerichag", "name": "Messe Zürich AG", "total": 2000},
     "nordhaus": {"id": "zuerichparkhausnordhaus", "name": "Nordhaus", "total": 175},
     "octavo": {"id": "zuerichparkhausoctavo", "name": "Octavo", "total": 123},
@@ -34,5 +34,5 @@
     "zuerichhorn": {"id": "zuerichparkhauszuerichhorn", "name": "Zürichhorn", "total": 245},
     "theater_11": {"id": "zuerichparkplatztheater11", "name": "Theater 11", "total": 188},
     "unispital_sued": {"id": "zuerichparkplatzuszsued", "name": "USZ Süd", "total": 80},
-    "puls5": {"id": "zuerichpuls5parkgarage", "name": "Puls 5 Parkgarage", "total": 0}
+    "puls5": {"id": "zuerichpuls5parkgarage", "name": "Puls 5 Parkgarage", "total": 62}
 }

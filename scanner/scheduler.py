@@ -43,10 +43,11 @@ def main():
         schedule.every().day.at("18:00").do(_run_script, "get_event_and_weather_data.py")
         schedule.every().day.at("06:30").do(_run_script, "fetch_events.py", timeout=300)
         schedule.every().day.at("18:30").do(_run_script, "fetch_events.py", timeout=300)
+        schedule.every().monday.at("07:00").do(_run_script, "check_parkhaus_urls.py", timeout=120)
 
         _run_script("collect_data.py")
 
-        logger.info("Scheduler started - collect_data every 15 min, weather 2x daily, events 2x daily")
+        logger.info("Scheduler started - collect_data every 15 min, weather 2x daily, events 2x daily, URL check weekly Mon 07:00")
 
         while True:
             schedule.run_pending()
