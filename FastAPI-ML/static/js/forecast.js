@@ -95,7 +95,7 @@ function expertRow(h, _showGroup) {
     <td>${h.name}${linkStr}${extras.length ? `<br><small class="text-muted">${extras.join(' · ')}</small>` : ''}</td>
     ${historyCell(h, 2)}
     ${historyCell(h, 1)}
-    <td class="text-end"><strong>${h.total ? Math.round((1 - h.free_now / h.total) * 100) : '?'}%</strong><br><span class="cell-detail">${h.free_now}/${h.total}</span></td>
+    ${ampelCell(h.free_now, h.total, `Aktuell: ${h.free_now} frei von ${h.total}`)}
     ${[1, 2, 4, 8].map(hz => horizonCell(h, hz)).join('')}
   </tr>`;
 }
@@ -538,8 +538,31 @@ function zeichneKarte() {
       }
     }
     const routeLink = `<br><a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lon}" target="_blank" style="font-size:.85rem">📍 Route planen</a>`;
-    marker.bindPopup(`<strong>${name}</strong><br>${free} frei / ${h.total}<br>${pct}% belegt${priceInfo}${warnInfo}${routeLink}`);
+    const detailLink = `<br><a href="#" class="map-detail-link" data-pls="${h.pls_id}" style="font-size:.85rem">🔬 Details anzeigen</a>`;
+    marker.bindPopup(`<strong>${name}</strong><br>${free} frei / ${h.total}<br>${pct}% belegt${priceInfo}${warnInfo}${routeLink}${detailLink}`);
     mapMarkers.push(marker);
+  });
+
+  parkingMap.on('popupopen', (e) => {
+    const link = e.popup.getElement()?.querySelector('.map-detail-link');
+    if (link) {
+      link.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const plsId = link.dataset.pls;
+        const house = current?.houses.find(hh => hh.pls_id === plsId);
+        const radio = document.getElementById('persona-expert');
+        radio.checked = true;
+        applyPersona('expert');
+        Merker.schreiben('persona', 'expert');
+        const suche = document.getElementById('such-feld');
+        if (suche && house) {
+          suche.value = house.name.replace(/^[^:]+:\s*/, '');
+          Merker.schreiben('suche', suche.value);
+          zeichneTabelle();
+        }
+        loadDetail(plsId);
+      });
+    }
   });
 
   setTimeout(() => parkingMap.invalidateSize(), 100);
