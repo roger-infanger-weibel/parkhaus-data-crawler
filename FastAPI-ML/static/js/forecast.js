@@ -153,11 +153,11 @@ function fillTimeRow(rowId) {
     const cols = [
       { label: fmt(new Date(fetch.getTime() - 2 * 3600000)), cls: 'text-secondary' },
       { label: fmt(new Date(fetch.getTime() - 1 * 3600000)), cls: 'text-secondary' },
-      { label: fmt(fetch), cls: '' },
-      { label: fmt(new Date(slot.getTime() + 1 * 3600000)), cls: '' },
-      { label: fmt(new Date(slot.getTime() + 2 * 3600000)), cls: '' },
-      { label: fmt(new Date(slot.getTime() + 4 * 3600000)), cls: '' },
-      { label: fmt(new Date(slot.getTime() + 8 * 3600000)), cls: '' },
+      { label: fmt(fetch), cls: 'text-secondary' },
+      { label: fmt(new Date(slot.getTime() + 1 * 3600000)), cls: 'text-primary' },
+      { label: fmt(new Date(slot.getTime() + 2 * 3600000)), cls: 'text-primary' },
+      { label: fmt(new Date(slot.getTime() + 4 * 3600000)), cls: 'text-primary' },
+      { label: fmt(new Date(slot.getTime() + 8 * 3600000)), cls: 'text-primary' },
     ];
     if (!catRow) {
       catRow = document.createElement('tr');
@@ -167,8 +167,8 @@ function fillTimeRow(rowId) {
     catRow.innerHTML = `<th></th>` +
       `<th colspan="3" class="text-center small text-muted">Ist-Daten</th>` +
       `<th colspan="4" class="text-center small text-primary">Prognose</th>`;
-    row.innerHTML = `<th>Parkhaus</th>` + cols.map((c, i) =>
-      `<th class="text-end ${i >= 3 ? 'text-primary' : c.cls}">${c.label}</th>`).join('');
+    row.innerHTML = `<th>Parkhaus</th>` + cols.map(c =>
+      `<th class="text-end ${c.cls}">${c.label}</th>`).join('');
   }
 }
 
