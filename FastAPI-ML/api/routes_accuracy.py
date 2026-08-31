@@ -91,7 +91,7 @@ def per_parkhaus(city: str, days: int = Query(14, ge=1, le=120),
 
 
 @router.get("/timeseries")
-def timeseries(scope: str = Query("global"), days: int = Query(60, ge=1, le=365),
+def timeseries(scope: str = Query("global"), days: int = Query(90, ge=1, le=365),
                horizon: int = Query(1), env: str = Depends(get_env)):
     since = (now_local() - timedelta(days=days)).date()
     if scope == "global":
@@ -140,3 +140,44 @@ def runs(env: str = Depends(get_env)):
             if r.get(k) is not None:
                 r[k] = float(r[k])
     return rows
+
+
+@router.get("/activations")
+def activations(days: int = Query(90, ge=1, le=365), env: str = Depends(get_env)):
+    """Aktivierungsdaten der ML-Modelle fuer Timeline-Markierungen."""
+    since = (now_local() - timedelta(days=days)).date()
+    rows = db.query(
+        """
+        SELECT trained_at, horizon_h,
+               ROUND(cv_mae_occ, 1) AS mae_occ,
+               ROUND(cv_r2, 3) AS r2,
+               params_json
+        FROM ai_model_runs
+        WHERE model_type = 'ml' AND trained_at >= %s
+        ORDER BY trained_at
+        """,
+        (since,), env=env,
+    )
+    result = []
+    for r in rows:
+        params = {}
+        if r.get("params_json"):
+            try:
+                import json
+                params = json.loads(r["params_json"]) if isinstance(r["params_json"], str) else r["params_json"]
+            except Exception:
+                pass
+        label_parts = []
+        if r.get("mae_occ") is not None:
+            label_parts.append(f"MAE {float(r['mae_occ']):.1f}pp")
+        if r.get("r2") is not None:
+            label_parts.append(f"R² {float(r['r2']):.3f}")
+        cv_folds = params.get("cv_folds")
+        if cv_folds:
+            label_parts.append(f"{cv_folds}-Fold CV")
+        result.append({
+            "date": r["trained_at"].strftime("%Y-%m-%d"),
+            "horizon_h": r["horizon_h"],
+            "label": " · ".join(label_parts) if label_parts else "Neues Modell",
+        })
+    return result

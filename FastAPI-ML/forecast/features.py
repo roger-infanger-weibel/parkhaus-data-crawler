@@ -4,7 +4,9 @@ Ziel der Modelle ist die Belegungsquote occ = (total - free) / total in [0, 1];
 sie macht ein globales Modell ueber Haeuser sehr unterschiedlicher Groesse
 moeglich. Rueckrechnung in freie Plaetze ueber das letzte bekannte total.
 """
+import json
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -12,6 +14,21 @@ import pandas as pd
 
 from core import data_access as da
 from core import kalender
+
+def _load_soon_hours() -> tuple[dict[str, float], float]:
+    """Venue-spezifische soon_hours aus venues.json laden."""
+    cfg_path = Path(__file__).resolve().parent.parent.parent / "scanner" / "venues.json"
+    if not cfg_path.exists():
+        return {}, 1.0
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+    mapping = {}
+    for v in cfg.get("venues", []):
+        if "soon_hours" in v:
+            mapping[v["name"]] = v["soon_hours"]
+    return mapping, cfg.get("soon_hours_default", 1.0)
+
+_VENUE_SOON_HOURS, _SOON_HOURS_DEFAULT = _load_soon_hours()
 
 SLOTS_PER_HOUR = 4
 LAGS = {  # Spaltenname -> Verschiebung in 15-Min-Slots (bezogen auf t0)
@@ -40,6 +57,7 @@ FEATURE_COLUMNS = [
     "temp_bin", "temp_sq",
     "event_active", "event_soon", "event_bonus", "event_category",
     "weekend_event", "rain_hour",
+    "anomaly", "morning_anomaly",
     "log_total",
     "city", "pls_key",
 ]
@@ -101,10 +119,12 @@ def _event_slot_table(events: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]
     for _, e in ev.iterrows():
         bonus = float(e["bonus"] or 0)
         cat = str(e.get("category", "") or "default")
+        venue = str(e.get("venue", "") or "")
+        soon_h = _VENUE_SOON_HOURS.get(venue, _SOON_HOURS_DEFAULT)
         for slot in pd.date_range(e["start_time"].floor("15min"),
                                   e["end_time"].ceil("15min"), freq="15min"):
             active_rows.append((e["city"], e["pls_id"], slot, bonus, cat))
-        for slot in pd.date_range((e["start_time"] - timedelta(hours=3)).ceil("15min"),
+        for slot in pd.date_range((e["start_time"] - timedelta(hours=soon_h)).ceil("15min"),
                                   e["start_time"].floor("15min"), freq="15min",
                                   inclusive="left"):
             soon_rows.append((e["city"], e["pls_id"], slot, bonus))
@@ -220,6 +240,11 @@ def build_horizon_frame(grid: pd.DataFrame, horizon_h: int,
         df = df.merge(prior, on=["city", "pls_id", "weekday", "hour"], how="left")
     else:
         df["prior_occ"] = np.nan
+
+    # Tagesform: wie stark weicht die aktuelle Belegung vom Normalwert ab?
+    df["anomaly"] = df["occ_now"] - df["prior_occ"].fillna(df["occ_now"])
+    # Mittlere Abweichung der letzten 3h — zeigt ob "heute generell anders" ist
+    df["morning_anomaly"] = df["occ_mean_3h"] - df["prior_occ"].fillna(df["occ_mean_3h"])
 
     df["log_total"] = np.log1p(df["total"].astype(float))
     df["pls_key"] = df["city"] + "::" + df["pls_id"]

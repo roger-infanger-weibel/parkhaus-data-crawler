@@ -55,7 +55,8 @@ def _rebuild_daily(env, days: set) -> None:
                 SELECT DATE(target_time), {scope_cols}, model_type, horizon_h,
                        COUNT(*),
                        AVG(abs_err_free),
-                       AVG(abs_err_occ) * 100,
+                       SUM(abs_err_occ * COALESCE(total_at_pred, 1))
+                           / SUM(COALESCE(total_at_pred, 1)) * 100,
                        SQRT(AVG(POW(predicted_free - actual_free, 2))),
                        AVG(predicted_free - actual_free)
                 FROM ai_predictions

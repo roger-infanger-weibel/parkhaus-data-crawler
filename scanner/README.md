@@ -42,6 +42,9 @@ Facility counts as actually delivered by the APIs (measured 2026-07-31 in
 
 ### Installation
 ```bash
+# Falls nur python3 vorhanden (Debian/Ubuntu):
+sudo ln -s /usr/bin/python3 /usr/bin/python
+
 pip install -r requirements.txt
 ```
 

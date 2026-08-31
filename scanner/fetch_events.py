@@ -89,7 +89,12 @@ def _guess_category(title: str) -> str:
     return "default"
 
 
-def _bonus(category: str) -> float:
+def _bonus(category: str, venue_name: str = "") -> float:
+    """venue_bonus aus venues.json hat Vorrang, sonst category_bonus."""
+    if venue_name:
+        for v in _VENUES_CONFIG["venues"]:
+            if v["name"] == venue_name and "venue_bonus" in v:
+                return v["venue_bonus"]
     return CATEGORY_BONUS.get(category, CATEGORY_BONUS["default"])
 
 
@@ -1066,7 +1071,7 @@ def fetch_and_store(venue_filter: Optional[str] = None) -> dict:
                 continue
 
             eid = _event_id(ev["venue"], ev["title"], ev["start_time"])
-            bonus = _bonus(ev.get("category", "default"))
+            bonus = _bonus(ev.get("category", "default"), ev.get("venue", ""))
             cursor.execute(
                 """
                 INSERT INTO local_events

@@ -237,10 +237,12 @@ free_korrigiert = free − round(bias)</code></pre>
     <span class="feature-tag event">event_category</span>
   </p>
   <p class="small text-muted">
-    Echte Veranstaltungsdaten von Venue-Websites (Hallenstadion, Tonhalle,
-    Stadtcasino Basel, Luzerner Theater, OLMA). <code>event_bonus</code> = kategorieabhängiger
-    Zuschlag (Konzert 0.40, Sport 0.45, Messe 0.50 etc.).
-    <code>event_soon</code> = Event beginnt innerhalb der nächsten 3&nbsp;Stunden.
+    Echte Veranstaltungsdaten von 18 Venue-Websites (Hallenstadion, KKL, Tonhalle,
+    Opernhaus, Theater Basel, OLMA u.a.). <code>event_bonus</code> = venue-spezifischer
+    Zuschlag aus <code>venues.json</code> (z.B. KKL&nbsp;0.25, Hallenstadion&nbsp;0.45, Theater&nbsp;0.10–0.15);
+    Fallback auf Kategorie-Bonus wenn kein <code>venue_bonus</code> konfiguriert.
+    <code>event_soon</code> = Event beginnt innerhalb der venue-spezifischen Ankunftszeit
+    (<code>soon_hours</code> in <code>venues.json</code>, z.B. KKL&nbsp;1&nbsp;h, Messen&nbsp;2&nbsp;h, Theater&nbsp;0.5&nbsp;h; Default&nbsp;1&nbsp;h).
     <code>event_category</code> = kategorische Variable (Konzert, Sport, Messe, …).
   </p>
 
@@ -511,6 +513,32 @@ FastAPI-ML (Port 80)
     .ch-day { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
               color: #888; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; margin: 1.2rem 0 0.5rem; }
   </style>
+
+  <div class="ch-day">31. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
+        <td><div class="ch-req">Feature Importance Logging</div>
+            <div class="ch-react">ForecastModel speichert nach fit() die Feature-Importances. Top 15 werden in params_json (ai_model_runs) abgelegt, Top 5 ins Trainingslog geschrieben. Transparenz über welche Features das Modell tatsächlich nutzt.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
+        <td><div class="ch-req">Tagesform-Features (anomaly, morning_anomaly)</div>
+            <div class="ch-react">Zwei neue Features in features.py: «anomaly» = aktuelle Belegung minus saisonalem Prior (wie ungewöhnlich ist es jetzt?), «morning_anomaly» = 3h-Mittel minus Prior (genereller Trend des Tages). Erkennt z.B. Feiertage, Streiks, Grossevents die den Tag vom Normalverlauf abweichen lassen.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Rolling Cross-Validation (4 Folds)</div>
+            <div class="ch-react">Trainings-Pipeline nutzt neu 4 rolling CV-Fenster à 14 Tage statt einem einzigen Holdout. Gibt robustere MAE/R²-Schätzungen — einzelne «gute» oder «schlechte» Wochen verzerren das Ergebnis nicht mehr. CV-Metriken werden in params_json und Trainingslog gespeichert.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-fix">Fix</span></td>
+        <td><div class="ch-req">MAE-occ% Gewichtung nach Garagengrösse</div>
+            <div class="ch-react">evaluate.py: MAE-occ% wird neu gewichtet nach total_at_pred statt einfachem AVG. Vorher dominierten kleine Garagen (38 Plätze) mit hohen %-Fehlern die Gesamtmetrik — ein Fehler von 5 Plätzen = 13% bei kleinem Haus aber nur 0.3% bei grossem. Jetzt realistischere Gesamtbewertung.</div></td></tr>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
+        <td><div class="ch-req">Modell-Aktivierungen auf Accuracy-Zeitachse sichtbar</div>
+            <div class="ch-react">Accuracy-Seite: Zeitraum-Dropdown erweitert (60/90 Tage). Timeseries-Charts zeigen vertikale Markierungen (🔄) bei jedem Modell-Training. Tooltip zeigt MAE, R² und CV-Folds. Neuer API-Endpunkt /api/accuracy/activations liefert historische Aktivierungsdaten.</div></td></tr>
+  </tbody></table>
+
+  <div class="ch-day">28. August 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-imp">Verbesserung</span></td>
+        <td><div class="ch-req">Event-Impact pro Venue kalibrieren statt nur Kategorie-Bonus</div>
+            <div class="ch-react">Analyse historischer Daten zeigte: KKL-Konzerte wurden unterschätzt (Bonus 0.20, tatsächlicher Uplift 0.22–0.41), Luzerner Theater überschätzt (Bonus 0.30, Uplift nur 0.09). Neu: venue_bonus und soon_hours pro Venue in venues.json. Feature-Engineering nutzt venue-spezifisches Ankunftsfenster (z.B. KKL 1h, Messen 2h, Theater 30min) statt fix 3h. Bonus-Berechnung in fetch_events.py priorisiert venue_bonus vor category_bonus.</div></td></tr>
+  </tbody></table>
 
   <div class="ch-day">26. August 2026</div>
   <table class="table table-sm"><tbody>

@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 TRAIN_DAYS = config.TRAIN_DAYS
 HOLDOUT_DAYS = 14
+CV_FOLDS = 4
+CV_FOLD_DAYS = 14
 BASELINE_WEEKS = 8
 ACTIVATION_TOLERANCE = 1.10  # neuer Lauf darf max. 10% schlechter sein
 KEEP_ARTIFACTS = 7
@@ -224,9 +226,37 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
             logger.warning("Horizont %dh: zu wenig Daten, uebersprungen", h)
             continue
 
+        # Rolling Cross-Validation auf dem Trainingsteil
+        cv_maes_free, cv_maes_occ, cv_r2s = [], [], []
+        train_slots = sorted(train_f["slot"].unique())
+        for fold in range(CV_FOLDS):
+            fold_end = train_slots[-1] - timedelta(days=fold * CV_FOLD_DAYS)
+            fold_start = fold_end - timedelta(days=CV_FOLD_DAYS)
+            if fold_start < train_slots[0]:
+                break
+            cv_train = train_f[train_f["slot"] < fold_start]
+            cv_val = train_f[(train_f["slot"] >= fold_start) & (train_f["slot"] < fold_end)]
+            if cv_train.empty or cv_val.empty:
+                continue
+            cv_model = ForecastModel(h).fit(cv_train)
+            cv_pred = cv_model.predict(cv_val)
+            mf, mo = _mae_metrics(cv_pred, cv_val)
+            rv = _r2(cv_pred, cv_val)
+            if not np.isnan(mo):
+                cv_maes_free.append(mf)
+                cv_maes_occ.append(mo)
+                cv_r2s.append(rv)
+            del cv_model
+        cv_mae_free_avg = float(np.mean(cv_maes_free)) if cv_maes_free else float("nan")
+        cv_mae_occ_avg = float(np.mean(cv_maes_occ)) if cv_maes_occ else float("nan")
+        cv_r2_avg = float(np.mean(cv_r2s)) if cv_r2s else float("nan")
+        logger.info("Horizont %dh: Rolling-CV (%d Folds) MAE %.2f pp, R² %.4f",
+                    h, len(cv_maes_occ), cv_mae_occ_avg, cv_r2_avg)
+
+        # Finales Modell auf allen Trainingsdaten
         logger.info("Horizont %dh: trainiere auf %d Zeilen ...", h, len(train_f))
         model = ForecastModel(h).fit(train_f)
-        model.prior = prior  # fuer identische Features bei der Prognose
+        model.prior = prior
         pred_occ = model.predict(hold_f)
         mae_free, mae_occ = _mae_metrics(pred_occ, hold_f)
         r2_val = _r2(pred_occ, hold_f)
@@ -242,13 +272,24 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
             logger.info("Horizont %dh: bisheriges Modell auf demselben Holdout: "
                         "%.2f pp (neu: %.2f pp)", h, alt_mae_occ, mae_occ)
 
+        # Feature Importance (Top 15 fuer params_json)
+        fi = getattr(model, "feature_importance", {})
+        fi_top = dict(sorted(fi.items(), key=lambda x: x[1], reverse=True)[:15])
+        if fi_top:
+            logger.info("Horizont %dh Feature Importance (Top 5): %s", h,
+                        ", ".join(f"{k}={v:.0f}" for k, v in list(fi_top.items())[:5]))
+
         artifact = config.MODELS_DIR / f"ml_h{h}_{env}_{stamp}.joblib"
         model.save(artifact)
         run_id = _insert_run(
             env, "ml", h, now, len(train_f), train_f["slot"].min().to_pydatetime(),
             train_f["slot"].max().to_pydatetime(), mae_free, mae_occ,
             {"library": model.library, "features": features.FEATURE_COLUMNS,
-             "holdout_days": HOLDOUT_DAYS},
+             "holdout_days": HOLDOUT_DAYS,
+             "cv_folds": len(cv_maes_occ),
+             "cv_mae_occ_avg": round(cv_mae_occ_avg, 2) if not np.isnan(cv_mae_occ_avg) else None,
+             "cv_r2_avg": round(cv_r2_avg, 4) if not np.isnan(cv_r2_avg) else None,
+             "feature_importance": fi_top},
             artifact, r2=r2_val,
         )
         activated = _activate(env, run_id, "ml", h, mae_occ, alt_mae_occ)
@@ -256,6 +297,9 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
             "run_id": run_id, "activated": activated,
             "ml_mae_free": round(mae_free, 2), "ml_mae_occ_pp": round(mae_occ, 2),
             "ml_r2": round(r2_val, 4) if not np.isnan(r2_val) else None,
+            "cv_folds": len(cv_maes_occ),
+            "cv_mae_occ_pp": round(cv_mae_occ_avg, 2) if not np.isnan(cv_mae_occ_avg) else None,
+            "cv_r2": round(cv_r2_avg, 4) if not np.isnan(cv_r2_avg) else None,
             "vorheriges_modell_occ_pp": (round(alt_mae_occ, 2)
                                          if alt_mae_occ is not None else None),
             "baseline_mae_free": round(b_free, 2), "baseline_mae_occ_pp": round(b_occ, 2),

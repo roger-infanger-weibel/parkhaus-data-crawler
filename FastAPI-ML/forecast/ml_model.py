@@ -62,7 +62,15 @@ class ForecastModel:
     def fit(self, frame: pd.DataFrame) -> "ForecastModel":
         x = self._prepare(frame, fit=True)
         self.model.fit(x, frame["target"].astype(float))
+        self._store_importance(x.columns.tolist())
         return self
+
+    def _store_importance(self, col_names: list[str]) -> None:
+        try:
+            imp = self.model.feature_importances_
+            self.feature_importance = dict(zip(col_names, map(float, imp)))
+        except Exception:
+            self.feature_importance = {}
 
     def predict(self, frame: pd.DataFrame) -> pd.Series:
         x = self._prepare(frame, fit=False)

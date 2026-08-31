@@ -12,6 +12,7 @@
         "klassik": 0.30,
         "default": 0.20
     },
+    "soon_hours_default": 1.0,
     "venues": [
         {
             "scraper": "HallenstadionScraper",
@@ -19,7 +20,9 @@
             "city": "zurich",
             "url": "https://www.hallenstadion.ch/de/events",
             "parkhaus_ids": ["zuerichparkhausmessezuerichag"],
-            "default_hour": 20
+            "default_hour": 20,
+            "venue_bonus": 0.45,
+            "soon_hours": 1.5
         },
         {
             "scraper": "TonhalleScraper",
@@ -27,7 +30,9 @@
             "city": "zurich",
             "url": "https://www.tonhalle-orchester.ch/konzerte/kalender/",
             "parkhaus_ids": ["zuerichparkhausutoquai", "zuerichparkhaushohepromenade"],
-            "default_category": "klassik"
+            "default_category": "klassik",
+            "venue_bonus": 0.10,
+            "soon_hours": 0.75
         },
         {
             "scraper": "StadtcasinoBaselScraper",
@@ -35,14 +40,18 @@
             "city": "basel",
             "url": "https://www.stadtcasino-basel.ch/de/programm",
             "parkhaus_ids": ["baselparkhaussteinen"],
-            "default_category": "klassik"
+            "default_category": "klassik",
+            "venue_bonus": 0.20,
+            "soon_hours": 0.75
         },
         {
             "scraper": "LuzernerTheaterScraper",
             "name": "Luzerner Theater",
             "city": "luzern",
             "url": "https://www.luzernertheater.ch/spielplan/kalender",
-            "parkhaus_ids": ["luzernparkingstadttheater", "luzernparkhauskesselturm"]
+            "parkhaus_ids": ["luzernparkingstadttheater", "luzernparkhauskesselturm"],
+            "venue_bonus": 0.12,
+            "soon_hours": 0.5
         },
         {
             "scraper": "MusicalChScraper",
@@ -50,6 +59,8 @@
             "city": "",
             "url": "https://www.musical.ch/de/spielplan",
             "parkhaus_ids": [],
+            "venue_bonus": 0.40,
+            "soon_hours": 1.5,
             "venue_city_map": {
                 "theater 11": {"city": "zurich", "parkhaus_ids": ["zuerichparkplatztheater11", "zuerichparkhausmessezuerichag"]},
                 "musical theater": {"city": "basel", "parkhaus_ids": ["baselparkhaussteinen"]},
@@ -67,7 +78,9 @@
             "city": "stgallen",
             "url": "https://www.olma-messen.ch/veranstaltungen/",
             "parkhaus_ids": ["stgallenparkhausolmamessen", "stgallenparkhausolmaparkplatz"],
-            "default_category": "messe"
+            "default_category": "messe",
+            "venue_bonus": 0.50,
+            "soon_hours": 2.0
         },
         {
             "scraper": "OpernhausZurichScraper",
@@ -75,7 +88,9 @@
             "city": "zurich",
             "url": "https://www.opernhaus.ch/spielplan/",
             "parkhaus_ids": ["zuerichparkhausopera", "zuerichparkhaushohepromenade"],
-            "default_category": "oper"
+            "default_category": "oper",
+            "venue_bonus": 0.15,
+            "soon_hours": 0.75
         },
         {
             "scraper": "SchauspielhausZurichScraper",
@@ -83,42 +98,54 @@
             "city": "zurich",
             "url": "https://www.schauspielhaus.ch/de/spielplan",
             "parkhaus_ids": ["zuerichparkhaushohepromenade", "zuerichparkhausutoquai"],
-            "default_category": "theater"
+            "default_category": "theater",
+            "venue_bonus": 0.10,
+            "soon_hours": 0.5
         },
         {
             "scraper": "KongresshausZurichScraper",
             "name": "Kongresshaus Zürich",
             "city": "zurich",
             "url": "https://www.kongresshaus.ch/de/erleben/eventkalender",
-            "parkhaus_ids": ["zuerichparkhausbleicherweg", "zuerichparkhaushohepromenade"]
+            "parkhaus_ids": ["zuerichparkhausbleicherweg", "zuerichparkhaushohepromenade"],
+            "venue_bonus": 0.30,
+            "soon_hours": 1.0
         },
         {
             "scraper": "TheHallScraper",
             "name": "THE HALL",
             "city": "zurich",
             "url": "https://www.thehall.ch/de/eventkalender/",
-            "parkhaus_ids": ["zuerichparkhausmessezuerichag"]
+            "parkhaus_ids": ["zuerichparkhausmessezuerichag"],
+            "venue_bonus": 0.35,
+            "soon_hours": 1.0
         },
         {
             "scraper": "TheaterBaselScraper",
             "name": "Theater Basel",
             "city": "basel",
             "url": "https://www.theater-basel.ch/de/kalender",
-            "parkhaus_ids": ["baselparkhaussteinen"]
+            "parkhaus_ids": ["baselparkhaussteinen"],
+            "venue_bonus": 0.15,
+            "soon_hours": 0.5
         },
         {
             "scraper": "StJakobshalleScraper",
             "name": "St. Jakobshalle",
             "city": "basel",
             "url": "https://stjakobshalle.ch/events",
-            "parkhaus_ids": ["baselparkhausmesse"]
+            "parkhaus_ids": ["baselparkhausmesse"],
+            "venue_bonus": 0.45,
+            "soon_hours": 1.5
         },
         {
             "scraper": "TheaterStGallenScraper",
             "name": "Konzert & Theater St. Gallen",
             "city": "stgallen",
             "url": "https://www.konzertundtheater.ch/programm/kalender/",
-            "parkhaus_ids": ["stgallenparkhausolmamessen"]
+            "parkhaus_ids": ["stgallenparkhausolmamessen"],
+            "venue_bonus": 0.20,
+            "soon_hours": 0.75
         },
         {
             "scraper": "BernExpoScraper",
@@ -126,14 +153,18 @@
             "city": "bern",
             "url": "https://www.bernexpo.ch/veranstaltungen",
             "parkhaus_ids": ["bernparkhausbahnhof"],
-            "default_category": "messe"
+            "default_category": "messe",
+            "venue_bonus": 0.40,
+            "soon_hours": 2.0
         },
         {
             "scraper": "KKLLuzernScraper",
             "name": "KKL Luzern",
             "city": "luzern",
             "url": "https://www.kkl-luzern.ch/events",
-            "parkhaus_ids": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"]
+            "parkhaus_ids": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"],
+            "venue_bonus": 0.25,
+            "soon_hours": 1.0
         },
         {
             "scraper": "MesseLuzernScraper",
@@ -141,21 +172,27 @@
             "city": "luzern",
             "url": "https://www.messeluzern.ch/",
             "parkhaus_ids": ["luzernparkhauskesselturm"],
-            "default_category": "messe"
+            "default_category": "messe",
+            "venue_bonus": 0.45,
+            "soon_hours": 2.0
         },
         {
             "scraper": "StadtkellerLuzernScraper",
             "name": "Stadtkeller Luzern",
             "city": "luzern",
             "url": "https://stadtkeller.ch/events",
-            "parkhaus_ids": ["luzernparkingstadttheater", "luzernparkhauskesselturm"]
+            "parkhaus_ids": ["luzernparkingstadttheater", "luzernparkhauskesselturm"],
+            "venue_bonus": 0.12,
+            "soon_hours": 0.5
         },
         {
             "scraper": "LuzernTopEventsScraper",
             "name": "Luzern Top Events",
             "city": "luzern",
             "url": "https://www.luzern.com/de/stadt/veranstaltungen/top-events",
-            "parkhaus_ids": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"]
+            "parkhaus_ids": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"],
+            "venue_bonus": 0.45,
+            "soon_hours": 1.5
         }
     ]
 }
