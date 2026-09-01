@@ -91,43 +91,7 @@ function drawRadarCharts(entries) {
   });
 }
 
-// --- Activation-Lines Plugin (fuer Trend-Charts) ---
-
-const activationPlugin = {
-  id: 'activationLines',
-  afterDraw(chart) {
-    const lines = chart.options.plugins.activationLines?.lines;
-    if (!lines?.length) return;
-    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
-    for (const line of lines) {
-      const idx = chart.data.labels.indexOf(line.date);
-      if (idx < 0) continue;
-      const px = x.getPixelForValue(idx);
-      ctx.save();
-      ctx.strokeStyle = 'rgba(13, 110, 253, 0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath();
-      ctx.moveTo(px, top);
-      ctx.lineTo(px, bottom);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(13, 110, 253, 0.85)';
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('\u{1F504}', px, top - 4);
-      ctx.restore();
-    }
-  },
-};
-Chart.register(activationPlugin);
-
-let cachedActivations = null;
-
-async function loadActivations(trendDays) {
-  cachedActivations = await Api.get('/api/accuracy/activations', { days: trendDays || 365 });
-  return cachedActivations;
-}
+// Aktivierungslinien-Plugin entfernt — bei täglichem Training nur Rauschen
 
 // --- Übersicht: kleine Timeseries (ohne Aktivierungslinien) ---
 
@@ -166,13 +130,86 @@ async function loadAllTimeseries() {
   }
 }
 
-// --- Trend-Tab: grosse Charts mit Aktivierungslinien ---
+// --- Trend-Tab ---
+
+let trendAllChart = null;
 
 async function loadTrend() {
   const trendDays = parseInt(document.getElementById('trend-days').value);
   const sc = scope();
   const tsScope = sc === 'global' ? 'global' : 'city:' + sc;
-  const activations = await loadActivations(trendDays);
+
+  // Kombiniertes Chart: alle 4 Horizonte KI-Modell
+  const allCanvas = document.getElementById('trend-all');
+  if (allCanvas) {
+    const hColors = { 1: '#198754', 2: '#0d6efd', 4: '#6f42c1', 8: '#dc3545' };
+    const allDatasets = [];
+    let allDays = new Set();
+    const seriesData = {};
+    for (const h of [1, 2, 4, 8]) {
+      const data = await Api.get('/api/accuracy/timeseries', { scope: tsScope, horizon: h, days: trendDays });
+      const mlPoints = data.series.ml || [];
+      mlPoints.forEach(p => allDays.add(p.day));
+      seriesData[h] = mlPoints;
+    }
+    const daysAxis = [...allDays].sort();
+    for (const h of [1, 2, 4, 8]) {
+      const points = seriesData[h];
+      allDatasets.push({
+        label: `+${h} h`,
+        borderColor: hColors[h],
+        backgroundColor: 'transparent',
+        tension: 0.3, pointRadius: 1, borderWidth: 2,
+        data: daysAxis.map(d => points.find(p => p.day === d)?.mae_free ?? null),
+      });
+    }
+    if (trendAllChart) trendAllChart.destroy();
+    trendAllChart = new Chart(allCanvas, {
+      type: 'line',
+      data: { labels: daysAxis, datasets: allDatasets },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: {
+            ticks: {
+              maxTicksLimit: 14, font: { size: 10 },
+              callback(val) {
+                const d = this.getLabelForValue(val);
+                if (!d) return '';
+                const [, m, dd] = d.split('-');
+                return `${dd}.${m}.`;
+              },
+            },
+            grid: { color: 'rgba(0,0,0,0.04)' },
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'MAE (freie Plätze)', font: { size: 11 } },
+            ticks: { font: { size: 10 } },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+          },
+        },
+        plugins: {
+          legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+          title: { display: true, text: 'KI-Modell — alle Horizonte', font: { size: 14, weight: 'bold' }, padding: { bottom: 8 } },
+          tooltip: {
+            callbacks: {
+              title(items) {
+                const d = items[0]?.label;
+                if (!d) return '';
+                const [y, m, dd] = d.split('-');
+                return `${dd}.${m}.${y}`;
+              },
+              label(ctx) {
+                return `${ctx.dataset.label}: ±${ctx.parsed.y?.toFixed(1) ?? '–'} Plätze`;
+              },
+            },
+          },
+        },
+      },
+    });
+  }
 
   for (const h of [1, 2, 4, 8]) {
     const canvas = document.getElementById('trend-' + h);
@@ -189,14 +226,6 @@ async function loadTrend() {
       tension: 0.3, pointRadius: 1.5, borderWidth: 2,
       data: daysAxis.map(d => points.find(p => p.day === d)?.mae_free ?? null),
     }));
-
-    const hActivations = activations
-      .filter(a => a.horizon_h === h)
-      .filter(a => daysAxis.includes(a.date))
-      .reduce((acc, a) => {
-        if (!acc.find(x => x.date === a.date)) acc.push(a);
-        return acc;
-      }, []);
 
     if (trendCharts[h]) trendCharts[h].destroy();
     trendCharts[h] = new Chart(canvas, {
@@ -228,7 +257,6 @@ async function loadTrend() {
         plugins: {
           legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
           title: { display: true, text: `Prognose +${h} h`, font: { size: 13, weight: 'bold' }, padding: { bottom: 8 } },
-          activationLines: { lines: hActivations },
           tooltip: {
             callbacks: {
               title(items) {
@@ -239,11 +267,6 @@ async function loadTrend() {
               },
               label(ctx) {
                 return `${ctx.dataset.label}: ±${ctx.parsed.y?.toFixed(1) ?? '–'} Plätze`;
-              },
-              afterBody(items) {
-                const day = items[0]?.label;
-                const act = hActivations.find(a => a.date === day);
-                return act ? `\n\u{1F504} Neues Modell: ${act.label}` : '';
               },
             },
           },
