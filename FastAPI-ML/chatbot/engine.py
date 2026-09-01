@@ -81,9 +81,9 @@ class RuleBasedEngine(ChatEngine):
 
         # Stadt noetig, aber keine erkannt
         if intent in I.NEEDS_CITY and not entities.get("city"):
-            # Wenn Semantic Classifier unsicher war, lieber an LLM weiterleiten
-            sem = I.semantic.classify(text)
-            if sem is None or sem[1] < 0.55:
+            if not entities.get("parkhaus") and not entities.get("time"):
+                # Keine Parkhaus-Entitaet und keine Zeit erkannt:
+                # wahrscheinlich keine Parkfrage -> LLM-Fallback
                 intent = "fallback"
             else:
                 session.pending_intent = intent
