@@ -39,7 +39,7 @@ laufendes Genauigkeits-Monitoring und ein deutschsprachiger Chat-Assistent.
   `ai_feiertage` und `ai_schulferien` (Sync per `kalender.sync_kalender_to_db`).
 - **Neue Tabellen** (`schema.sql`, Präfix `ai_`): `ai_parkhaus_map`,
   `ai_model_runs`, `ai_predictions`, `ai_accuracy_daily`, `ai_chat_log`,
-  `ai_feiertage`, `ai_schulferien`.
+  `ai_feiertage`, `ai_schulferien`, `ai_chat_llm_usage`.
   Bestehende Tabellen werden **nur gelesen**.
 - **Identity-Mapping:** `pls_fetch_current`-IDs ≠ `parkhaeuser`-IDs
   (Basel exakt, Luzern/St. Gallen Namens-Containment, Bern Wort-Vergleich);
@@ -146,13 +146,23 @@ Manuelle Checkliste: die vier Seiten öffnen, im Chat die Beispielfragen
 stellen, `/api/health` prüfen (aktive Modelle, letzte Prognose, Job-Status,
 geladene `.env`).
 
-## Chatbot — semantische Intent-Erkennung
+## Chatbot — Hybrid (lokal + Gemini Flash)
 
-`chatbot/semantic.py` nutzt ein lokales Sentence-Transformer-Modell
-(`paraphrase-multilingual-MiniLM-L12-v2`, ~120 MB) für die Intent-Klassifikation
-via Cosine-Similarity. Der Regex-Fallback in `intents.py` greift nur, wenn das
-Modell nicht verfügbar ist oder der Score unter 0.45 liegt. Es werden keine
-Daten an externe KI-Dienste gesendet.
+Der Chat-Assistent arbeitet zweistufig:
+
+1. **Lokale Intent-Erkennung** (`chatbot/semantic.py`): Sentence-Transformer
+   (`paraphrase-multilingual-MiniLM-L12-v2`, ~120 MB) klassifiziert die Frage
+   per Cosine-Similarity. Bekannte Intents (Parkplätze, Prognosen, Wetter,
+   Events, Genauigkeit) werden regelbasiert beantwortet — kostenlos und schnell.
+2. **Gemini-Flash-Fallback** (`chatbot/llm.py`): Fragen, die keinem Intent
+   zugeordnet werden können, gehen an Googles Gemini Flash API (kostenloses
+   Kontingent, max. 1500 Requests/Tag). Der Bot antwortet dann intelligent
+   auf Deutsch, mit aktuellem Parkhaus-Kontext.
+
+**Setup:** `GEMINI_API_KEY` in der `.env` setzen (kostenloser Key von
+[aistudio.google.com](https://aistudio.google.com)). Ohne Key funktioniert
+der Chatbot wie bisher, nur ohne LLM-Fallback. Nutzung wird in der Tabelle
+`ai_chat_llm_usage` getrackt.
 
 ## Hinweise
 

@@ -418,8 +418,8 @@ FastAPI-ML (Port 80)
       <tr><td><code>/api/accuracy/timeseries</code></td><td>GET</td>
         <td>MAE-Verlauf über die letzten N Tage</td></tr>
       <tr><td><code>/api/chat</code></td><td>POST</td>
-        <td>Chat-Assistent mit semantischer Intent-Erkennung
-          (Sentence-Transformer, Regex-Fallback)</td></tr>
+        <td>Chat-Assistent: lokale Intent-Erkennung (Sentence-Transformer)
+          + Gemini-Flash-Fallback für unbekannte Fragen</td></tr>
       <tr><td><code>/api/health</code></td><td>GET</td>
         <td>Status, aktive Modelle, Scheduler-Zeiten, DB-Info</td></tr>
       <tr><td><code>/api/version</code></td><td>GET</td>
@@ -517,7 +517,7 @@ FastAPI-ML (Port 80)
   <div class="ch-day">1. September 2026</div>
   <table class="table table-sm"><tbody>
     <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
-        <td><div class="ch-req">Hybrid-Chatbot mit Claude-API</div>
+        <td><div class="ch-req">Hybrid-Chatbot mit Gemini Flash</div>
             <div class="ch-react">Chat-Assistent nutzt jetzt Claude Haiku als Fallback für Fragen, die der regelbasierte Bot nicht versteht. Bekannte Intents (Parkplätze, Wetter, Events, Prognosen) bleiben regelbasiert und schnell. Unbekannte Fragen gehen an Gemini Flash (kostenloses Kontingent, 1500 Requests/Tag). Nutzungs-Tracking in ai_chat_llm_usage-Tabelle.</div></td></tr>
   </tbody></table>
 
