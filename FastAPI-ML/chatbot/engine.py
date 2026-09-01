@@ -81,16 +81,14 @@ class RuleBasedEngine(ChatEngine):
 
         # Stadt noetig, aber keine erkannt
         if intent in I.NEEDS_CITY and not entities.get("city"):
-            if not entities.get("parkhaus") and not entities.get("time"):
-                # Keine Parkhaus-Entitaet und keine Zeit erkannt:
-                # wahrscheinlich keine Parkfrage -> LLM-Fallback
-                intent = "fallback"
-            else:
+            if entities.get("parkhaus"):
                 session.pending_intent = intent
                 session.entities = entities
                 reply = R.ASK_CITY
                 self._log(env, session_id, text, intent, entities, reply)
                 return ChatResponse(reply, intent, self._entities_out(entities), None)
+            # Kein Parkhaus erkannt -> wahrscheinlich keine Parkfrage -> LLM
+            intent = "fallback"
 
         handler = HANDLERS.get(intent, HANDLERS["fallback"])
         try:
