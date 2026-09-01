@@ -66,6 +66,7 @@ class RuleBasedEngine(ChatEngine):
         entities = E.extract(text, now, self._mapping(env))
         session = self._session(session_id)
 
+        entities["_raw_text"] = text
         intent = I.classify(folded, entities, now, raw_text=text)
 
         # Slot-Filling: vorher fehlte die Stadt, jetzt kam nur "Luzern" o.ae.
@@ -100,7 +101,7 @@ class RuleBasedEngine(ChatEngine):
 
     @staticmethod
     def _entities_out(entities: dict) -> dict:
-        out = dict(entities)
+        out = {k: v for k, v in entities.items() if not k.startswith("_")}
         if out.get("time"):
             out["time"] = {"at": out["time"]["at"].isoformat(),
                            "explicit": out["time"]["explicit"]}

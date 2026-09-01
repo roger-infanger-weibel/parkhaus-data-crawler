@@ -10,6 +10,7 @@ import db
 from api import services
 from core import data_access as da
 from chatbot import responses as R
+from chatbot import llm
 
 MAX_LIST = 5
 
@@ -234,7 +235,21 @@ def accuracy(env, entities, now):
     return text, {"type": "accuracy", "ml": ml, "baseline": base}
 
 
+def _build_context(env, entities, now):
+    parts = [f"Datum/Zeit: {now.strftime('%d.%m.%Y %H:%M')}"]
+    city = entities.get("city")
+    if city:
+        snaps = da.latest_snapshots(env=env, city=city)
+        if snaps:
+            lines = [f"  {s['name']}: {s['free']}/{s['total']} frei" for s in snaps[:5]]
+            parts.append(f"Aktuelle Belegung {R.city_name(city)}:\n" + "\n".join(lines))
+    return "\n".join(parts)
+
+
 def fallback(env, entities, now):
+    reply = llm.ask(entities.get("_raw_text", ""), env, _build_context(env, entities, now))
+    if reply:
+        return reply, {"type": "llm_fallback"}
     return R.FALLBACK, None
 
 
