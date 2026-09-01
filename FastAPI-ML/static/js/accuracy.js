@@ -139,34 +139,47 @@ async function loadTrend() {
   const sc = scope();
   const tsScope = sc === 'global' ? 'global' : 'city:' + sc;
 
-  // Kombiniertes Chart: alle 4 Horizonte KI-Modell
+  // Kombiniertes Chart: Durchschnitt über alle Horizonte
   const allCanvas = document.getElementById('trend-all');
   if (allCanvas) {
-    const hColors = { 1: '#198754', 2: '#0d6efd', 4: '#6f42c1', 8: '#dc3545' };
-    const allDatasets = [];
     let allDays = new Set();
-    const seriesData = {};
+    const mlByDay = {}, baseByDay = {};
     for (const h of [1, 2, 4, 8]) {
       const data = await Api.get('/api/accuracy/timeseries', { scope: tsScope, horizon: h, days: trendDays });
-      const mlPoints = data.series.ml || [];
-      mlPoints.forEach(p => allDays.add(p.day));
-      seriesData[h] = mlPoints;
+      for (const p of (data.series.ml || [])) {
+        allDays.add(p.day);
+        (mlByDay[p.day] = mlByDay[p.day] || []).push(p.mae_free);
+      }
+      for (const p of (data.series.baseline || [])) {
+        (baseByDay[p.day] = baseByDay[p.day] || []).push(p.mae_free);
+      }
     }
     const daysAxis = [...allDays].sort();
-    for (const h of [1, 2, 4, 8]) {
-      const points = seriesData[h];
-      allDatasets.push({
-        label: `+${h} h`,
-        borderColor: hColors[h],
-        backgroundColor: 'transparent',
-        tension: 0.3, pointRadius: 1, borderWidth: 2,
-        data: daysAxis.map(d => points.find(p => p.day === d)?.mae_free ?? null),
-      });
-    }
+    const avg = obj => daysAxis.map(d => {
+      const vals = obj[d];
+      return vals?.length ? vals.reduce((a, b) => a + b) / vals.length : null;
+    });
+
     if (trendAllChart) trendAllChart.destroy();
     trendAllChart = new Chart(allCanvas, {
       type: 'line',
-      data: { labels: daysAxis, datasets: allDatasets },
+      data: {
+        labels: daysAxis,
+        datasets: [
+          {
+            label: 'KI-Modell (Ø alle Horizonte)',
+            borderColor: '#198754', backgroundColor: 'rgba(25, 135, 84, 0.08)',
+            fill: true, tension: 0.3, pointRadius: 1.5, borderWidth: 2.5,
+            data: avg(mlByDay),
+          },
+          {
+            label: 'Basis (Ø alle Horizonte)',
+            borderColor: '#fd7e14', backgroundColor: 'transparent',
+            tension: 0.3, pointRadius: 1, borderWidth: 1.5, borderDash: [4, 3],
+            data: avg(baseByDay),
+          },
+        ],
+      },
       options: {
         responsive: true,
         interaction: { mode: 'index', intersect: false },
@@ -185,14 +198,14 @@ async function loadTrend() {
           },
           y: {
             beginAtZero: true,
-            title: { display: true, text: 'MAE (freie Plätze)', font: { size: 11 } },
+            title: { display: true, text: 'Ø MAE (freie Plätze)', font: { size: 11 } },
             ticks: { font: { size: 10 } },
             grid: { color: 'rgba(0,0,0,0.06)' },
           },
         },
         plugins: {
           legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
-          title: { display: true, text: 'KI-Modell — alle Horizonte', font: { size: 14, weight: 'bold' }, padding: { bottom: 8 } },
+          title: { display: true, text: 'Gesamtqualität — Durchschnitt aller Prognosen', font: { size: 14, weight: 'bold' }, padding: { bottom: 8 } },
           tooltip: {
             callbacks: {
               title(items) {
