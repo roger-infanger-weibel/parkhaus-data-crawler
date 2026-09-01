@@ -91,9 +91,17 @@ function drawRadarCharts(entries) {
   });
 }
 
-// Aktivierungslinien-Plugin entfernt — bei täglichem Training nur Rauschen
+// --- Hilfsfunktion: 7-Tage gleitender Durchschnitt ---
 
-// --- Übersicht: kleine Timeseries (ohne Aktivierungslinien) ---
+function movingAvg(data, window) {
+  return data.map((_, i) => {
+    const start = Math.max(0, i - window + 1);
+    const slice = data.slice(start, i + 1).filter(v => v != null);
+    return slice.length >= Math.min(3, window) ? slice.reduce((a, b) => a + b) / slice.length : null;
+  });
+}
+
+// --- Übersicht: kleine Timeseries ---
 
 async function loadAllTimeseries() {
   const sc = scope();
@@ -105,12 +113,13 @@ async function loadAllTimeseries() {
 
     const data = await Api.get('/api/accuracy/timeseries', { scope: tsScope, horizon: h, days: days() });
     const daysAxis = [...new Set(Object.values(data.series).flat().map(p => p.day))].sort();
-    const colors = { ml: '#198754', baseline: '#fd7e14' };
-    const datasets = Object.entries(data.series).map(([mt, points]) => ({
-      label: mt === 'ml' ? 'KI' : 'Basis',
-      borderColor: colors[mt], tension: 0.2, pointRadius: 1, borderWidth: 1.5,
-      data: daysAxis.map(d => points.find(p => p.day === d)?.mae_free ?? null),
-    }));
+    const mlData = daysAxis.map(d => (data.series.ml || []).find(p => p.day === d)?.mae_free ?? null);
+    const baseData = daysAxis.map(d => (data.series.baseline || []).find(p => p.day === d)?.mae_free ?? null);
+    const datasets = [
+      { label: 'Basis', borderColor: '#fd7e14', tension: 0.2, pointRadius: 0, borderWidth: 1, borderDash: [3, 2], data: baseData },
+      { label: 'KI', borderColor: 'rgba(25, 135, 84, 0.3)', tension: 0.2, pointRadius: 0, borderWidth: 1, data: mlData },
+      { label: 'KI Trend', borderColor: '#198754', tension: 0.3, pointRadius: 0, borderWidth: 2.5, data: movingAvg(mlData, 7) },
+    ];
 
     if (tsCharts[h]) tsCharts[h].destroy();
     tsCharts[h] = new Chart(canvas, {
@@ -130,161 +139,96 @@ async function loadAllTimeseries() {
   }
 }
 
-// --- Trend-Tab ---
+// --- Trend-Tab: kompakte Charts mit Trendlinie ---
 
 let trendAllChart = null;
+
+function trendChartOpts(title) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+      x: {
+        ticks: { maxTicksLimit: 5, font: { size: 8 }, callback(val) {
+          const d = this.getLabelForValue(val);
+          return d ? d.slice(5).replace('-', '.') : '';
+        }},
+        grid: { display: false },
+      },
+      y: { beginAtZero: true, ticks: { font: { size: 8 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+    },
+    plugins: {
+      legend: { display: false },
+      title: { display: true, text: title, font: { size: 10, weight: 'bold' }, padding: { top: 2, bottom: 4 } },
+      tooltip: { callbacks: {
+        title(items) { const d = items[0]?.label; if (!d) return ''; const [y,m,dd] = d.split('-'); return `${dd}.${m}.${y}`; },
+        label(ctx) { return `${ctx.dataset.label}: ±${ctx.parsed.y?.toFixed(1) ?? '–'}`; },
+      }},
+    },
+  };
+}
 
 async function loadTrend() {
   const trendDays = parseInt(document.getElementById('trend-days').value);
   const sc = scope();
   const tsScope = sc === 'global' ? 'global' : 'city:' + sc;
 
-  // Kombiniertes Chart: Durchschnitt über alle Horizonte
+  // Daten fuer alle Horizonte laden
+  let allDays = new Set();
+  const mlByDay = {}, baseByDay = {};
+  const perHorizon = {};
+  for (const h of [1, 2, 4, 8]) {
+    const data = await Api.get('/api/accuracy/timeseries', { scope: tsScope, horizon: h, days: trendDays });
+    perHorizon[h] = data.series;
+    for (const p of (data.series.ml || [])) {
+      allDays.add(p.day);
+      (mlByDay[p.day] = mlByDay[p.day] || []).push(p.mae_free);
+    }
+    for (const p of (data.series.baseline || [])) {
+      (baseByDay[p.day] = baseByDay[p.day] || []).push(p.mae_free);
+    }
+  }
+  const daysAxis = [...allDays].sort();
+  const avgArr = obj => daysAxis.map(d => {
+    const vals = obj[d];
+    return vals?.length ? vals.reduce((a, b) => a + b) / vals.length : null;
+  });
+
+  // 1. Kombiniertes Chart: Ø aller Horizonte
   const allCanvas = document.getElementById('trend-all');
   if (allCanvas) {
-    let allDays = new Set();
-    const mlByDay = {}, baseByDay = {};
-    for (const h of [1, 2, 4, 8]) {
-      const data = await Api.get('/api/accuracy/timeseries', { scope: tsScope, horizon: h, days: trendDays });
-      for (const p of (data.series.ml || [])) {
-        allDays.add(p.day);
-        (mlByDay[p.day] = mlByDay[p.day] || []).push(p.mae_free);
-      }
-      for (const p of (data.series.baseline || [])) {
-        (baseByDay[p.day] = baseByDay[p.day] || []).push(p.mae_free);
-      }
-    }
-    const daysAxis = [...allDays].sort();
-    const avg = obj => daysAxis.map(d => {
-      const vals = obj[d];
-      return vals?.length ? vals.reduce((a, b) => a + b) / vals.length : null;
-    });
-
+    const mlAvg = avgArr(mlByDay);
+    const baseAvg = avgArr(baseByDay);
     if (trendAllChart) trendAllChart.destroy();
     trendAllChart = new Chart(allCanvas, {
       type: 'line',
-      data: {
-        labels: daysAxis,
-        datasets: [
-          {
-            label: 'KI-Modell (Ø alle Horizonte)',
-            borderColor: '#198754', backgroundColor: 'rgba(25, 135, 84, 0.08)',
-            fill: true, tension: 0.3, pointRadius: 1.5, borderWidth: 2.5,
-            data: avg(mlByDay),
-          },
-          {
-            label: 'Basis (Ø alle Horizonte)',
-            borderColor: '#fd7e14', backgroundColor: 'transparent',
-            tension: 0.3, pointRadius: 1, borderWidth: 1.5, borderDash: [4, 3],
-            data: avg(baseByDay),
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        scales: {
-          x: {
-            ticks: {
-              maxTicksLimit: 14, font: { size: 10 },
-              callback(val) {
-                const d = this.getLabelForValue(val);
-                if (!d) return '';
-                const [, m, dd] = d.split('-');
-                return `${dd}.${m}.`;
-              },
-            },
-            grid: { color: 'rgba(0,0,0,0.04)' },
-          },
-          y: {
-            beginAtZero: true,
-            title: { display: true, text: 'Ø MAE (freie Plätze)', font: { size: 11 } },
-            ticks: { font: { size: 10 } },
-            grid: { color: 'rgba(0,0,0,0.06)' },
-          },
-        },
-        plugins: {
-          legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
-          title: { display: true, text: 'Gesamtqualität — Durchschnitt aller Prognosen', font: { size: 14, weight: 'bold' }, padding: { bottom: 8 } },
-          tooltip: {
-            callbacks: {
-              title(items) {
-                const d = items[0]?.label;
-                if (!d) return '';
-                const [y, m, dd] = d.split('-');
-                return `${dd}.${m}.${y}`;
-              },
-              label(ctx) {
-                return `${ctx.dataset.label}: ±${ctx.parsed.y?.toFixed(1) ?? '–'} Plätze`;
-              },
-            },
-          },
-        },
-      },
+      data: { labels: daysAxis, datasets: [
+        { label: 'Basis', borderColor: '#fd7e14', borderWidth: 1, borderDash: [3, 2], pointRadius: 0, tension: 0.2, data: baseAvg },
+        { label: 'KI', borderColor: 'rgba(25, 135, 84, 0.3)', borderWidth: 1, pointRadius: 0, tension: 0.2, data: mlAvg },
+        { label: 'KI Trend', borderColor: '#198754', borderWidth: 2.5, pointRadius: 0, tension: 0.3, data: movingAvg(mlAvg, 7) },
+      ]},
+      options: trendChartOpts('Ø Gesamt'),
     });
   }
 
+  // 2. Pro Horizont
   for (const h of [1, 2, 4, 8]) {
     const canvas = document.getElementById('trend-' + h);
     if (!canvas) continue;
-
-    const data = await Api.get('/api/accuracy/timeseries', { scope: tsScope, horizon: h, days: trendDays });
-    const daysAxis = [...new Set(Object.values(data.series).flat().map(p => p.day))].sort();
-    const colors = { ml: '#198754', baseline: '#fd7e14' };
-    const datasets = Object.entries(data.series).map(([mt, points]) => ({
-      label: mt === 'ml' ? 'KI-Modell' : 'Basis',
-      borderColor: colors[mt],
-      backgroundColor: mt === 'ml' ? 'rgba(25, 135, 84, 0.08)' : 'transparent',
-      fill: mt === 'ml',
-      tension: 0.3, pointRadius: 1.5, borderWidth: 2,
-      data: daysAxis.map(d => points.find(p => p.day === d)?.mae_free ?? null),
-    }));
+    const series = perHorizon[h] || {};
+    const mlData = daysAxis.map(d => (series.ml || []).find(p => p.day === d)?.mae_free ?? null);
+    const baseData = daysAxis.map(d => (series.baseline || []).find(p => p.day === d)?.mae_free ?? null);
 
     if (trendCharts[h]) trendCharts[h].destroy();
     trendCharts[h] = new Chart(canvas, {
       type: 'line',
-      data: { labels: daysAxis, datasets },
-      options: {
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        scales: {
-          x: {
-            ticks: {
-              maxTicksLimit: 12, font: { size: 10 },
-              callback(val) {
-                const d = this.getLabelForValue(val);
-                if (!d) return '';
-                const [, m, dd] = d.split('-');
-                return `${dd}.${m}.`;
-              },
-            },
-            grid: { color: 'rgba(0,0,0,0.04)' },
-          },
-          y: {
-            beginAtZero: true,
-            title: { display: true, text: 'MAE (freie Plätze)', font: { size: 11 } },
-            ticks: { font: { size: 10 } },
-            grid: { color: 'rgba(0,0,0,0.06)' },
-          },
-        },
-        plugins: {
-          legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
-          title: { display: true, text: `Prognose +${h} h`, font: { size: 13, weight: 'bold' }, padding: { bottom: 8 } },
-          tooltip: {
-            callbacks: {
-              title(items) {
-                const d = items[0]?.label;
-                if (!d) return '';
-                const [y, m, dd] = d.split('-');
-                return `${dd}.${m}.${y}`;
-              },
-              label(ctx) {
-                return `${ctx.dataset.label}: ±${ctx.parsed.y?.toFixed(1) ?? '–'} Plätze`;
-              },
-            },
-          },
-        },
-      },
+      data: { labels: daysAxis, datasets: [
+        { label: 'Basis', borderColor: '#fd7e14', borderWidth: 1, borderDash: [3, 2], pointRadius: 0, tension: 0.2, data: baseData },
+        { label: 'KI', borderColor: 'rgba(25, 135, 84, 0.3)', borderWidth: 1, pointRadius: 0, tension: 0.2, data: mlData },
+        { label: 'KI Trend', borderColor: '#198754', borderWidth: 2.5, pointRadius: 0, tension: 0.3, data: movingAvg(mlData, 7) },
+      ]},
+      options: trendChartOpts(`+${h} h`),
     });
   }
 
