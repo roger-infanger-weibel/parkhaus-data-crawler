@@ -11,7 +11,7 @@ import db
 
 logger = logging.getLogger(__name__)
 
-MODEL = "gemini-2.0-flash"
+MODEL = "gemini-3.6-flash"
 DAILY_REQUEST_LIMIT = int(os.getenv("AI_CHAT_DAILY_LIMIT", "1500"))
 MAX_TOKENS = 300
 
