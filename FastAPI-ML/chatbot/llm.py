@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 MODEL = "gemini-3.6-flash"
 DAILY_REQUEST_LIMIT = int(os.getenv("AI_CHAT_DAILY_LIMIT", "1500"))
-MAX_TOKENS = 300
+MAX_TOKENS = 500
 
 _model = None
 _initialized = False
@@ -116,6 +116,9 @@ def ask(user_text: str, env: str, context: str = "") -> str | None:
             config=types.GenerateContentConfig(
                 system_instruction=system,
                 max_output_tokens=MAX_TOKENS,
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                    disable=True,
+                ),
             ),
         )
         reply = response.text
