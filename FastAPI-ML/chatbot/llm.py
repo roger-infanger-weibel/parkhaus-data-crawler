@@ -116,7 +116,7 @@ def ask(user_text: str, env: str, context: str = "") -> str | None:
             config=types.GenerateContentConfig(
                 system_instruction=system,
                 max_output_tokens=MAX_TOKENS,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                thinking_config=types.ThinkingConfig(thinking_budget=128),
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(
                     disable=True,
                 ),
