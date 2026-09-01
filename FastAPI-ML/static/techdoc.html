@@ -518,7 +518,7 @@ FastAPI-ML (Port 80)
   <table class="table table-sm"><tbody>
     <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
         <td><div class="ch-req">Hybrid-Chatbot mit Claude-API</div>
-            <div class="ch-react">Chat-Assistent nutzt jetzt Claude Haiku als Fallback für Fragen, die der regelbasierte Bot nicht versteht. Bekannte Intents (Parkplätze, Wetter, Events, Prognosen) bleiben kostenlos und schnell über das bestehende System. Nur unbekannte Fragen gehen an die Claude-API. Tägliches Kostenlimit von $1 verhindert Überraschungen. Nutzungs-Tracking in ai_chat_llm_usage-Tabelle.</div></td></tr>
+            <div class="ch-react">Chat-Assistent nutzt jetzt Claude Haiku als Fallback für Fragen, die der regelbasierte Bot nicht versteht. Bekannte Intents (Parkplätze, Wetter, Events, Prognosen) bleiben regelbasiert und schnell. Unbekannte Fragen gehen an Gemini Flash (kostenloses Kontingent, 1500 Requests/Tag). Nutzungs-Tracking in ai_chat_llm_usage-Tabelle.</div></td></tr>
   </tbody></table>
 
   <div class="ch-day">31. August 2026</div>

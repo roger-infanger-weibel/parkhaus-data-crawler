@@ -1,7 +1,7 @@
-"""Claude-API-Fallback fuer den Chatbot mit taeglichem Kostenlimit.
+"""Gemini-API-Fallback fuer den Chatbot (kostenloses Kontingent).
 
-Nutzt Claude Haiku fuer kosteneffiziente Antworten auf Fragen, die der
-regelbasierte Chatbot nicht versteht. Trackt Kosten pro Tag in der DB.
+Nutzt Gemini Flash fuer intelligente Antworten auf Fragen, die der
+regelbasierte Chatbot nicht versteht. Trackt Nutzung pro Tag in der DB.
 """
 import logging
 import os
@@ -11,14 +11,11 @@ import db
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-haiku-4-5-20251001"
-# Haiku pricing (USD per million tokens)
-COST_INPUT_PER_M = 0.80
-COST_OUTPUT_PER_M = 4.00
-DAILY_LIMIT_USD = float(os.getenv("AI_CHAT_DAILY_LIMIT", "1.00"))
+MODEL = "gemini-2.0-flash"
+DAILY_REQUEST_LIMIT = int(os.getenv("AI_CHAT_DAILY_LIMIT", "1500"))
 MAX_TOKENS = 300
 
-_client = None
+_model = None
 _initialized = False
 
 SYSTEM_PROMPT = """\
@@ -34,24 +31,28 @@ konkreten Parkplatz-Daten fragt, empfehle ihm die passende Frage \
 (z.B. "Frag mich: Wie viele Plätze sind in Luzern frei?").
 - Beantworte allgemeine Fragen freundlich und hilfsbereit.
 - Wenn du etwas nicht weisst, sag es ehrlich.
-- Erwähne nie, dass du ein KI-Modell von Anthropic/Claude bist. \
+- Erwähne nie, dass du ein KI-Modell von Google bist. \
 Du bist der "Parkhaus-Assistent".
 """
 
 
 def _init():
-    global _client, _initialized
+    global _model, _initialized
     if _initialized:
-        return _client is not None
+        return _model is not None
     _initialized = True
     try:
-        import anthropic
-        _client = anthropic.Anthropic()
-        logger.info("Claude-API-Client initialisiert (Modell: %s)", MODEL)
+        from google import genai
+        api_key = os.getenv("GEMINI_API_KEY", "")
+        if not api_key:
+            logger.warning("GEMINI_API_KEY nicht gesetzt — LLM-Fallback deaktiviert")
+            return False
+        client = genai.Client(api_key=api_key)
+        _model = client
+        logger.info("Gemini-API-Client initialisiert (Modell: %s)", MODEL)
         return True
     except Exception:
-        logger.warning("Claude-API nicht verfügbar — kein ANTHROPIC_API_KEY?",
-                       exc_info=True)
+        logger.warning("Gemini-API nicht verfügbar", exc_info=True)
         return False
 
 
@@ -68,39 +69,36 @@ def _ensure_table(env: str):
     """, env=env)
 
 
-def _get_daily_cost(env: str) -> float:
+def _get_daily_requests(env: str) -> int:
     _ensure_table(env)
     rows = db.query(
-        "SELECT cost_usd FROM ai_chat_llm_usage WHERE day = %s",
+        "SELECT requests FROM ai_chat_llm_usage WHERE day = %s",
         (date.today(),), env=env,
     )
-    return float(rows[0]["cost_usd"]) if rows else 0.0
+    return int(rows[0]["requests"]) if rows else 0
 
 
 def _record_usage(env: str, input_tokens: int, output_tokens: int):
-    cost = (input_tokens * COST_INPUT_PER_M + output_tokens * COST_OUTPUT_PER_M) / 1_000_000
     _ensure_table(env)
     db.execute("""
         INSERT INTO ai_chat_llm_usage (day, input_tokens, output_tokens, requests, cost_usd)
-        VALUES (%s, %s, %s, 1, %s)
+        VALUES (%s, %s, %s, 1, 0)
         ON DUPLICATE KEY UPDATE
             input_tokens = input_tokens + VALUES(input_tokens),
             output_tokens = output_tokens + VALUES(output_tokens),
-            requests = requests + 1,
-            cost_usd = cost_usd + VALUES(cost_usd)
-    """, (date.today(), input_tokens, output_tokens, cost), env=env)
-    logger.info("LLM-Usage: +%d/%d tokens, +$%.4f (Tagessumme wird ~$%.4f)",
-                input_tokens, output_tokens, cost, _get_daily_cost(env) + cost)
+            requests = requests + 1
+    """, (date.today(), input_tokens, output_tokens), env=env)
+    logger.info("LLM-Usage: +%d/%d tokens, Request #%d heute",
+                input_tokens, output_tokens, _get_daily_requests(env))
 
 
 def ask(user_text: str, env: str, context: str = "") -> str | None:
-    """Stellt eine Frage an Claude Haiku. Gibt None zurück bei Fehler/Limit."""
     if not _init():
         return None
 
-    daily_cost = _get_daily_cost(env)
-    if daily_cost >= DAILY_LIMIT_USD:
-        logger.warning("Tageslimit erreicht: $%.2f >= $%.2f", daily_cost, DAILY_LIMIT_USD)
+    daily_reqs = _get_daily_requests(env)
+    if daily_reqs >= DAILY_REQUEST_LIMIT:
+        logger.warning("Tageslimit erreicht: %d >= %d Requests", daily_reqs, DAILY_REQUEST_LIMIT)
         return ("Ich habe mein tägliches Kontingent für ausführliche Antworten "
                 "aufgebraucht. Bitte versuch es morgen wieder, oder stell mir "
                 "eine konkrete Frage zu Parkplätzen, Wetter oder Events — "
@@ -111,15 +109,21 @@ def ask(user_text: str, env: str, context: str = "") -> str | None:
         system += f"\n\nAktueller Kontext:\n{context}"
 
     try:
-        response = _client.messages.create(
+        from google.genai import types
+        response = _model.models.generate_content(
             model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=system,
-            messages=[{"role": "user", "content": user_text}],
+            contents=user_text,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                max_output_tokens=MAX_TOKENS,
+            ),
         )
-        reply = response.content[0].text
-        _record_usage(env, response.usage.input_tokens, response.usage.output_tokens)
+        reply = response.text
+        usage = response.usage_metadata
+        in_tok = usage.prompt_token_count or 0
+        out_tok = usage.candidates_token_count or 0
+        _record_usage(env, in_tok, out_tok)
         return reply
     except Exception:
-        logger.exception("Claude-API-Aufruf fehlgeschlagen")
+        logger.exception("Gemini-API-Aufruf fehlgeschlagen")
         return None
