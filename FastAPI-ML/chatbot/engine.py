@@ -79,13 +79,18 @@ class RuleBasedEngine(ChatEngine):
                 entities = merged
         session.pending_intent = None
 
-        # Stadt noetig, aber keine erkannt -> nachfragen und Intent merken
+        # Stadt noetig, aber keine erkannt
         if intent in I.NEEDS_CITY and not entities.get("city"):
-            session.pending_intent = intent
-            session.entities = entities
-            reply = R.ASK_CITY
-            self._log(env, session_id, text, intent, entities, reply)
-            return ChatResponse(reply, intent, self._entities_out(entities), None)
+            # Wenn Semantic Classifier unsicher war, lieber an LLM weiterleiten
+            sem = I.semantic.classify(text)
+            if sem is None or sem[1] < 0.55:
+                intent = "fallback"
+            else:
+                session.pending_intent = intent
+                session.entities = entities
+                reply = R.ASK_CITY
+                self._log(env, session_id, text, intent, entities, reply)
+                return ChatResponse(reply, intent, self._entities_out(entities), None)
 
         handler = HANDLERS.get(intent, HANDLERS["fallback"])
         try:
