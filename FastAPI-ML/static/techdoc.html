@@ -514,6 +514,13 @@ FastAPI-ML (Port 80)
               color: #888; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; margin: 1.2rem 0 0.5rem; }
   </style>
 
+  <div class="ch-day">4. September 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>
+        <td><div class="ch-req">Residual-Modelle pro Parkhaus</div>
+            <div class="ch-react">Leichte LightGBM-Modelle pro Parkhaus, die den Fehler des globalen Modells konditioniert korrigieren. 10 Features (Stunde, Wochentag, aktuelle Belegung, Anomalie, Wetter, Events). Ersetzt die statische Bias-Korrektur — statt eines fixen Offsets lernt das Residual-Modell, wann und wie stark das globale Modell bei einem spezifischen Parkhaus daneben liegt. Min. 200 Trainingszeilen pro Haus, Fallback auf statischen Bias wenn zu wenig Daten. Ein Artefakt pro Horizont enthält alle Parkhaus-Modelle.</div></td></tr>
+  </tbody></table>
+
   <div class="ch-day">1. September 2026</div>
   <table class="table table-sm"><tbody>
     <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>

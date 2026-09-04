@@ -9,7 +9,7 @@ import logging
 import joblib
 import pandas as pd
 
-from forecast.features import CATEGORICAL_COLUMNS, FEATURE_COLUMNS
+from forecast.features import CATEGORICAL_COLUMNS, FEATURE_COLUMNS, RESIDUAL_FEATURES
 
 logger = logging.getLogger(__name__)
 
@@ -173,4 +173,58 @@ class FullClassifier:
 
     @staticmethod
     def load(path) -> "FullClassifier":
+        return joblib.load(path)
+
+
+class ResidualModel:
+    """Leichtes Modell pro Parkhaus: korrigiert den Fehler des globalen Modells."""
+
+    MIN_ROWS = 200
+
+    def __init__(self):
+        if HAS_LIGHTGBM:
+            self.library = "lightgbm"
+            self.model = LGBMRegressor(
+                objective="regression_l1",
+                n_estimators=100,
+                learning_rate=0.05,
+                num_leaves=15,
+                min_child_samples=30,
+                subsample=0.8,
+                verbose=-1,
+            )
+        else:
+            from sklearn.ensemble import HistGradientBoostingRegressor
+            self.library = "sklearn"
+            self.model = HistGradientBoostingRegressor(
+                loss="absolute_error", max_iter=80, learning_rate=0.06,
+            )
+
+    def fit(self, frame: pd.DataFrame, residuals: pd.Series) -> "ResidualModel":
+        x = frame[RESIDUAL_FEATURES].astype(float)
+        self.model.fit(x, residuals.astype(float))
+        return self
+
+    def predict(self, frame: pd.DataFrame) -> pd.Series:
+        x = frame[RESIDUAL_FEATURES].astype(float)
+        return pd.Series(self.model.predict(x), index=frame.index)
+
+
+class ResidualStore:
+    """Dict-Wrapper: ein ResidualModel pro pls_key, gespeichert als ein Artefakt."""
+
+    def __init__(self, models: dict[str, ResidualModel] | None = None):
+        self.models = models or {}
+
+    def predict_correction(self, pls_key: str, frame: pd.DataFrame) -> pd.Series | None:
+        m = self.models.get(pls_key)
+        if m is None:
+            return None
+        return m.predict(frame)
+
+    def save(self, path) -> None:
+        joblib.dump(self, path)
+
+    @staticmethod
+    def load(path) -> "ResidualStore":
         return joblib.load(path)

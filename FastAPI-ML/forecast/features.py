@@ -63,6 +63,11 @@ FEATURE_COLUMNS = [
 ]
 CATEGORICAL_COLUMNS = ["city", "pls_key", "event_category"]
 
+RESIDUAL_FEATURES = [
+    "hour", "weekday", "is_weekend", "occ_now", "delta_occ_1h",
+    "is_raining", "event_active", "prior_occ", "anomaly", "month",
+]
+
 
 def build_grid(env: Optional[str], start: datetime, end: datetime,
                city: Optional[str] = None, pls_id: Optional[str] = None) -> pd.DataFrame:

@@ -17,7 +17,7 @@ from core import data_access as da
 from core.timeutil import floor_to_grid, now_local
 from forecast import features
 from forecast.baseline import BaselineModel
-from forecast.ml_model import ForecastModel, QuantileModel, FullClassifier
+from forecast.ml_model import ForecastModel, QuantileModel, FullClassifier, ResidualStore
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +38,14 @@ def _load_artifact(stored: str, loader):
 
 
 def _active_runs(env) -> dict:
-    """{'ml': {h: run}, 'ml_q20': {h: run}, 'ml_full': {h: run}, 'baseline': run|None}"""
     rows = db.query("SELECT * FROM ai_model_runs WHERE is_active = 1", env=env)
     ml = {r["horizon_h"]: r for r in rows if r["model_type"] == "ml"}
     ml_q20 = {r["horizon_h"]: r for r in rows if r["model_type"] == "ml_q20"}
     ml_full = {r["horizon_h"]: r for r in rows if r["model_type"] == "ml_full"}
+    ml_residual = {r["horizon_h"]: r for r in rows if r["model_type"] == "ml_residual"}
     baseline = next((r for r in rows if r["model_type"] == "baseline"), None)
-    return {"ml": ml, "ml_q20": ml_q20, "ml_full": ml_full, "baseline": baseline}
+    return {"ml": ml, "ml_q20": ml_q20, "ml_full": ml_full,
+            "ml_residual": ml_residual, "baseline": baseline}
 
 
 def run(env: Optional[str] = None) -> dict:
@@ -91,6 +92,7 @@ def run(env: Optional[str] = None) -> dict:
     ml_models = {}
     q20_models = {}
     full_models = {}
+    residual_stores: dict[int, ResidualStore] = {}
     prior = pd.DataFrame()
     for h, run_row in runs["ml"].items():
         model = _load_artifact(run_row["artifact_path"], ForecastModel.load)
@@ -105,6 +107,10 @@ def run(env: Optional[str] = None) -> dict:
         model = _load_artifact(run_row["artifact_path"], FullClassifier.load)
         if model is not None:
             full_models[h] = model
+    for h, run_row in runs.get("ml_residual", {}).items():
+        store = _load_artifact(run_row["artifact_path"], ResidualStore.load)
+        if store is not None:
+            residual_stores[h] = store
     if not ml_models:
         logger.warning("Kein aktives ML-Modell - nur Baseline-Prognosen")
     if baseline is None:
@@ -139,9 +145,20 @@ def run(env: Optional[str] = None) -> dict:
                     continue
                 total = int(row["total"])
                 free = int(round((1 - float(occ)) * total))
-                b = bias.get((row["city"], row["pls_id"], h), 0)
-                if b and model_type == "ml":
-                    free = free - round(b)
+                if model_type == "ml":
+                    pls_key = f"{row['city']}::{row['pls_id']}"
+                    res_store = residual_stores.get(h)
+                    correction = None
+                    if res_store is not None:
+                        row_frame = frame.loc[[idx]]
+                        correction = res_store.predict_correction(pls_key, row_frame)
+                    if correction is not None:
+                        corr_occ = float(correction.iloc[0])
+                        free = int(round((1 - (float(occ) - corr_occ)) * total))
+                    else:
+                        b = bias.get((row["city"], row["pls_id"], h), 0)
+                        if b:
+                            free = free - round(b)
                 free = max(0, min(free, total))
 
                 free_q20 = None

@@ -24,7 +24,7 @@ from core.identity import build_mapping
 from core.timeutil import now_local
 from forecast import features
 from forecast.baseline import BaselineModel
-from forecast.ml_model import ForecastModel, QuantileModel, FullClassifier
+from forecast.ml_model import ForecastModel, QuantileModel, FullClassifier, ResidualModel, ResidualStore
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +177,7 @@ def _cleanup_artifacts(env: str) -> None:
     prefixe = ([f"ml_h{h}_{env}_" for h in config.HORIZONS]
                 + [f"ml_q20_h{h}_{env}_" for h in config.HORIZONS]
                 + [f"ml_full_h{h}_{env}_" for h in config.HORIZONS]
+                + [f"residual_h{h}_{env}_" for h in config.HORIZONS]
                 + [f"baseline_{env}_"])
     for prefix in prefixe:
         files = sorted(config.MODELS_DIR.glob(prefix + "*.joblib"), reverse=True)
@@ -334,8 +335,37 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
         )
         _activate(env, c_run, "ml_full", h, float("nan"))
 
+        # Residual-Modelle pro Parkhaus
+        logger.info("Horizont %dh: trainiere Residual-Modelle ...", h)
+        global_pred_train = model.predict(train_f)
+        residuals_train = global_pred_train - train_f["target"].astype(float)
+        train_f["pls_key"] = train_f["city"] + "::" + train_f["pls_id"]
+        res_models = {}
+        for pls_key, grp in train_f.groupby("pls_key"):
+            if len(grp) < ResidualModel.MIN_ROWS:
+                continue
+            try:
+                rm = ResidualModel().fit(grp, residuals_train.loc[grp.index])
+                res_models[pls_key] = rm
+            except Exception:
+                logger.warning("Residual-Modell fuer %s fehlgeschlagen", pls_key,
+                               exc_info=True)
+        res_store = ResidualStore(res_models)
+        res_artifact = config.MODELS_DIR / f"residual_h{h}_{env}_{stamp}.joblib"
+        res_store.save(res_artifact)
+        res_run = _insert_run(
+            env, "ml_residual", h, now, len(train_f),
+            train_f["slot"].min().to_pydatetime(),
+            train_f["slot"].max().to_pydatetime(), None, None,
+            {"n_parkhaus": len(res_models),
+             "min_rows": ResidualModel.MIN_ROWS},
+            res_artifact,
+        )
+        _activate(env, res_run, "ml_residual", h, float("nan"))
+        logger.info("Horizont %dh: %d Residual-Modelle trainiert", h, len(res_models))
+
         # Speicher freigeben, bevor der naechste Horizont-Frame entsteht
-        del frame, train_f, hold_f, model, q_model, clf
+        del frame, train_f, hold_f, model, q_model, clf, res_store
         gc.collect()
 
     # Basismodell als eigener Lauf (horizon NULL), immer aktiv
