@@ -52,6 +52,7 @@ deshalb verzichtet der Code bewusst auf `X | None`-Syntax aus 3.10).
 
 ```bash
 cd FastAPI-ML
+source .venv/bin/activate
 pip install -r requirements.txt
 python init_db.py --env test          # ai_*-Tabellen anlegen
 python -m core.identity --env test    # Parkhaus-Mapping aufbauen
@@ -75,6 +76,7 @@ Läuft auf dem Server (87.106.21.252), wöchentlich genügt:
 
 ```bash
 cd /root/FastAPI-ML
+source .venv/bin/activate
 python3 -m forecast.train --env prod
 ```
 
@@ -85,7 +87,7 @@ Zeitplan und die Deutung der Ausgabe: [MODELL-REFRESH.md](MODELL-REFRESH.md).
 die App selbst braucht betriebsbereit rund 216 MB. Auf einer Maschine mit
 weniger als etwa 2 GB reicht das nicht — dort `AI_RETRAIN_ENABLED=0` setzen,
 auf einem anderen Rechner trainieren und die Modelldateien übertragen
-(`python -m scripts.export_models --env prod`). Das genügt, weil in
+(`source .venv/bin/activate && python -m scripts.export_models --env prod`). Das genügt, weil in
 `ai_model_runs` nur der Dateiname steht.
 
 Was passiert, wenn zu wenig Speicher da ist, zeigte der alte Server mit
@@ -97,8 +99,9 @@ einschliesslich der ausführbaren Teile laufender Programme, worauf auch
 
 ```bash
 git pull
-pip install -r FastAPI-ML/requirements.txt
 cd FastAPI-ML
+source .venv/bin/activate
+pip install -r requirements.txt
 python init_db.py --env prod        # nur beim allerersten Mal
 ./start-fastapi-ml.sh               # bzw. /root/start-all.sh
 ```
@@ -139,7 +142,9 @@ App auf Standardwerten.
 ## Tests
 
 ```bash
-cd FastAPI-ML && python -m pytest tests/ -q
+cd FastAPI-ML
+source .venv/bin/activate
+python -m pytest tests/ -q
 ```
 
 Manuelle Checkliste: die vier Seiten öffnen, im Chat die Beispielfragen
