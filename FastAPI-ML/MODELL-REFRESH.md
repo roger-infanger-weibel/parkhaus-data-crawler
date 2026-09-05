@@ -81,7 +81,8 @@ besser als ein besseres, das keine Prognosen erzeugt.
 curl -sS https://parkhaus-wetter.roil.ch/api/health
 ```
 
-- **`active_runs`** zeigt fünf Einträge; die Zeitstempel sollten vom heutigen
+- **`active_runs`** zeigt 17 Einträge (je 4× ml, ml_q20, ml_full,
+  ml_residual + 1× baseline); die Zeitstempel sollten vom heutigen
   Lauf sein (ausser bei einem «NICHT aktiviert»-Horizont)
 - **`last_prediction`** wird beim nächsten Viertelstunden-Lauf frisch
 
@@ -108,7 +109,7 @@ python -m scripts.export_models --env prod
 scp export_models/*.joblib root@87.106.21.252:/root/FastAPI-ML/models_store/
 ```
 
-`export_models` sammelt genau die fünf Dateien des aktiven Laufs (~18 MB) in
+`export_models` sammelt die Dateien aller aktiven Läufe (~25 MB) in
 `export_models/` — der Ordner wird bei jedem Lauf geleert, es liegen also nie
 alte Dateien darin, die man versehentlich mitkopiert.
 

@@ -19,8 +19,10 @@ laufendes Genauigkeits-Monitoring und ein deutschsprachiger Chat-Assistent.
   (Wochentag/Stunden-Durchschnitt + Event-/Regen-Zuschlag) als Referenz,
   vier globale LightGBM-Regressionen (Ziel = Belegungsquote 0–1),
   vier Quantil-Modelle (α=0.2, pessimistisches 20%-Quantil: „mit 80 %
-  Wahrscheinlichkeit mindestens X Plätze frei") und vier Voll-Klassifikatoren
-  (P(free < 5): Wahrscheinlichkeit, dass das Parkhaus voll ist).
+  Wahrscheinlichkeit mindestens X Plätze frei"), vier Voll-Klassifikatoren
+  (P(free < 5): Wahrscheinlichkeit, dass das Parkhaus voll ist) und
+  vier Residual-Stores (je ein leichtes LightGBM pro Parkhaus, das den
+  Fehler des globalen Modells konditioniert korrigiert).
   Fällt LightGBM bei der Installation aus, wird automatisch
   scikit-learn verwendet.
 - **Jobs (APScheduler, in-process, Zeitzone Europe/Zurich):** Prognose
