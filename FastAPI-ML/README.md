@@ -30,10 +30,12 @@ laufendes Genauigkeits-Monitoring und ein deutschsprachiger Chat-Assistent.
   `AI_RETRAIN_ENABLED=0` abschalten – auf kleinen Servern nötig, siehe unten.
 - **Metrik:** MAE in freien Plätzen (primär) und in Belegungs-Prozentpunkten;
   bewusst kein MAPE (explodiert bei `free ≈ 0`).
-- **Bias-Korrektur:** Die Prognose wird pro Parkhaus und Horizont um den
-  mittleren Bias der letzten 14 Tage korrigiert (aus `ai_accuracy_daily`,
-  min. 50 Auswertungen). Gleicht systematische Abweichungen des globalen
-  Modells bei einzelnen Häusern aus.
+- **Residual-Korrektur:** Pro Parkhaus und Horizont wird ein leichtes
+  LightGBM-Modell trainiert, das den Fehler des globalen Modells
+  konditioniert korrigiert (abhängig von Stunde, Wochentag, Anomalie,
+  Wetter, Events). Ersetzt die frühere statische Bias-Korrektur.
+  Fallback auf den gewichteten Bias der letzten 14 Tage, wenn für ein
+  Parkhaus zu wenig Trainingsdaten vorhanden sind (<200 Zeilen).
 - **Kalender-Features:** Feiertage (kantonal), Brückentage und Schulferien
   fliessen als Merkmale ins Modell ein. Die Daten liegen in den Tabellen
   `ai_feiertage` und `ai_schulferien` (Sync per `kalender.sync_kalender_to_db`).

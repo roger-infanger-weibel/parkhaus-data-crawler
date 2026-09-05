@@ -139,12 +139,13 @@
     </div>
   </div>
 
-  <h5>Bias-Korrektur</h5>
+  <h5>Parkhaus-spezifische Korrektur</h5>
   <p>
-    Das Modell lernt über alle Parkhäuser gemeinsam. Einzelne Häuser können
-    dabei systematisch über- oder unterschätzt werden. Deshalb wird für jedes
-    Parkhaus der mittlere Fehler der letzten 14&nbsp;Tage gemessen und automatisch
-    herausgerechnet.
+    Das Hauptmodell lernt über alle Parkhäuser gemeinsam. Da einzelne Häuser
+    eigene Muster haben (Pendler-Parkhaus vs. Shopper-Parkhaus), wird pro
+    Parkhaus ein kleines Zusatzmodell trainiert. Dieses lernt, wann und wie
+    stark das Hauptmodell bei diesem spezifischen Haus daneben liegt — und
+    korrigiert die Prognose automatisch.
   </p>
 
   <h4>Wie gut die Prognosen sind</h4>

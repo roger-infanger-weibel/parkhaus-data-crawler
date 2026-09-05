@@ -148,24 +148,29 @@
     Dient ausschliesslich als Benchmark — <em>kein</em> Ensemble-Bestandteil.
   </p>
 
-  <h5>2.5 Bias-Korrektur (Post-Processing)</h5>
+  <h5>2.5 Residual-Korrektur (Post-Processing)</h5>
   <p>
-    Pro <code>(city, pls_id, horizon_h)</code> wird der gewichtete mittlere Bias der
-    letzten 14&nbsp;Tage berechnet:
+    Pro <code>(city, pls_id, horizon_h)</code> wird ein leichtes LightGBM-Modell
+    trainiert, das den Fehler des globalen Modells <em>konditioniert</em> korrigiert.
+    Anders als der frühere statische Bias-Offset lernt das Residual-Modell,
+    <strong>wann</strong> und <strong>wie stark</strong> das globale Modell bei einem
+    spezifischen Parkhaus daneben liegt.
   </p>
-  <pre class="bg-light p-2 rounded"><code>w(d) = exp(−0.14 × d)              Halbwertszeit ≈ 5 Tage
-bias = Σ(bias_free × n × w(d)) / Σ(n × w(d))    letzte 14 Tage, min. 50 Evaluationen
-free_korrigiert = free − round(bias)</code></pre>
+  <pre class="bg-light p-2 rounded"><code>residual = global_pred_occ − actual_occ       Target des Residual-Modells
+Features: hour, weekday, is_weekend, occ_now, delta_occ_1h,
+          is_raining, event_active, prior_occ, anomaly, month
+free_korrigiert = (1 − (occ_pred − residual_pred)) × total</code></pre>
   <p>
-    Exponentiell gewichtet: jüngere Tage haben mehr Einfluss, damit der Bias
-    schnell auf Veränderungen reagiert (z.B. Baustellen, geänderte Kapazitäten).
+    Hyperparameter bewusst klein gehalten (100 Trees, 15 Leaves, min. 30 Samples),
+    um Overfitting zu vermeiden. Mindestens 200 Trainingszeilen pro Parkhaus nötig,
+    sonst Fallback auf den gewichteten Bias der letzten 14 Tage.
     Wird nur auf ML-Prognosen angewandt, nicht auf Baseline.
   </p>
 
   <!-- ============================================================ -->
   <h3 class="mt-5">3. Feature Engineering</h3>
   <!-- ============================================================ -->
-  <p>40 Features pro Observation, gruppiert nach Kategorie:</p>
+  <p>42 Features pro Observation, gruppiert nach Kategorie:</p>
 
   <h6>Temporal (zyklisch kodiert)</h6>
   <p>
@@ -353,11 +358,11 @@ free_korrigiert = free − round(bias)</code></pre>
 │
 FastAPI-ML (Port 80)
 ├── :10/:25/:40/:55  predict.py   → ai_predictions
-│   └── Bias-Korrektur aus ai_accuracy_daily
+│   └── Residual-Korrektur (pro Parkhaus) oder Bias-Fallback
 ├── :13/:28/:43/:58  evaluate.py  → ai_accuracy_daily
 ├── 03:15            identity.py  → ai_parkhaus_map
 └── 03:30            train.py     → ai_model_runs + models_store/
-                     └── Regression + Quantile + Classifier × 4 Horizonte</code></pre>
+                     └── Regression + Quantile + Classifier + Residual × 4 Horizonte</code></pre>
 
   <h5>Rasterung &amp; Preprocessing</h5>
   <ul>
