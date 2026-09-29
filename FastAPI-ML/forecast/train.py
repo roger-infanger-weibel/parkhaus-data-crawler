@@ -11,7 +11,6 @@ import argparse
 import gc
 import json
 import logging
-import subprocess
 from pathlib import Path
 from datetime import timedelta
 from typing import Optional
@@ -197,12 +196,9 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
 
     build_mapping(env)
 
+    version_file = Path(__file__).resolve().parent.parent / "VERSION"
     try:
-        git_hash = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=Path(__file__).resolve().parent.parent,
-            text=True,
-        ).strip()
+        git_hash = version_file.read_text().strip()
     except Exception:
         git_hash = "unknown"
     logger.info("Code-Version: %s  |  Env: %s  |  Tage: %d", git_hash, env, days)
