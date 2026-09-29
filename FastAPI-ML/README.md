@@ -55,8 +55,8 @@ Voraussetzung: **Python 3.9 oder neuer** (der Server läuft auf 3.9,
 deshalb verzichtet der Code bewusst auf `X | None`-Syntax aus 3.10).
 
 ```bash
-cd FastAPI-ML
 source .venv/bin/activate
+cd FastAPI-ML
 pip install -r requirements.txt
 python init_db.py --env test          # ai_*-Tabellen anlegen
 python -m core.identity --env test    # Parkhaus-Mapping aufbauen
@@ -79,8 +79,8 @@ DB-Rechte: zur Laufzeit nur `SELECT, INSERT, UPDATE, DELETE`;
 Läuft auf dem Server (87.106.21.252), wöchentlich genügt:
 
 ```bash
-cd /root/FastAPI-ML
 source .venv/bin/activate
+cd /root/FastAPI-ML
 python3 -m forecast.train --env prod
 ```
 
@@ -112,8 +112,8 @@ einschliesslich der ausführbaren Teile laufender Programme, worauf auch
 
 ```bash
 git pull
-cd FastAPI-ML
 source .venv/bin/activate
+cd FastAPI-ML
 pip install -r requirements.txt
 python init_db.py --env prod        # nur beim allerersten Mal
 ./start-fastapi-ml.sh               # bzw. /root/start-all.sh
@@ -155,8 +155,8 @@ App auf Standardwerten.
 ## Tests
 
 ```bash
-cd FastAPI-ML
 source .venv/bin/activate
+cd FastAPI-ML
 python -m pytest tests/ -q
 ```
 

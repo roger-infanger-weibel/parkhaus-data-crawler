@@ -19,8 +19,8 @@ mehrere Tage steigt.
 ## Der Ablauf
 
 ```bash
-cd /root/FastAPI-ML
 source .venv/bin/activate
+cd /root/FastAPI-ML
 python3 -m forecast.train --env prod
 python3 -m forecast.train --env test     # nur falls Test-Umgebung genutzt
 ```
@@ -31,7 +31,7 @@ beim nächsten Viertelstunden-Lauf.
 Automatisch per crontab, sonntags um 03:00:
 
 ```
-0 3 * * 0 cd /root/FastAPI-ML && source .venv/bin/activate && python3 -m forecast.train --env prod >> /root/train.log 2>&1
+0 3 * * 0 source .venv/bin/activate && cd /root/FastAPI-ML && python3 -m forecast.train --env prod >> /root/train.log 2>&1
 ```
 
 Alternativ erledigt das der eingebaute Scheduler nachts um 03:30, sofern
@@ -102,8 +102,8 @@ Nötig nur, wenn der Server zu wenig Arbeitsspeicher hat (Training braucht
 `AI_RETRAIN_ENABLED=0` setzen und:
 
 ```bash
-cd FastAPI-ML
 source .venv/bin/activate
+cd FastAPI-ML
 python -m forecast.train --env prod
 python -m scripts.export_models --env prod
 scp export_models/*.joblib root@87.106.21.252:/root/FastAPI-ML/models_store/
