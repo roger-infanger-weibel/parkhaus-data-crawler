@@ -11,6 +11,7 @@ import argparse
 import gc
 import json
 import logging
+import subprocess
 from pathlib import Path
 from datetime import timedelta
 from typing import Optional
@@ -195,6 +196,16 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
     holdout_start = now - timedelta(days=HOLDOUT_DAYS)
 
     build_mapping(env)
+
+    try:
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=Path(__file__).resolve().parent.parent,
+            text=True,
+        ).strip()
+    except Exception:
+        git_hash = "unknown"
+    logger.info("Code-Version: %s  |  Env: %s  |  Tage: %d", git_hash, env, days)
 
     logger.info("Lade Belegungsdaten seit %s ...", start)
     grid = features.build_grid(env, start, now)
