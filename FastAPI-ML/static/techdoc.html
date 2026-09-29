@@ -519,6 +519,13 @@ FastAPI-ML (Port 80)
               color: #888; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; margin: 1.2rem 0 0.5rem; }
   </style>
 
+  <div class="ch-day">29. September 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-fix">Fix</span></td>
+        <td><div class="ch-req">MAE-Explosion seit 25.09. im Genauigkeits-Dashboard</div>
+            <div class="ch-react">Root Cause: Das Parkleitsystem St.&nbsp;Gallen liefert für «Parkhaus Oberer Graben» (pls_id=31) korrupte free-Werte (~1'000'000'031 statt ~31). Die Evaluierung berechnete daraus abs_err_free im Milliardenbereich, was die globalen Tagesaggregate auf mae_free&nbsp;≈&nbsp;60'000–114'000 aufblähte. Fix: evaluate.py und data_access.py filtern jetzt Messwerte mit free&nbsp;&lt;&nbsp;0 oder free&nbsp;&gt;&nbsp;2×total als unplausibel heraus. Reparatur-Query setzt die betroffenen Evaluierungen zurück und berechnet die Tagesaggregate neu.</div></td></tr>
+  </tbody></table>
+
   <div class="ch-day">4. September 2026</div>
   <table class="table table-sm"><tbody>
     <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>

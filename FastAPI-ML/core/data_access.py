@@ -102,7 +102,12 @@ def occupancy_history(env: Optional[str] = None, start: Optional[datetime] = Non
 
     if not frames:
         return pd.DataFrame(columns=["city", "pls_id", "fetch_ts", "free", "total"])
-    return pd.concat(frames, ignore_index=True)
+    df = pd.concat(frames, ignore_index=True)
+    bad = (df["free"] < 0) | (df["free"] > df["total"] * 2)
+    if bad.any():
+        logger.warning("  %d Zeilen mit unplausiblem free-Wert entfernt", bad.sum())
+        df = df[~bad].reset_index(drop=True)
+    return df
 
 
 def weather_range(env: Optional[str] = None, start: Optional[datetime] = None,

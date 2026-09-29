@@ -114,6 +114,9 @@ def run(env: Optional[str] = None) -> dict:
             continue
         fetch_ts, actual_free, actual_total = hit
         total = actual_total if actual_total else p["total_at_pred"]
+        if actual_free < 0 or (total and actual_free > total * 2):
+            unmatched.append((now, p["id"]))
+            continue
         actual_occ = None
         abs_err_occ = None
         if total:
