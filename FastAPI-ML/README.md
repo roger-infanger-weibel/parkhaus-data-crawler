@@ -94,8 +94,17 @@ auf einem anderen Rechner trainieren und die Modelldateien übertragen
 (`source .venv/bin/activate && python -m scripts.export_models --env prod`). Das genügt, weil in
 `ai_model_runs` nur der Dateiname steht.
 
-Was passiert, wenn zu wenig Speicher da ist, zeigte der alte Server mit
-641 MB und ohne Swap: der Kernel wirft dann den Datei-Cache weg,
+**Swap empfohlen:** Auch wenn genug RAM vorhanden ist (aktuell 3.8 GB),
+sollte ein 2-GB-Swapfile als Sicherheitsnetz eingerichtet sein, damit der
+OOM-Killer bei Lastspitzen nicht die App abschiesst:
+
+```bash
+fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+```
+
+Was passiert ohne Swap, zeigte der alte Server mit
+641 MB: der Kernel wirft dann den Datei-Cache weg,
 einschliesslich der ausführbaren Teile laufender Programme, worauf auch
 `sshd` unbenutzbar wird — die Maschine steht komplett.
 
