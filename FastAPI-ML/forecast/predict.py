@@ -145,6 +145,7 @@ def run(env: Optional[str] = None) -> dict:
                     continue
                 total = int(row["total"])
                 free = int(round((1 - float(occ)) * total))
+                corrected_occ = float(occ)
                 if model_type == "ml":
                     pls_key = f"{row['city']}::{row['pls_id']}"
                     res_store = residual_stores.get(h)
@@ -153,8 +154,9 @@ def run(env: Optional[str] = None) -> dict:
                         row_frame = frame.loc[[idx]]
                         correction = res_store.predict_correction(pls_key, row_frame)
                     if correction is not None:
-                        corr_occ = float(correction.iloc[0])
-                        free = int(round((1 - (float(occ) - corr_occ)) * total))
+                        corr_occ = max(-0.15, min(0.15, float(correction.iloc[0])))
+                        corrected_occ = float(occ) - corr_occ
+                        free = int(round((1 - corrected_occ) * total))
                     else:
                         b = bias.get((row["city"], row["pls_id"], h), 0)
                         if b:
@@ -172,7 +174,8 @@ def run(env: Optional[str] = None) -> dict:
 
                 insert_rows.append((
                     t0, target, h, model_type, run_id, row["city"], row["pls_id"],
-                    free, round(float(occ), 4), total, free_q20, full_prob,
+                    free, round(min(max(corrected_occ, 0.0), 1.0), 4),
+                    total, free_q20, full_prob,
                 ))
 
     n = db.executemany(

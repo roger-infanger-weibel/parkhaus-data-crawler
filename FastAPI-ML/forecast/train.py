@@ -228,7 +228,10 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
             continue
 
         # Rolling Cross-Validation auf dem Trainingsteil
+        # Gleichzeitig Out-of-Fold Predictions sammeln fuer Residual-Training
         cv_maes_free, cv_maes_occ, cv_r2s = [], [], []
+        import pandas as pd
+        oof_preds = pd.Series(dtype=float)
         train_slots = sorted(train_f["slot"].unique())
         for fold in range(CV_FOLDS):
             fold_end = train_slots[-1] - timedelta(days=fold * CV_FOLD_DAYS)
@@ -241,6 +244,7 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
                 continue
             cv_model = ForecastModel(h).fit(cv_train)
             cv_pred = cv_model.predict(cv_val)
+            oof_preds = pd.concat([oof_preds, pd.Series(cv_pred, index=cv_val.index)])
             mf, mo = _mae_metrics(cv_pred, cv_val)
             rv = _r2(cv_pred, cv_val)
             if not np.isnan(mo):
@@ -335,17 +339,20 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
         )
         _activate(env, c_run, "ml_full", h, float("nan"))
 
-        # Residual-Modelle pro Parkhaus
-        logger.info("Horizont %dh: trainiere Residual-Modelle ...", h)
-        global_pred_train = model.predict(train_f)
-        residuals_train = global_pred_train - train_f["target"].astype(float)
-        train_f["pls_key"] = train_f["city"] + "::" + train_f["pls_id"]
+        # Residual-Modelle pro Parkhaus (Out-of-Fold Residuals)
+        logger.info("Horizont %dh: trainiere Residual-Modelle (OOF) ...", h)
+        oof_subset = train_f.loc[train_f.index.intersection(oof_preds.index)]
+        oof_residuals = oof_preds.loc[oof_subset.index] - oof_subset["target"].astype(float)
+        oof_subset = oof_subset.copy()
+        oof_subset["pls_key"] = oof_subset["city"] + "::" + oof_subset["pls_id"]
+        logger.info("Horizont %dh: %d OOF-Residuals verfuegbar (von %d Trainingszeilen)",
+                    h, len(oof_residuals), len(train_f))
         res_models = {}
-        for pls_key, grp in train_f.groupby("pls_key"):
+        for pls_key, grp in oof_subset.groupby("pls_key"):
             if len(grp) < ResidualModel.MIN_ROWS:
                 continue
             try:
-                rm = ResidualModel().fit(grp, residuals_train.loc[grp.index])
+                rm = ResidualModel().fit(grp, oof_residuals.loc[grp.index])
                 res_models[pls_key] = rm
             except Exception:
                 logger.warning("Residual-Modell fuer %s fehlgeschlagen", pls_key,
@@ -365,7 +372,7 @@ def run(env: Optional[str] = None, days: int = TRAIN_DAYS) -> dict:
         logger.info("Horizont %dh: %d Residual-Modelle trainiert", h, len(res_models))
 
         # Speicher freigeben, bevor der naechste Horizont-Frame entsteht
-        del frame, train_f, hold_f, model, q_model, clf, res_store
+        del frame, train_f, hold_f, model, q_model, clf, res_store, oof_preds, oof_subset
         gc.collect()
 
     # Basismodell als eigener Lauf (horizon NULL), immer aktiv
