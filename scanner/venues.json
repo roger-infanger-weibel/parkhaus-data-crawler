@@ -193,6 +193,16 @@
             "parkhaus_ids": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2"],
             "venue_bonus": 0.45,
             "soon_hours": 1.5
+        },
+        {
+            "scraper": "MySwitzerlandMaerkteMessenScraper",
+            "name": "MySwitzerland Märkte & Messen",
+            "city": "",
+            "url": "https://www.myswitzerland.com/de-ch/erlebnisse/veranstaltungen/veranstaltungen-suche/",
+            "parkhaus_ids": [],
+            "default_category": "messe",
+            "venue_bonus": 0.40,
+            "soon_hours": 2.0
         }
     ]
 }

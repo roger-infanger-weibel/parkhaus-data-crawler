@@ -849,6 +849,106 @@ class ObrassoKKLScraper(VenueScraper):
         return events
 
 
+class MySwitzerlandMaerkteMessenScraper(VenueScraper):
+    """Schweizweite Märkte & Messen von myswitzerland.com.
+
+    Erfasst Herbstmessen, Weihnachtsmärkte, Volksfeste etc. fuer alle
+    Staedte, in denen wir Parkhaus-Daten haben.
+    """
+    _cfg = _venue_config("MySwitzerlandMaerkteMessenScraper")
+    name = _cfg.get("name", "MySwitzerland Märkte")
+    city = ""
+    parkhaus_ids = []
+
+    CITY_MAP = {
+        "zürich": "zurich", "zurich": "zurich", "zuerich": "zurich",
+        "basel": "basel",
+        "luzern": "luzern", "lucerne": "luzern",
+        "st.gallen": "stgallen", "st. gallen": "stgallen", "stgallen": "stgallen",
+        "bern": "bern", "berne": "bern",
+    }
+
+    CITY_PARKHAUS = {
+        "zurich": ["zuerichparkhausbleicherweg", "zuerichparkhaushohepromenade",
+                    "zuerichparkhausmessezuerichag"],
+        "basel": ["baselparkhaussteinen", "baselparkhausmesse"],
+        "luzern": ["luzernparkhausbahnhof", "luzernparkhausbahnhofp1p2",
+                    "luzernparkhauskesselturm", "luzernparkingstadttheater"],
+        "stgallen": ["stgallenparkhausolmamessen", "stgallenparkhausolmaparkplatz"],
+        "bern": ["bernparkhausbahnhof"],
+    }
+
+    BASE_URL = "https://www.myswitzerland.com/de-ch/erlebnisse/veranstaltungen/veranstaltungen-suche/"
+
+    def _match_city(self, location_text: str) -> Optional[str]:
+        loc = location_text.lower().strip()
+        for key, city_id in self.CITY_MAP.items():
+            if key in loc:
+                return city_id
+        return None
+
+    def fetch(self) -> list[dict]:
+        events = []
+        for page in range(1, 6):
+            try:
+                url = self.BASE_URL + "?rubrik=maerktmessen"
+                if page > 1:
+                    url += f"&p={page}"
+                resp = self._get(url)
+                soup = BeautifulSoup(resp.text, "html.parser")
+                teasers = soup.select("a.EventTeaser")
+                if not teasers:
+                    break
+                for teaser in teasers:
+                    title_el = teaser.select_one(".EventTeaser--title")
+                    text_el = teaser.select_one(".EventTeaser--text")
+                    if not title_el or not text_el:
+                        continue
+                    title = title_el.get_text(strip=True)
+                    text = text_el.get_text(strip=True)
+                    if len(title) < 3:
+                        continue
+
+                    city_id = self._match_city(text)
+                    if not city_id:
+                        continue
+
+                    dates = re.findall(r'(\d{1,2}\.\d{2}\.\d{4})', text)
+                    if len(dates) >= 2:
+                        start = datetime.strptime(dates[0], "%d.%m.%Y")
+                        end = datetime.strptime(dates[1], "%d.%m.%Y")
+                    elif len(dates) == 1:
+                        start = datetime.strptime(dates[0], "%d.%m.%Y")
+                        end = start
+                    else:
+                        continue
+
+                    title_lower = title.lower()
+                    is_volksfest = any(w in title_lower for w in (
+                        "herbstmesse", "chilbi", "määs", "fasnacht",
+                        "weihnachtsmarkt", "christkindli", "adventsmarkt",
+                        "sternenstadt", "wunderdorf",
+                    ))
+                    start_hour = 11 if is_volksfest else 9
+                    end_hour = 22 if is_volksfest else 18
+
+                    events.append({
+                        "title": title,
+                        "venue": self.name,
+                        "start_time": start.replace(hour=start_hour),
+                        "end_time": end.replace(hour=end_hour),
+                        "category": "messe",
+                        "_city": city_id,
+                        "_parkhaus_ids": self.CITY_PARKHAUS.get(city_id, []),
+                    })
+            except Exception as e:
+                logger.warning("MySwitzerland p%d: %s", page, e)
+                break
+            _time.sleep(2)
+        logger.info("MySwitzerland Märkte: %d relevante Events in unseren Städten", len(events))
+        return events
+
+
 class MesseLuzernScraper(VenueScraper):
     _cfg = _venue_config("MesseLuzernScraper")
     name = _cfg.get("name", "Messe Luzern")
@@ -1017,6 +1117,7 @@ ALL_SCRAPERS = [
     MesseLuzernScraper(),
     StadtkellerLuzernScraper(),
     LuzernTopEventsScraper(),
+    MySwitzerlandMaerkteMessenScraper(),
 ]
 
 
