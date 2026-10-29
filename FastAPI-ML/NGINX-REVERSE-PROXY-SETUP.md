@@ -77,19 +77,25 @@ nohup python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1 > fas
 
 **Option B: Systemd Service (Produktion)**
 
-Erstelle `/etc/systemd/system/fastapi-parkhaus.service`:
+Erstelle `/etc/systemd/system/parkhaus-fastapi-ml.service`
+(aktuelle Version: `linux-cmd/medium-server/systemd/parkhaus-fastapi-ml.service`):
 ```ini
 [Unit]
-Description=FastAPI Parkhaus ML Service
-After=network.target
+Description=Parkhaus FastAPI-ML KI-Prognose (Port 8000, hinter Nginx)
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-Type=notify
-User=www-data
-WorkingDirectory=/path/to/FastAPI-ML
-ExecStart=/usr/bin/python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 4
-Restart=on-failure
-RestartSec=10
+Type=simple
+User=root
+WorkingDirectory=/root/FastAPI-ML
+Environment=VIRTUAL_ENV=/root/.venv
+Environment=PATH=/root/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/root/.venv/bin/python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=always
+RestartSec=15
+MemoryMax=3G
+MemoryHigh=2G
 
 [Install]
 WantedBy=multi-user.target
@@ -307,7 +313,7 @@ worker_processes auto;  # In /etc/nginx/nginx.conf
 
 ### FastAPI Workers (Produktiv)
 ```bash
-python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 4
+python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
 ### Caching (optional)

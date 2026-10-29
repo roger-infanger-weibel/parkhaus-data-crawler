@@ -127,8 +127,10 @@ Firewall-Freigaben bei Nginx — siehe [NGINX-REVERSE-PROXY-SETUP.md](NGINX-REVE
 
 Autostart nach einem Neustart läuft über den crontab-Eintrag
 `@reboot sleep 60 && /root/start-all.sh`. Alternativ gibt es systemd-Units
-(`bash linux-cmd/install-systemd.sh`), die zusätzlich Speicherlimits und
-Neustart nach Absturz mitbringen.
+(`bash linux-cmd/install-systemd.sh`), die zusätzlich Speicherlimits
+(MemoryHigh=2G, MemoryMax=3G) und Neustart nach Absturz mitbringen.
+Ein täglicher Crontab-Restart (`0 3 * * * systemctl restart parkhaus-fastapi-ml`)
+verhindert Speicheraufbau vor dem Training um 03:30.
 
 ### Umgebungswahl in der Oberfläche
 
@@ -192,7 +194,11 @@ der Chatbot wie bisher, nur ohne LLM-Fallback. Nutzung wird in der Tabelle
   trotzdem prognostiziert, nur ohne Event-Features.
 - Events werden automatisch 2× täglich von `scanner/fetch_events.py` gescrapt
   (Hallenstadion, Tonhalle, Stadtcasino Basel, Luzerner Theater, Musical.ch,
-  OLMA). Die Venue→Parkhaus-Zuordnung ist manuell gepflegt.
+  OLMA, Opernhaus/Schauspielhaus Zürich, KKL Luzern, Theater Basel,
+  St. Jakobshalle, BernExpo, Messe Luzern, Stadtkeller Luzern u.a.).
+  Zusätzlich erfasst der **MySwitzerland-Scraper** schweizweite Märkte & Messen
+  (Herbstmessen, Weihnachtsmärkte, Volksfeste) für alle 5 Städte.
+  Die Venue→Parkhaus-Zuordnung ist in `scanner/venues.json` gepflegt.
 - Ist der Prognosestand älter als 30 Minuten, warnt die Prognoseseite. Die
   Spalten +1 h bis +8 h zählen ab dem Prognosestand, nicht ab der Uhrzeit
   des Betrachters.
