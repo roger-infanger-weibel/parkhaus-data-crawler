@@ -17,11 +17,12 @@ Restart=always
 RestartSec=15
 
 # Speicherlimit als Notbremse. Das Training braucht ~735 MB fuer 60 Tage und
-# ~1370 MB fuer 120 Tage; laeuft etwas aus dem Ruder, stirbt nur dieser Dienst
-# statt der ganzen Maschine. Auf einem Server mit wenig RAM entsprechend
-# kleiner setzen und das Training dort per AI_RETRAIN_ENABLED=0 abschalten.
-MemoryMax=2G
-MemoryHigh=1000M
+# ~1370 MB fuer 120 Tage. MemoryHigh=2G vermeidet Swap-Thrashing, das bei
+# 1000M den einzigen Worker blockierte und die Seite haengen liess.
+# Auf einem Server mit wenig RAM entsprechend kleiner setzen und das Training
+# dort per AI_RETRAIN_ENABLED=0 abschalten.
+MemoryMax=3G
+MemoryHigh=2G
 
 [Install]
 WantedBy=multi-user.target
