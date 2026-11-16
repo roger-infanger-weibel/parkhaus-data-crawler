@@ -519,6 +519,13 @@ FastAPI-ML (Port 80)
               color: #888; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; margin: 1.2rem 0 0.5rem; }
   </style>
 
+  <div class="ch-day">16. November 2026</div>
+  <table class="table table-sm"><tbody>
+    <tr><td style="width:100px"><span class="ch-tag ch-fix">Fix</span></td>
+        <td><p class="ch-req">parkhaus-wetter.roil.ch nicht aufrufbar — Ursache finden und Doku anpassen</p>
+            <p class="ch-react">Let's-Encrypt-Zertifikat am 16.11.2026 abgelaufen; Nginx und FastAPI liefen normal. Das Zertifikat war mit <code>certbot --standalone</code> ausgestellt, was bei laufendem Nginx (Port 80 belegt) keine automatische Erneuerung erlaubt. <code>NGINX-REVERSE-PROXY-SETUP.md</code> auf das Nginx-Plugin mit Deploy-Hook (<code>systemctl reload nginx</code>) umgestellt, Abschnitt zur Fehlerbehandlung «abgelaufenes Zertifikat» ergänzt.</p></td></tr>
+  </tbody></table>
+
   <div class="ch-day">5. Oktober 2026</div>
   <table class="table table-sm"><tbody>
     <tr><td style="width:100px"><span class="ch-tag ch-feat">Feature</span></td>

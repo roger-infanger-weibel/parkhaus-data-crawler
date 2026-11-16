@@ -170,16 +170,35 @@ sudo systemctl restart nginx
 sudo apt install certbot python3-certbot-nginx
 ```
 
-**Zertifikat ausstellen:**
+**Zertifikat ausstellen (über das Nginx-Plugin):**
 ```bash
-sudo certbot certonly --standalone -d parkhaus-wetter.roil.ch
+sudo certbot certonly --nginx -d parkhaus-wetter.roil.ch --deploy-hook "systemctl reload nginx"
 ```
 
-**Auto-Renewal überprüfen:**
+> **Wichtig: nicht `--standalone` verwenden.** Der Standalone-Modus braucht Port 80
+> für sich. Im Betrieb belegt Nginx diesen Port, die automatische Erneuerung
+> scheitert dann still und das Zertifikat läuft nach 90 Tagen ab
+> (so passiert am 16.11.2026). Das Nginx-Plugin erneuert bei laufendem Nginx,
+> der Deploy-Hook lädt Nginx danach neu, damit das neue Zertifikat aktiv wird.
+
+**Erstinstallation:** Solange das Zertifikat noch fehlt, startet Nginx mit dem
+HTTPS-Block aus Schritt 3 nicht. In diesem Fall einmalig bei gestopptem Nginx
+ausstellen und danach sofort auf das Nginx-Plugin umstellen:
+```bash
+sudo certbot certonly --standalone -d parkhaus-wetter.roil.ch
+sudo systemctl start nginx
+sudo certbot certonly --nginx -d parkhaus-wetter.roil.ch --force-renewal --deploy-hook "systemctl reload nginx"
+```
+
+**Auto-Renewal aktivieren und testen:**
 ```bash
 sudo systemctl enable certbot.timer
 sudo systemctl start certbot.timer
+sudo certbot renew --dry-run
 ```
+
+Der Dry-Run muss ohne Fehler durchlaufen. In
+`/etc/letsencrypt/renewal/parkhaus-wetter.roil.ch.conf` muss `authenticator = nginx` stehen.
 
 ### Schritt 5: DNS konfigurieren
 
@@ -243,9 +262,21 @@ sudo tail -f /var/log/nginx/error.log
 
 ### Problem: SSL Zertifikat existiert nicht
 **Ursache:** Certbot wurde nicht ausgeführt  
-**Lösung:**
+**Lösung:** Siehe Schritt 4, Abschnitt «Erstinstallation».
+
+### Problem: Seite nicht aufrufbar, Browser meldet abgelaufenes Zertifikat
+**Ursache:** Die automatische Erneuerung ist gescheitert. Typisch, wenn das
+Zertifikat mit `--standalone` ausgestellt wurde und Nginx Port 80 belegt.  
+**Diagnose:**
 ```bash
-sudo certbot certonly --standalone -d parkhaus-wetter.roil.ch
+sudo certbot certificates
+sudo tail -n 50 /var/log/letsencrypt/letsencrypt.log
+```
+**Lösung:** Über das Nginx-Plugin erneuern (stellt auch die Auto-Erneuerung um):
+```bash
+sudo certbot certonly --nginx -d parkhaus-wetter.roil.ch --deploy-hook "systemctl reload nginx"
+sudo systemctl reload nginx
+sudo certbot renew --dry-run
 ```
 
 ### Problem: DNS zeigt alte IP
@@ -364,8 +395,10 @@ sudo tail -f /var/log/nginx/access.log
 - Certbot testen: `sudo certbot renew --dry-run`
 
 ### Jährlich:
-- Zertifikate erneuern (automatisch via Certbot)
 - Nginx-Version updaten
+
+Das Zertifikat ist 90 Tage gültig und wird von `certbot.timer` automatisch
+rund 30 Tage vor Ablauf erneuert. Der monatliche Dry-Run oben zeigt, ob das klappt.
 
 ---
 
@@ -398,6 +431,6 @@ add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
 ---
 
-**Letztes Update:** August 18, 2026  
+**Letztes Update:** November 16, 2026  
 **Autor:** Roger  
 **Status:** Produktion aktiv ✅
