@@ -298,59 +298,128 @@ async function initCitySelectors() {
     cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 }
 
+let _ampelData = null;
+
+function ampelColor(pct) {
+  return pct >= 95 ? '#198754' : pct >= 90 ? '#fd7e14' : '#dc3545';
+}
+
+function ampelBar(pct) {
+  const color = ampelColor(pct);
+  return `<div class="d-flex align-items-center gap-2">
+    <div style="flex:1;height:8px;background:#e9ecef;border-radius:4px;overflow:hidden">
+      <div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div>
+    </div>
+  </div>`;
+}
+
+function confMatrixCell(confList, pred, act, totalN) {
+  const item = confList.find(c => c.predicted === pred && c.actual === act);
+  const n = item ? item.n : 0;
+  const pct = totalN ? (n / totalN * 100) : 0;
+  const isDiag = pred === act;
+  const isDanger = pred === 'gruen' && act === 'rot';
+  const bg = isDiag ? 'rgba(25,135,84,0.1)' : isDanger ? 'rgba(220,53,69,0.15)' : '';
+  const fw = (isDiag || isDanger) ? 'fw-bold' : '';
+  const style = bg ? `background:${bg}` : '';
+  return `<td style="${style}" class="${fw}">${pct.toFixed(1)}%<br><span class="text-muted small">${n.toLocaleString('de-CH')}</span></td>`;
+}
+
+function renderConfMatrix(tbodyId, confList) {
+  const totalN = confList.reduce((s, c) => s + c.n, 0);
+  const colors = ['gruen', 'gelb', 'rot'];
+  const labels = { gruen: '🟢 Grün', gelb: '🟡 Gelb', rot: '🔴 Rot' };
+  document.getElementById(tbodyId).innerHTML = colors.map(pred =>
+    `<tr><td class="fw-bold">${labels[pred]}</td>${colors.map(act =>
+      confMatrixCell(confList, pred, act, totalN)).join('')}</tr>`
+  ).join('');
+}
+
 async function loadAmpel() {
   const data = await Api.get('/api/accuracy/ampel', { days: days() });
+  _ampelData = data;
   if (!data.total) {
-    document.getElementById('ampel-main-pct').textContent = '–';
+    document.getElementById('ampel-hz-table').innerHTML =
+      '<tr><td colspan="5" class="text-muted">Keine Daten</td></tr>';
     return;
   }
 
-  const h1 = data.by_horizon.find(h => h.horizon_h === 1);
-  document.getElementById('ampel-main-pct').textContent = h1 ? h1.pct + '%' : '–';
-  document.getElementById('ampel-main-pct').style.color =
-    h1 && h1.pct >= 95 ? '#198754' : h1 && h1.pct >= 90 ? '#fd7e14' : '#dc3545';
-  document.getElementById('ampel-main-n').textContent =
-    h1 ? h1.correct.toLocaleString('de-CH') + ' / ' + h1.n.toLocaleString('de-CH') + ' richtig' : '';
-
-  document.getElementById('ampel-horizon-table').innerHTML = data.by_horizon.map(h => {
-    const color = h.pct >= 95 ? '#198754' : h.pct >= 90 ? '#fd7e14' : '#dc3545';
+  // Horizont-Tabelle
+  document.getElementById('ampel-hz-table').innerHTML = data.by_horizon.map(h => {
+    const color = ampelColor(h.pct);
     return `<tr>
-      <td>+${h.horizon_h}h</td>
-      <td class="text-end"><strong style="color:${color}">${h.pct}%</strong></td>
-      <td class="text-end text-muted">${h.n.toLocaleString('de-CH')}</td>
+      <td><strong>+${h.horizon_h} h</strong></td>
+      <td class="text-end"><span style="color:${color};font-size:1.1rem;font-weight:700">${h.pct}%</span></td>
+      <td class="text-end">${h.correct.toLocaleString('de-CH')}</td>
+      <td class="text-end">${h.n.toLocaleString('de-CH')}</td>
+      <td>${ampelBar(h.pct)}</td>
     </tr>`;
   }).join('');
 
-  document.getElementById('ampel-city-table').innerHTML = data.by_city.map(c => {
-    const color = c.pct >= 95 ? '#198754' : c.pct >= 90 ? '#fd7e14' : '#dc3545';
-    return `<tr>
-      <td>${CITY_LABELS[c.city] || c.city}</td>
-      <td class="text-end"><strong style="color:${color}">${c.pct}%</strong></td>
-    </tr>`;
+  // Gefährliche Fehler
+  const dangerous = data.confusion.find(c => c.predicted === 'gruen' && c.actual === 'rot');
+  const scared = data.confusion.find(c => c.predicted === 'rot' && c.actual === 'gruen');
+  const dPct = dangerous ? dangerous.pct : 0;
+  const dN = dangerous ? dangerous.n : 0;
+  const sPct = scared ? scared.pct : 0;
+  const sN = scared ? scared.n : 0;
+  document.getElementById('ampel-danger-box').innerHTML = `
+    <div class="mb-3">
+      <div class="text-danger fw-bold" style="font-size:1.8rem">${dPct}%</div>
+      <div class="small">🚨 Grün angezeigt, war aber rot</div>
+      <div class="text-muted small">${dN.toLocaleString('de-CH')} Fälle — Nutzer fährt hin, kein Platz</div>
+    </div>
+    <div>
+      <div class="text-warning fw-bold" style="font-size:1.3rem">${sPct}%</div>
+      <div class="small">⚠️ Rot angezeigt, war aber grün</div>
+      <div class="text-muted small">${sN.toLocaleString('de-CH')} Fälle — unnötig abgeschreckt</div>
+    </div>`;
+
+  // Stadt × Horizont Matrix
+  const cities = [...new Set(data.by_city_horizon.map(c => c.city))].sort();
+  document.getElementById('ampel-city-hz-table').innerHTML = cities.map(city => {
+    const cells = [1, 2, 4, 8].map(hz => {
+      const item = data.by_city_horizon.find(c => c.city === city && c.horizon_h === hz);
+      if (!item) return '<td class="text-end text-muted">–</td>';
+      const color = ampelColor(item.pct);
+      return `<td class="text-end"><strong style="color:${color}">${item.pct}%</strong>
+        <div class="text-muted small">${item.n.toLocaleString('de-CH')}</div></td>`;
+    }).join('');
+    return `<tr><td><strong>${CITY_LABELS[city] || city}</strong></td>${cells}</tr>`;
   }).join('');
 
-  const topConf = data.confusion.slice(0, 5);
-  document.getElementById('ampel-confusion').innerHTML = topConf.map(c => {
-    const icon = c.predicted === c.actual ? '✅' :
-                 c.predicted === 'gruen' && c.actual === 'rot' ? '🚨' :
-                 c.predicted === 'rot' && c.actual === 'gruen' ? '⚠️' : '↔️';
-    return `<div>${icon} ${c.predicted} → ${c.actual}: ${c.pct}%</div>`;
-  }).join('');
+  // Confusion Matrix gesamt
+  renderConfMatrix('ampel-matrix-body', data.confusion);
 
-  document.getElementById('ampel-dangerous').innerHTML =
-    `<div class="text-danger fw-bold">🚨 Gefährlich (grün→rot): ${data.dangerous_pct}%</div>`;
+  // Stadt-Selector für Confusion
+  const sel = document.getElementById('ampel-city-conf');
+  if (sel.options.length <= 1) {
+    sel.innerHTML = cities.map(c =>
+      `<option value="${c}">${CITY_LABELS[c] || c}</option>`).join('');
+    sel.addEventListener('change', () => renderCityConfusion());
+  }
+  renderCityConfusion();
+}
+
+function renderCityConfusion() {
+  if (!_ampelData?.confusion_by_city) return;
+  const city = document.getElementById('ampel-city-conf').value;
+  const items = _ampelData.confusion_by_city[city] || [];
+  renderConfMatrix('ampel-matrix-city-body', items);
 }
 
 function loadOverview() {
   loadSummary();
   loadAllTimeseries();
-  loadAmpel();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initCitySelectors();
   Merker.binden('scope-select', 'global', () => { loadOverview(); loadTrend(); });
-  Merker.binden('days-select', '14', () => { loadOverview(); loadPerParkhaus(); });
+  Merker.binden('days-select', '14', () => {
+    loadOverview(); loadPerParkhaus();
+    if (document.getElementById('tab-ampel')?.classList.contains('active')) loadAmpel();
+  });
   Merker.binden('city-select', null, loadPerParkhaus);
   Merker.binden('ph-horizon', '1', loadPerParkhaus);
 
@@ -367,6 +436,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!trendLoaded) { trendLoaded = false; }
       loadTrend();
     });
+  }
+
+  // Ampel-Tab beim Anklicken laden
+  const ampelTab = document.getElementById('tab-ampel');
+  if (ampelTab) {
+    ampelTab.addEventListener('shown.bs.tab', () => loadAmpel());
   }
 
   await Promise.all([loadOverview(), loadPerParkhaus(), loadRuns()]);

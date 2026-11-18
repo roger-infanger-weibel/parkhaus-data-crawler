@@ -152,30 +152,33 @@ def ampel_accuracy(days: int = Query(30, ge=1, le=120), env: str = Depends(get_e
         (since,), env=env,
     )
     if not rows:
-        return {"days": days, "total": 0, "by_horizon": [], "by_city": [], "confusion": []}
+        return {"days": days, "total": 0, "by_horizon": [],
+                "by_city_horizon": [], "confusion": [],
+                "confusion_by_city": {}}
 
     from collections import defaultdict
     by_hz: dict = defaultdict(lambda: {"n": 0, "correct": 0})
-    by_city: dict = defaultdict(lambda: {"n": 0, "correct": 0})
+    by_ch: dict = defaultdict(lambda: {"n": 0, "correct": 0})
     confusion: dict = defaultdict(int)
+    conf_by_city: dict = defaultdict(lambda: defaultdict(int))
 
     for r in rows:
         pred_a = _ampel(r["predicted_free"], r["total_at_pred"])
         act_a = _ampel(r["actual_free"], r["total_at_pred"])
         match = pred_a == act_a
-
         hz = r["horizon_h"]
+        city = r["city"]
+
         by_hz[hz]["n"] += 1
         if match:
             by_hz[hz]["correct"] += 1
 
-        if hz == 1:
-            city = r["city"]
-            by_city[city]["n"] += 1
-            if match:
-                by_city[city]["correct"] += 1
+        by_ch[(city, hz)]["n"] += 1
+        if match:
+            by_ch[(city, hz)]["correct"] += 1
 
         confusion[(pred_a, act_a)] += 1
+        conf_by_city[city][(pred_a, act_a)] += 1
 
     horizon_list = []
     for hz in sorted(by_hz):
@@ -184,18 +187,27 @@ def ampel_accuracy(days: int = Query(30, ge=1, le=120), env: str = Depends(get_e
                              "correct": g["correct"],
                              "pct": round(g["correct"] / g["n"] * 100, 1)})
 
-    city_list = []
-    for city in sorted(by_city):
-        g = by_city[city]
-        city_list.append({"city": city, "n": g["n"],
-                          "correct": g["correct"],
-                          "pct": round(g["correct"] / g["n"] * 100, 1)})
+    ch_list = []
+    for (city, hz) in sorted(by_ch):
+        g = by_ch[(city, hz)]
+        ch_list.append({"city": city, "horizon_h": hz, "n": g["n"],
+                        "correct": g["correct"],
+                        "pct": round(g["correct"] / g["n"] * 100, 1)})
 
-    conf_list = []
     total_n = len(rows)
+    conf_list = []
     for (pred, act), n in sorted(confusion.items(), key=lambda x: -x[1]):
         conf_list.append({"predicted": pred, "actual": act, "n": n,
-                          "pct": round(n / total_n * 100, 1)})
+                          "pct": round(n / total_n * 100, 2)})
+
+    conf_city_out = {}
+    for city, pairs in conf_by_city.items():
+        city_n = sum(pairs.values())
+        items = []
+        for (pred, act), n in sorted(pairs.items(), key=lambda x: -x[1]):
+            items.append({"predicted": pred, "actual": act, "n": n,
+                          "pct": round(n / city_n * 100, 2)})
+        conf_city_out[city] = items
 
     dangerous = confusion.get(("gruen", "rot"), 0)
 
@@ -203,8 +215,9 @@ def ampel_accuracy(days: int = Query(30, ge=1, le=120), env: str = Depends(get_e
         "days": days,
         "total": total_n,
         "by_horizon": horizon_list,
-        "by_city": city_list,
+        "by_city_horizon": ch_list,
         "confusion": conf_list,
+        "confusion_by_city": conf_city_out,
         "dangerous_pct": round(dangerous / total_n * 100, 2) if total_n else 0,
     }
 
