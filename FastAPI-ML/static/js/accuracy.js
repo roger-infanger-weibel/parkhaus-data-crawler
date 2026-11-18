@@ -298,9 +298,53 @@ async function initCitySelectors() {
     cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 }
 
+async function loadAmpel() {
+  const data = await Api.get('/api/accuracy/ampel', { days: days() });
+  if (!data.total) {
+    document.getElementById('ampel-main-pct').textContent = '–';
+    return;
+  }
+
+  const h1 = data.by_horizon.find(h => h.horizon_h === 1);
+  document.getElementById('ampel-main-pct').textContent = h1 ? h1.pct + '%' : '–';
+  document.getElementById('ampel-main-pct').style.color =
+    h1 && h1.pct >= 95 ? '#198754' : h1 && h1.pct >= 90 ? '#fd7e14' : '#dc3545';
+  document.getElementById('ampel-main-n').textContent =
+    h1 ? h1.correct.toLocaleString('de-CH') + ' / ' + h1.n.toLocaleString('de-CH') + ' richtig' : '';
+
+  document.getElementById('ampel-horizon-table').innerHTML = data.by_horizon.map(h => {
+    const color = h.pct >= 95 ? '#198754' : h.pct >= 90 ? '#fd7e14' : '#dc3545';
+    return `<tr>
+      <td>+${h.horizon_h}h</td>
+      <td class="text-end"><strong style="color:${color}">${h.pct}%</strong></td>
+      <td class="text-end text-muted">${h.n.toLocaleString('de-CH')}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('ampel-city-table').innerHTML = data.by_city.map(c => {
+    const color = c.pct >= 95 ? '#198754' : c.pct >= 90 ? '#fd7e14' : '#dc3545';
+    return `<tr>
+      <td>${CITY_LABELS[c.city] || c.city}</td>
+      <td class="text-end"><strong style="color:${color}">${c.pct}%</strong></td>
+    </tr>`;
+  }).join('');
+
+  const topConf = data.confusion.slice(0, 5);
+  document.getElementById('ampel-confusion').innerHTML = topConf.map(c => {
+    const icon = c.predicted === c.actual ? '✅' :
+                 c.predicted === 'gruen' && c.actual === 'rot' ? '🚨' :
+                 c.predicted === 'rot' && c.actual === 'gruen' ? '⚠️' : '↔️';
+    return `<div>${icon} ${c.predicted} → ${c.actual}: ${c.pct}%</div>`;
+  }).join('');
+
+  document.getElementById('ampel-dangerous').innerHTML =
+    `<div class="text-danger fw-bold">🚨 Gefährlich (grün→rot): ${data.dangerous_pct}%</div>`;
+}
+
 function loadOverview() {
   loadSummary();
   loadAllTimeseries();
+  loadAmpel();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

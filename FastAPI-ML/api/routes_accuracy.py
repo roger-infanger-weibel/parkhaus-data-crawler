@@ -124,6 +124,91 @@ def timeseries(scope: str = Query("global"), days: int = Query(90, ge=1, le=365)
     return {"scope": scope, "horizon_h": horizon, "series": series}
 
 
+def _ampel(free, total):
+    """Gleiche Logik wie ampelKlasse() in forecast.js."""
+    if not total or total == 0:
+        return "gelb"
+    ratio = free / total
+    if ratio > 0.1 and free > 15:
+        return "gruen"
+    if ratio > 0.05 and free > 15:
+        return "gelb"
+    return "rot"
+
+
+@router.get("/ampel")
+def ampel_accuracy(days: int = Query(30, ge=1, le=120), env: str = Depends(get_env)):
+    """Ampel-Trefferquote: wie oft stimmt gruen/gelb/rot?"""
+    since = now_local() - timedelta(days=days)
+    rows = db.query(
+        """
+        SELECT city, horizon_h, predicted_free, actual_free, total_at_pred
+        FROM ai_predictions
+        WHERE actual_free IS NOT NULL
+          AND total_at_pred IS NOT NULL AND total_at_pred > 0
+          AND model_type = 'ml'
+          AND target_time >= %s
+        """,
+        (since,), env=env,
+    )
+    if not rows:
+        return {"days": days, "total": 0, "by_horizon": [], "by_city": [], "confusion": []}
+
+    from collections import defaultdict
+    by_hz: dict = defaultdict(lambda: {"n": 0, "correct": 0})
+    by_city: dict = defaultdict(lambda: {"n": 0, "correct": 0})
+    confusion: dict = defaultdict(int)
+
+    for r in rows:
+        pred_a = _ampel(r["predicted_free"], r["total_at_pred"])
+        act_a = _ampel(r["actual_free"], r["total_at_pred"])
+        match = pred_a == act_a
+
+        hz = r["horizon_h"]
+        by_hz[hz]["n"] += 1
+        if match:
+            by_hz[hz]["correct"] += 1
+
+        if hz == 1:
+            city = r["city"]
+            by_city[city]["n"] += 1
+            if match:
+                by_city[city]["correct"] += 1
+
+        confusion[(pred_a, act_a)] += 1
+
+    horizon_list = []
+    for hz in sorted(by_hz):
+        g = by_hz[hz]
+        horizon_list.append({"horizon_h": hz, "n": g["n"],
+                             "correct": g["correct"],
+                             "pct": round(g["correct"] / g["n"] * 100, 1)})
+
+    city_list = []
+    for city in sorted(by_city):
+        g = by_city[city]
+        city_list.append({"city": city, "n": g["n"],
+                          "correct": g["correct"],
+                          "pct": round(g["correct"] / g["n"] * 100, 1)})
+
+    conf_list = []
+    total_n = len(rows)
+    for (pred, act), n in sorted(confusion.items(), key=lambda x: -x[1]):
+        conf_list.append({"predicted": pred, "actual": act, "n": n,
+                          "pct": round(n / total_n * 100, 1)})
+
+    dangerous = confusion.get(("gruen", "rot"), 0)
+
+    return {
+        "days": days,
+        "total": total_n,
+        "by_horizon": horizon_list,
+        "by_city": city_list,
+        "confusion": conf_list,
+        "dangerous_pct": round(dangerous / total_n * 100, 2) if total_n else 0,
+    }
+
+
 @router.get("/runs")
 def runs(env: str = Depends(get_env)):
     rows = db.query(
