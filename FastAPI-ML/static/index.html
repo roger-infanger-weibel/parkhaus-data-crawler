@@ -203,7 +203,7 @@
             <div class="card-body py-2">
               <h6 class="card-title">📊 Methodik</h6>
               <div id="expert-method" class="small">
-                <p class="mb-1"><strong>KI-Modell:</strong> Gradient Boosted Trees (XGBoost) pro Parkhaus. Trainiert auf historischen Belegungsdaten, Wochentag, Tageszeit, Feiertagen, Wetterdaten und lokalen Events.</p>
+                <p class="mb-1"><strong>KI-Modell:</strong> Gradient Boosted Trees (LightGBM) – ein globales Modell für alle Parkhäuser pro Prognosehorizont, ergänzt durch eine Residual-Korrektur pro Parkhaus. Trainiert auf historischen Belegungsdaten, Wochentag, Tageszeit, Feiertagen, Wetterdaten und lokalen Events.</p>
                 <p class="mb-1"><strong>Basis-Modell:</strong> Saisonaler Durchschnitt — gewichteter Mittelwert gleicher Wochentage der letzten Wochen.</p>
                 <p class="mb-0"><strong>Horizonte:</strong> +1h, +2h, +4h, +8h ab letztem Prognosestand. Je weiter in der Zukunft, desto grösser die Unsicherheit.</p>
               </div>
